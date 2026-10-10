@@ -3,60 +3,309 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07101c">
 <title>STAR CYBER AI X</title>
 <style>
-:root{--bg:#07101c;--panel:#0d1928;--line:#21354b;--text:#eaf2ff;--muted:#8ea3ba;--accent:#72e6c1}
+:root{
+  --bg:#07101c;--panel:#0d1928;--panel2:#101f31;--line:#21354b;
+  --text:#eaf2ff;--muted:#8ea3ba;--accent:#72e6c1;--warn:#ffd166;
+  --danger:#ff6b81;--high:#ff9b6a;--blue:#62d0ff;
+}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at 20% -10%,#183b4f 0,transparent 35%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
-.wrap{max-width:1100px;margin:auto;padding:24px 16px 100px}
-.hero{padding:28px;border:1px solid var(--line);border-radius:24px;background:rgba(13,25,40,.84);backdrop-filter:blur(16px)}
-.badge{display:inline-block;padding:6px 10px;border:1px solid #2e685a;border-radius:999px;color:var(--accent);font-size:12px;font-weight:800}
-h1{font-size:clamp(30px,7vw,54px);margin:12px 0 8px;letter-spacing:-1px}
-p{color:var(--muted);line-height:1.7}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
-.card{border:1px solid var(--line);border-radius:20px;background:var(--panel);padding:18px;min-height:150px}
-.card h3{margin-top:0}.num{font-size:30px;font-weight:900}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-button,a.btn{border:1px solid var(--line);background:#112235;color:var(--text);padding:12px 15px;border-radius:14px;text-decoration:none;font-weight:750;cursor:pointer}
-button.primary{background:var(--accent);color:#05231a;border-color:transparent}
-pre{white-space:pre-wrap;direction:ltr;text-align:left;background:#060d16;border:1px solid var(--line);padding:15px;border-radius:16px;overflow:auto}
-@media(max-width:720px){.grid{grid-template-columns:1fr}.card{min-height:auto}.hero{padding:20px}}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font-family:system-ui,-apple-system,"SF Pro Display",sans-serif;background:
+radial-gradient(circle at 10% -10%,#173b50 0,transparent 34%),
+radial-gradient(circle at 90% 0,#2a2144 0,transparent 30%),var(--bg);min-height:100vh}
+.wrap{max-width:1180px;margin:auto;padding:18px 14px 100px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}
+.brand h1{margin:4px 0;font-size:clamp(28px,7vw,48px);letter-spacing:-1px}
+.brand p{margin:0;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #2c6959;color:var(--accent);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}
+.panel{background:rgba(13,25,40,.9);border:1px solid var(--line);border-radius:20px;padding:16px;backdrop-filter:blur(16px);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:17px;padding:15px;min-width:0}
+.card .n{font-size:28px;font-weight:900}
+.card .k{font-size:12px;color:var(--muted);margin-top:2px}
+.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:4px}
+.tabs button{white-space:nowrap}
+button,.btn,input,select,textarea{font:inherit}
+button,.btn{border:1px solid var(--line);background:#12253a;color:var(--text);padding:11px 14px;border-radius:12px;min-height:44px;font-weight:750;cursor:pointer;text-decoration:none}
+button.primary{background:var(--accent);color:#06231a;border-color:transparent}
+button.danger{color:#ffd9df;border-color:#6a3140}
+button:disabled{opacity:.45}
+input,select,textarea{width:100%;background:#081421;color:var(--text);border:1px solid #35506b;border-radius:12px;padding:11px;min-height:44px}
+textarea{min-height:130px;direction:ltr;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+label{display:block;color:#b7c8d9;font-size:13px;margin:10px 0 6px}
+.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.section{display:none}.section.active{display:block}
+.list{display:grid;gap:10px}
+.item{border:1px solid var(--line);border-radius:15px;padding:13px;background:#0a1623}
+.item h3{margin:0 0 6px;font-size:16px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.pill{border:1px solid var(--line);padding:4px 8px;border-radius:999px}
+.sev-critical{color:var(--danger)}.sev-high{color:var(--high)}.sev-medium{color:var(--warn)}.sev-low{color:var(--blue)}.sev-info{color:var(--muted)}
+pre{white-space:pre-wrap;word-break:break-word;direction:ltr;text-align:left;background:#06101a;border:1px solid var(--line);padding:12px;border-radius:12px;overflow:auto;max-height:360px}
+.small{font-size:12px;color:var(--muted)}
+.notice{padding:10px 12px;border-radius:12px;background:#0a1724;border:1px solid var(--line);color:#b9cadc}
+footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:9px 12px;text-align:center;color:var(--muted);font-size:11px}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+@media(max-width:460px){.grid{grid-template-columns:1fr 1fr}.wrap{padding:12px 10px 90px}.panel{padding:13px}.brand h1{font-size:31px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <section class="hero">
-    <span class="badge">SELF-HOSTED SECURITY AI</span>
-    <h1>STAR CYBER AI X</h1>
-    <p>تحليل Burp، حفظ الأدلة، فحص النطاقات المصرح بها، التحقق من النتائج، وإصدار تقارير أمنية.</p>
-    <div class="toolbar">
-      <button class="primary" onclick="health()">فحص النظام</button>
-      <a class="btn" href="/docs">API Docs</a>
+  <div class="top">
+    <div class="brand">
+      <span class="badge"><span class="dot"></span> STAR CYBER AI X v0.3</span>
+      <h1>Security Control Center</h1>
+      <p>Burp + Repository Intelligence + Evidence + Retest + Reports</p>
     </div>
-    <div id="status"></div>
+    <button onclick="health()">فحص النظام</button>
+  </div>
+
+  <section class="panel">
+    <div class="formgrid">
+      <div>
+        <label>STAR API Token</label>
+        <input id="token" type="password" autocomplete="off" placeholder="Bearer token">
+      </div>
+      <div>
+        <label>الحالة</label>
+        <div id="healthBox" class="notice">لم يتم الفحص بعد</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" onclick="saveToken()">حفظ للجلسة</button>
+      <button onclick="refreshAll()">تحديث البيانات</button>
+      <a class="btn" href="/docs" target="_blank" rel="noopener">API Docs</a>
+    </div>
   </section>
 
-  <section class="grid">
-    <div class="card"><div class="num">01</div><h3>Burp AI</h3><p>تحليل request/response مع Analyst + Verifier.</p></div>
-    <div class="card"><div class="num">02</div><h3>Attack Lab</h3><p>اختبارات مضبوطة ومقيدة بالنطاق المصرح به.</p></div>
-    <div class="card"><div class="num">03</div><h3>Evidence</h3><p>حفظ الطلبات والردود مع SHA-256.</p></div>
-    <div class="card"><div class="num">04</div><h3>Reports</h3><p>تقارير Findings وCWE وOWASP والإصلاح.</p></div>
-    <div class="card"><div class="num">05</div><h3>Verifier</h3><p>تدقيق مستقل للنتيجة قبل اعتبارها مثبتة.</p></div>
-    <div class="card"><div class="num">06</div><h3>Retest Ready</h3><p>الهيكل جاهز لإضافة replay وscreenshots وPCAP.</p></div>
+  <section class="grid" style="margin-bottom:14px">
+    <div class="card"><div id="projectCount" class="n">—</div><div class="k">Projects</div></div>
+    <div class="card"><div id="repoCount" class="n">—</div><div class="k">Repositories</div></div>
+    <div class="card"><div id="findingCount" class="n">—</div><div class="k">Findings</div></div>
+    <div class="card"><div id="scopeCount" class="n">—</div><div class="k">Scopes</div></div>
   </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button onclick="showTab('overview')">Overview</button>
+      <button onclick="showTab('projects')">Projects & Scopes</button>
+      <button onclick="showTab('repos')">Repository Intelligence</button>
+      <button onclick="showTab('findings')">Findings</button>
+      <button onclick="showTab('audit')">Audit</button>
+    </div>
+  </section>
+
+  <section id="overview" class="section active panel">
+    <h2>النظام</h2>
+    <div class="list">
+      <div class="item"><h3>Burp Master</h3><p class="small">حدد Request/Response داخل Burp ثم Analyze with STAR AI. يتم إنشاء Evidence Bundle وتحليل مستقل وتسجيل Finding.</p></div>
+      <div class="item"><h3>Repository Intelligence</h3><p class="small">استيراد metadata من GitHub بصلاحية قراءة فقط ثم تحليل ملفات مختارة وحفظ النتائج داخل نفس نظام التقارير.</p></div>
+      <div class="item"><h3>Retest Engine</h3><p class="small">إعادة اختبار Finding سابق وحفظ نتيجة fix-verified / still-vulnerable / inconclusive مع دليل جديد.</p></div>
+    </div>
+  </section>
+
+  <section id="projects" class="section panel">
+    <h2>Projects & Scopes</h2>
+    <div class="formgrid">
+      <div>
+        <h3>مشروع جديد</h3>
+        <label>الاسم</label><input id="projectName" placeholder="My Security Lab">
+        <label>الوصف</label><textarea id="projectDesc" placeholder="Authorized security assessment"></textarea>
+        <button class="primary" onclick="createProject()">إنشاء المشروع</button>
+      </div>
+      <div>
+        <h3>Scope جديد</h3>
+        <label>المشروع</label><select id="scopeProject"></select>
+        <label>الهدف</label><input id="scopeTarget" placeholder="https://lab.example">
+        <label>الاسم</label><input id="scopeName" placeholder="Authorized web app">
+        <label><input id="scopeAuthorized" type="checkbox" style="width:auto;min-height:auto"> أؤكد أن هذا النطاق مخوّل للاختبار</label>
+        <button class="primary" onclick="createScope()">إضافة Scope</button>
+      </div>
+    </div>
+    <h3>المشاريع</h3><div id="projectsList" class="list"></div>
+  </section>
+
+  <section id="repos" class="section panel">
+    <h2>Repository Intelligence</h2>
+    <div class="formgrid">
+      <div>
+        <label>المشروع</label><select id="repoProject"></select>
+        <label>GitHub repository</label><input id="repoName" dir="ltr" placeholder="owner/repository">
+        <label>Ref / Branch (اختياري)</label><input id="repoRef" dir="ltr" placeholder="main">
+        <button class="primary" onclick="importRepo()">استيراد Read-only</button>
+      </div>
+      <div>
+        <div class="notice">للمستودعات الخاصة، ضع <code>GITHUB_TOKEN</code> على الخادم بصلاحية Metadata: Read وContents: Read فقط.</div>
+        <pre id="repoResult">لا توجد عملية بعد.</pre>
+      </div>
+    </div>
+    <h3>المستودعات المستوردة</h3><div id="reposList" class="list"></div>
+  </section>
+
+  <section id="findings" class="section panel">
+    <div class="row" style="justify-content:space-between">
+      <h2>Findings</h2>
+      <select id="reportProject" style="max-width:280px"></select>
+      <button onclick="openReport()">فتح التقرير</button>
+    </div>
+    <div id="findingsList" class="list"></div>
+  </section>
+
+  <section id="audit" class="section panel">
+    <h2>Audit Log</h2>
+    <div id="auditList" class="list"></div>
+  </section>
+
+  <div id="status" class="panel small">جاهز.</div>
 </div>
+
+<footer>STAR CYBER AI X · Active testing remains scope-gated.</footer>
+
 <script>
+const $=id=>document.getElementById(id);
+let state={projects:[],repos:[],findings:[],scopes:[]};
+
+function token(){return $("token").value.trim()}
+function saveToken(){sessionStorage.setItem("starToken",token());setStatus("تم حفظ التوكن لهذه الجلسة فقط.");refreshAll()}
+function setStatus(s){$("status").textContent=s}
+function showTab(id){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));$(id).classList.add("active")}
+
+async function api(path,opts={}){
+  const headers={...(opts.headers||{})};
+  if(token())headers.Authorization="Bearer "+token();
+  if(opts.body && !(opts.body instanceof FormData))headers["Content-Type"]="application/json";
+  const r=await fetch(path,{...opts,headers});
+  const text=await r.text();
+  let data;try{data=JSON.parse(text)}catch{data=text}
+  if(!r.ok)throw Error((data&&data.detail)||text||("HTTP "+r.status));
+  return data;
+}
+
 async function health(){
-  const el=document.getElementById("status");
-  el.innerHTML="جاري الفحص...";
   try{
-    const r=await fetch("/api/health");
-    const d=await r.json();
-    el.innerHTML="<pre>"+JSON.stringify(d,null,2)+"</pre>";
-  }catch(e){
-    el.innerHTML="<pre>"+String(e)+"</pre>";
+    const d=await api("/api/health");
+    $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · GitHub ${d.github_configured?"configured":"public-only"}`;
+  }catch(e){$("healthBox").textContent="ERROR · "+e.message}
+}
+
+function fillProjectSelects(){
+  for(const id of ["scopeProject","repoProject","reportProject"]){
+    const sel=$(id);sel.replaceChildren(...state.projects.map(p=>new Option(`#${p.id} ${p.name}`,p.id)));
   }
 }
+
+function renderProjects(){
+  $("projectCount").textContent=state.projects.length;
+  $("scopeCount").textContent=state.scopes.length;
+  $("projectsList").replaceChildren(...state.projects.map(p=>{
+    const d=document.createElement("div");d.className="item";
+    const scopes=state.scopes.filter(s=>s.project_id===p.id);
+    d.innerHTML=`<h3>#${p.id} ${escapeHtml(p.name)}</h3><div class="meta"><span class="pill">${scopes.length} scopes</span><span class="pill">${escapeHtml(p.created_at)}</span></div><p class="small">${escapeHtml(p.description||"")}</p>`;
+    return d;
+  }));
+}
+
+function renderRepos(){
+  $("repoCount").textContent=state.repos.length;
+  $("reposList").replaceChildren(...state.repos.map(r=>{
+    const d=document.createElement("div");d.className="item";
+    d.innerHTML=`<h3>${escapeHtml(r.full_name)}</h3><div class="meta"><span class="pill">#${r.id}</span><span class="pill">${escapeHtml(r.ref)}</span><span class="pill">${r.file_count} files</span></div><div class="row" style="margin-top:10px"><button data-id="${r.id}" class="analyzeRepo">تحليل الملفات ذات الأولوية</button><button data-id="${r.id}" class="showFiles">عرض الملفات</button></div><pre id="repo-${r.id}" style="display:none"></pre>`;
+    return d;
+  }));
+  document.querySelectorAll(".analyzeRepo").forEach(b=>b.onclick=()=>analyzeRepo(Number(b.dataset.id)));
+  document.querySelectorAll(".showFiles").forEach(b=>b.onclick=()=>showRepoFiles(Number(b.dataset.id)));
+}
+
+function renderFindings(){
+  $("findingCount").textContent=state.findings.length;
+  $("findingsList").replaceChildren(...state.findings.map(f=>{
+    const d=document.createElement("div");d.className="item";
+    d.innerHTML=`<h3 class="sev-${escapeHtml(f.severity)}">#${f.id} ${escapeHtml(f.title)}</h3><div class="meta"><span class="pill">${escapeHtml(f.severity)}</span><span class="pill">${escapeHtml(f.status)}</span><span class="pill">${f.confidence}%</span><span class="pill">${escapeHtml(f.cwe||"no CWE")}</span></div><p class="small">${escapeHtml(f.summary||"")}</p>`;
+    return d;
+  }));
+}
+
+async function refreshAll(){
+  if(!token()){setStatus("أدخل STAR API Token أولاً.");return}
+  try{
+    const [projects,scopes,repos,findings]=await Promise.all([
+      api("/api/projects"),api("/api/scopes"),api("/api/repositories"),api("/api/findings")
+    ]);
+    state={projects,scopes,repos,findings};
+    fillProjectSelects();renderProjects();renderRepos();renderFindings();
+    await loadAudit();
+    setStatus("تم تحديث البيانات.");
+  }catch(e){setStatus("خطأ: "+e.message)}
+}
+
+async function createProject(){
+  try{
+    const d=await api("/api/projects",{method:"POST",body:JSON.stringify({name:$("projectName").value,description:$("projectDesc").value})});
+    setStatus("تم إنشاء المشروع #"+d.id);await refreshAll();
+  }catch(e){setStatus("خطأ: "+e.message)}
+}
+
+async function createScope(){
+  try{
+    const body={project_id:Number($("scopeProject").value),name:$("scopeName").value,target:$("scopeTarget").value,authorized:$("scopeAuthorized").checked,notes:"Created from STAR dashboard"};
+    const d=await api("/api/scopes",{method:"POST",body:JSON.stringify(body)});
+    setStatus("تم إنشاء Scope #"+d.id);await refreshAll();
+  }catch(e){setStatus("خطأ: "+e.message)}
+}
+
+async function importRepo(){
+  try{
+    $("repoResult").textContent="Importing...";
+    const body={project_id:Number($("repoProject").value),full_name:$("repoName").value.trim(),ref:$("repoRef").value.trim()||null};
+    const d=await api("/api/repositories/import",{method:"POST",body:JSON.stringify(body)});
+    $("repoResult").textContent=JSON.stringify(d,null,2);setStatus("تم استيراد repository metadata.");await refreshAll();
+  }catch(e){$("repoResult").textContent="ERROR\n"+e.message;setStatus("خطأ: "+e.message)}
+}
+
+async function analyzeRepo(id){
+  const box=$("repo-"+id);box.style.display="block";box.textContent="Analyzing priority files...";
+  try{
+    const d=await api(`/api/repositories/${id}/analyze`,{method:"POST",body:JSON.stringify({paths:[]})});
+    box.textContent=JSON.stringify(d,null,2);setStatus(`Repository #${id}: saved ${d.saved_finding_ids.length} findings`);await refreshAll();
+  }catch(e){box.textContent="ERROR\n"+e.message}
+}
+
+async function showRepoFiles(id){
+  const box=$("repo-"+id);box.style.display="block";box.textContent="Loading files...";
+  try{const d=await api(`/api/repositories/${id}/files`);box.textContent=d.map(x=>`${x.path}  [${x.size} bytes]`).join("\n")}catch(e){box.textContent="ERROR\n"+e.message}
+}
+
+async function loadAudit(){
+  try{
+    const rows=await api("/api/audit?limit=50");
+    $("auditList").replaceChildren(...rows.map(a=>{
+      const d=document.createElement("div");d.className="item";
+      d.innerHTML=`<h3>${escapeHtml(a.action)}</h3><div class="meta"><span class="pill">${escapeHtml(a.object_type)}</span><span class="pill">${escapeHtml(a.object_id)}</span><span class="pill">${escapeHtml(a.created_at)}</span></div><pre>${escapeHtml(a.detail_json)}</pre>`;return d;
+    }));
+  }catch{}
+}
+
+async function openReport(){
+  const id=Number($("reportProject").value);if(!id)return;
+  try{
+    const r=await fetch(`/api/reports/${id}`,{headers:{Authorization:"Bearer "+token()}});
+    if(!r.ok)throw Error(await r.text());
+    const blob=await r.blob();window.open(URL.createObjectURL(blob),"_blank","noopener");
+  }catch(e){setStatus("خطأ: "+e.message)}
+}
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+$("token").value=sessionStorage.getItem("starToken")||"";
+health();
+if(token())refreshAll();
 </script>
 </body>
 </html>
