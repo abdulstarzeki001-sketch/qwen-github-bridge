@@ -115,7 +115,7 @@ export const config = {
   method: "POST",
   rateLimit: {
     action: "rate_limit",
-    aggregateBy: "ip",
+    aggregateBy: ["domain", "ip"],
     windowSize: 60,
     windowLimit: 10,
   },
