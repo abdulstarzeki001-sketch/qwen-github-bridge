@@ -51,7 +51,7 @@ export default async function handler(req) {
     const url = new URL(req.url);
     if (url.pathname === "/api/github/browse") {
       const path = url.searchParams.get("path") || "";
-      if (path.length > 500 || path.split("/").some(x => x === "." || x === "..") || /[\\\\\\x00-\\x1f]/.test(path)) {
+      if (path.length > 500 || path.split("/").some(x => x === "." || x === "..") || path.includes("\\") || [...path].some(ch => ch.charCodeAt(0) < 32)) {
         return Response.json({ error: "Invalid path" }, { status: 400, headers });
       }
       const resource = await github("/repos/abdulstarzeki001-sketch/qwen-github-bridge/contents/" +
