@@ -12,10 +12,13 @@ export async function onRequest({request,env}){
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
     return makeGithubHandler(env)(request);
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
-  const expected=env.STAR_API_TOKEN||"";
-  if(expected.length<32 || request.headers.get("authorization")!=="Bearer "+expected)
-    return json({error:"Unauthorized"},401);
   const useOpenAI=env.STAR_AI_PROVIDER==="openai";
+  // Public free chat needs no browser token. Paid mode remains private to avoid unapproved charges.
+  if(useOpenAI){
+    const expected=env.STAR_API_TOKEN||"";
+    if(expected.length<32||request.headers.get("authorization")!=="Bearer "+expected)
+      return json({error:"Paid OpenAI mode requires administrator authorization"},401);
+  }
   if(useOpenAI&&!env.OPENAI_API_KEY)return json({error:"Set OPENAI_API_KEY for OpenAI mode"},503);
   if(!useOpenAI&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
   const ip=request.headers.get("cf-connecting-ip")||"unknown";
@@ -26,12 +29,12 @@ export async function onRequest({request,env}){
   }
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
-  if(!prompt||prompt.length>16000)return json({error:"Prompt must contain 1-16000 characters"},400);
+  if(!prompt||prompt.length>6000)return json({error:"Prompt must contain 1-6000 characters"},400);
   try{
     const model=useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
     const upstream=await fetch(useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",headers:{"Authorization":"Bearer "+(useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
-      body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
+      body:JSON.stringify({model,max_tokens:1000,temperature:0.15,messages:[
         {role:"system",content:"You are STAR CYBER AI X, an engineering and defensive cybersecurity assistant. Answer in the user's language. Never claim to have executed actions you did not execute."},
         {role:"user",content:prompt}
       ]}),signal:AbortSignal.timeout(25000)
