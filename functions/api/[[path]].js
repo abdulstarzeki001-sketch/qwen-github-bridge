@@ -1,3 +1,4 @@
+import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 
@@ -15,8 +16,9 @@ export async function onRequest({request,env}){
     return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
   const expected=env.STAR_API_TOKEN||"";
-  if(expected.length<32 || request.headers.get("authorization")!=="Bearer "+expected)
-    return json({error:"Unauthorized"},401);
+  const validBearer=expected.length>=32 && request.headers.get("authorization")==="Bearer "+expected;
+  if(!validBearer && !(await ownerAccess(request,env)))
+    return json({error:"Owner sign-in required"},401);
   const useCloudflare=env.STAR_AI_PROVIDER==="cloudflare";
   const useOpenAI=env.STAR_AI_PROVIDER==="openai";
   if(useCloudflare&&!env.AI)return json({error:"Cloudflare AI binding missing"},503);
