@@ -68,7 +68,7 @@ Authorization: Bearer <STAR_API_TOKEN>
 
 ## AI brain
 
-The recommended **free starting provider** is Cloudflare Workers AI:
+The Docker/FastAPI runtime can use Cloudflare Workers AI. For the Netlify web runtime, the preferred zero-provider-key path is **Netlify AI Gateway**.
 
 ```env
 AI_PROVIDER=cloudflare
@@ -159,3 +159,21 @@ GitHub Models inference was fully retired by GitHub on July 30, 2026, so STAR no
 For the always-on AI brain, the current free-start path is **Cloudflare Workers AI**. GitHub continues to handle source control, CI, Burp extension builds, GHCR publishing, repository intelligence, and release history.
 
 The Cloudflare adapter and connectivity test are already included; activation requires the Cloudflare account ID and scoped Workers AI API token to be stored as secrets, never committed to the repository.
+
+
+## Netlify web runtime
+
+The repository is ready for a Netlify production deploy:
+
+- static dashboard: `web/`
+- health function: `GET /api/health`
+- AI chat function: `POST /api/chat`
+- AI provider: Netlify AI Gateway through OpenRouter
+- default model route: `openrouter/free`
+- external provider API key required: **no**
+
+The Netlify project already exists as `star-cyber-ai-x`.
+
+Netlify AI Gateway activates after the project's first production deploy. The site should stay protected until deployment and access controls are reviewed.
+
+See `docs/NETLIFY_DEPLOY.md`.
