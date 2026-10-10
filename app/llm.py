@@ -1,4 +1,6 @@
 import json
+import re
+
 import httpx
 
 from .config import settings
@@ -56,26 +58,70 @@ Never invent observations.
 """
 
 
+def _extract_json(raw: str) -> dict:
+    raw = (raw or "").strip()
+
+    try:
+        value = json.loads(raw)
+        return value if isinstance(value, dict) else {"value": value}
+    except json.JSONDecodeError:
+        pass
+
+    fenced = re.search(
+        r"```(?:json)?\\s*(\\{.*\\})\\s*```",
+        raw,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if fenced:
+        try:
+            value = json.loads(fenced.group(1))
+            return value if isinstance(value, dict) else {"value": value}
+        except json.JSONDecodeError:
+            pass
+
+    first = raw.find("{")
+    last = raw.rfind("}")
+    if first != -1 and last > first:
+        try:
+            value = json.loads(raw[first:last + 1])
+            return value if isinstance(value, dict) else {"value": value}
+        except json.JSONDecodeError:
+            pass
+
+    return {"raw": raw}
+
+
 async def _chat(system: str, user: str) -> dict:
-    url = settings.llm_base_url.rstrip("/") + "/chat/completions"
+    base_url, api_key, model = settings.resolved_llm()
+    url = base_url.rstrip("/") + "/chat/completions"
+
     payload = {
-        "model": settings.llm_model,
+        "model": model,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
         "temperature": 0.15,
-        "response_format": {"type": "json_object"},
     }
-    headers = {"Authorization": f"Bearer {settings.llm_api_key}"}
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
     async with httpx.AsyncClient(timeout=settings.llm_timeout) as client:
         response = await client.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        raw = response.json()["choices"][0]["message"]["content"]
+        data = response.json()
+
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {"raw": raw}
+        raw = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError(
+            "AI provider returned an unexpected chat-completions response"
+        ) from exc
+
+    return _extract_json(raw)
 
 
 async def analyze_and_verify(request: str, response: str) -> dict:
