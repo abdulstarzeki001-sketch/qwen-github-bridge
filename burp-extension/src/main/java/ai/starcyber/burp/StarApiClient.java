@@ -26,14 +26,31 @@ final class StarApiClient {
     }
 
     void analyze(HttpRequestResponse requestResponse) {
-        try {
-            String request = truncate(requestResponse.request().toString(), MAX_REQUEST_CHARS);
-            String response = requestResponse.response() == null
-                ? ""
-                : truncate(requestResponse.response().toString(), MAX_RESPONSE_CHARS);
+        String payload = "{"
+            + "\"project_id\":" + config.projectId() + ","
+            + "\"scope_id\":" + config.scopeId() + ","
+            + "\"request\":\"" + escapeJson(requestText(requestResponse)) + "\","
+            + "\"response\":\"" + escapeJson(responseText(requestResponse)) + "\","
+            + "\"note\":\"Sent manually from Burp Suite / STAR BURP AI\""
+            + "}";
+        send("/api/burp/analyze", payload, "Analyzing selected Burp message...");
+    }
 
-            int projectId = config.projectId();
-            int scopeId = config.scopeId();
+    void inspect(HttpRequestResponse requestResponse) {
+        String payload = exchangeJson(requestResponse);
+        send("/api/burp/inspect", payload, "Inspecting selected Burp message...");
+    }
+
+    void compare(HttpRequestResponse first, HttpRequestResponse second) {
+        String payload = "{"
+            + "\"first\":" + exchangeJson(first) + ","
+            + "\"second\":" + exchangeJson(second)
+            + "}";
+        send("/api/burp/compare", payload, "Comparing two selected Burp messages...");
+    }
+
+    private void send(String path, String json, String pendingMessage) {
+        try {
             String baseUrl = config.apiUrl();
             String token = config.apiToken();
 
@@ -41,16 +58,8 @@ final class StarApiClient {
                 throw new IllegalArgumentException("API URL must start with http:// or https://");
             }
 
-            String json = "{"
-                + "\"project_id\":" + projectId + ","
-                + "\"scope_id\":" + scopeId + ","
-                + "\"request\":\"" + escapeJson(request) + "\","
-                + "\"response\":\"" + escapeJson(response) + "\","
-                + "\"note\":\"Sent manually from Burp Suite / STAR BURP AI\""
-                + "}";
-
             HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/api/burp/analyze"))
+                .uri(URI.create(baseUrl + path))
                 .timeout(Duration.ofSeconds(150))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json));
@@ -59,7 +68,7 @@ final class StarApiClient {
                 builder.header("Authorization", "Bearer " + token);
             }
 
-            config.showResult("Analyzing selected Burp message...");
+            config.showResult(pendingMessage);
 
             HttpResponse<String> result = httpClient.send(
                 builder.build(),
@@ -69,14 +78,34 @@ final class StarApiClient {
             config.showResult("HTTP " + result.statusCode() + "\n\n" + result.body());
 
             if (result.statusCode() >= 200 && result.statusCode() < 300) {
-                api.logging().logToOutput("STAR AI analysis completed.");
+                api.logging().logToOutput("STAR AI request completed: " + path);
             } else {
-                api.logging().logToError("STAR AI returned HTTP " + result.statusCode());
+                api.logging().logToError(
+                    "STAR AI returned HTTP " + result.statusCode() + " for " + path
+                );
             }
         } catch (Exception ex) {
             config.showResult("ERROR\n\n" + ex.getMessage());
-            api.logging().logToError("STAR AI analysis failed: " + ex);
+            api.logging().logToError("STAR AI request failed: " + ex);
         }
+    }
+
+    private static String exchangeJson(HttpRequestResponse requestResponse) {
+        return "{"
+            + "\"request\":\"" + escapeJson(requestText(requestResponse)) + "\","
+            + "\"response\":\"" + escapeJson(responseText(requestResponse)) + "\""
+            + "}";
+    }
+
+    private static String requestText(HttpRequestResponse requestResponse) {
+        return truncate(requestResponse.request().toString(), MAX_REQUEST_CHARS);
+    }
+
+    private static String responseText(HttpRequestResponse requestResponse) {
+        if (requestResponse.response() == null) {
+            return "";
+        }
+        return truncate(requestResponse.response().toString(), MAX_RESPONSE_CHARS);
     }
 
     private static String truncate(String value, int maxChars) {
