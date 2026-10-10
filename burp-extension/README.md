@@ -14,16 +14,16 @@ Burp Suite extension built with the **Montoya API 2026.7**.
 
 ## Build
 
-Requires Java 17+ and Gradle.
+Requires Java 17+ and Maven.
 
 ```bash
-gradle jar
+mvn -B clean package
 ```
 
 Output:
 
 ```text
-build/libs/star-burp-ai-0.2.0.jar
+target/star-burp-ai-0.2.0.jar
 ```
 
 ## Load into Burp
