@@ -28,7 +28,10 @@ TEXT_NAMES = {
 
 
 def validate_repo_name(full_name: str) -> bool:
-    return bool(REPO_RE.fullmatch(full_name or ""))
+    if not REPO_RE.fullmatch(full_name or ""):
+        return False
+    owner, name = full_name.split("/", 1)
+    return owner not in {".", ".."} and name not in {".", ".."}
 
 
 def language_hint(path: str) -> str:
