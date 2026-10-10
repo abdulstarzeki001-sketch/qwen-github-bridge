@@ -1,16 +1,18 @@
+import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 
 const json=(body,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
 function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
 export async function onRequest({request,env}){
   const path=new URL(request.url).pathname;
+  const policy=ownerPolicy(env);
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
     return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
       ai_model:env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
   }
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
-    return makeGithubHandler(env)(request);
+    return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
   const expected=env.STAR_API_TOKEN||"";
   if(expected.length<32 || request.headers.get("authorization")!=="Bearer "+expected)
@@ -26,13 +28,13 @@ export async function onRequest({request,env}){
   }
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
-  if(!prompt||prompt.length>16000)return json({error:"Prompt must contain 1-16000 characters"},400);
+  if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
   try{
     const model=useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
     const upstream=await fetch(useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",headers:{"Authorization":"Bearer "+(useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
       body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
-        {role:"system",content:"You are STAR CYBER AI X, an engineering and defensive cybersecurity assistant. Answer in the user's language. Never claim to have executed actions you did not execute."},
+        {role:"system",content:policy.identity+". "+policy.instructions+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
         {role:"user",content:prompt}
       ]}),signal:AbortSignal.timeout(25000)
     });
