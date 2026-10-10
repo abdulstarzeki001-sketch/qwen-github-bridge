@@ -69,7 +69,8 @@ payload = {
         {"role": "user", "content": user}
     ],
     "temperature": 0.1,
-    "max_tokens": 3500
+    "max_tokens": 3500,
+    "stream": False
 }
 
 req = Request(
@@ -78,6 +79,7 @@ req = Request(
     headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
+        "Accept": "application/json",
         "User-Agent": "star-cyber-ai-x"
     },
     method="POST"
@@ -85,7 +87,11 @@ req = Request(
 
 try:
     with urlopen(req, timeout=120) as response:
-        data = json.loads(response.read().decode("utf-8"))
+        raw_body = response.read().decode("utf-8", errors="replace")
+        if not raw_body.strip():
+            print(f"ERROR: Empty response from GitHub Models (HTTP {response.status}, Content-Type={response.headers.get('Content-Type')})", file=sys.stderr)
+            sys.exit(1)
+        data = json.loads(raw_body)
 except HTTPError as exc:
     body = exc.read().decode("utf-8", errors="replace")
     print(f"GitHub Models HTTP {exc.code}\n{body[:4000]}", file=sys.stderr)
