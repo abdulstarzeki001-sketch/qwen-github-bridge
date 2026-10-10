@@ -72,10 +72,10 @@ LLM_MODEL=Qwen3-Coder
 ## Burp Suite
 
 ```bash
-gradle -p burp-extension jar
+mvn -B -f burp-extension/pom.xml clean package
 ```
 
-Load `burp-extension/build/libs/star-burp-ai-0.2.0.jar` into Burp, configure the **STAR AI** tab, then right-click a request/response and select **Analyze with STAR AI**.
+Load `burp-extension/target/star-burp-ai-0.2.0.jar` into Burp, configure the **STAR AI** tab, then right-click a request/response and select **Analyze with STAR AI**.
 
 ## Security testing model
 
