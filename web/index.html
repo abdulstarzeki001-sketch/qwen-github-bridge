@@ -52,13 +52,36 @@ pre{white-space:pre-wrap;word-break:break-word;direction:ltr;text-align:left;bac
 footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:9px 12px;text-align:center;color:var(--muted);font-size:11px}
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 @media(max-width:460px){.grid{grid-template-columns:1fr 1fr}.wrap{padding:12px 10px 90px}.panel{padding:13px}.brand h1{font-size:31px}}
+
+html,body{max-width:100%;overflow-x:hidden}
+.wrap,.panel,.card,.item{min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible}
+.tabs button{min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:12px;padding:9px 6px;line-height:1.3}
+.chat-response{direction:auto;text-align:start;white-space:normal;max-height:none;overflow-wrap:anywhere;line-height:1.8;font-size:14px}
+.chat-response p{margin:0 0 12px;unicode-bidi:plaintext}
+.chat-response h3,.chat-response h4{margin:14px 0 8px}
+.chat-response ul,.chat-response ol{padding-inline-start:25px}
+.chat-response pre{direction:ltr;text-align:left;white-space:pre;overflow-x:auto;max-height:none}
+.chat-response code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;unicode-bidi:isolate}
+.chat-response :not(pre)>code{padding:2px 5px;border-radius:5px;background:#182d42}
+#chatPrompt{direction:auto;text-align:start;font-family:inherit}
+#chatMeta{overflow-wrap:anywhere}
+@media(max-width:560px){
+ .wrap{padding:12px 10px calc(95px + env(safe-area-inset-bottom))}
+ .brand h1{font-size:clamp(24px,7vw,32px);line-height:1.15;overflow-wrap:anywhere}
+ .brand p{font-size:13px;line-height:1.5}
+ .grid{gap:8px}.card{padding:12px}
+ .tabs button{font-size:11px}
+ footer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <span class="badge"><span class="dot"></span> STAR CYBER AI X v0.5</span>
+      <span class="badge"><span class="dot"></span> STAR CYBER AI X v0.6</span>
       <h1>Security Control Center</h1>
       <p>Burp + Repository Intelligence + Evidence + Retest + Reports</p>
     </div>
@@ -83,7 +106,7 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backd
     </div>
   </section>
 
-  <section class="grid" style="margin-bottom:14px">
+  <section id="backendStats" class="grid" style="margin-bottom:14px">
     <div class="card"><div id="projectCount" class="n">—</div><div class="k">Projects</div></div>
     <div class="card"><div id="repoCount" class="n">—</div><div class="k">Repositories</div></div>
     <div class="card"><div id="findingCount" class="n">—</div><div class="k">Findings</div></div>
@@ -164,14 +187,14 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backd
 
   <section id="chat" class="section panel">
     <h2>STAR AI Chat</h2>
-    <div class="notice">يعمل هذا المسار على Netlify AI Gateway عند نشر الموقع على Netlify. النموذج الافتراضي هو OpenRouter Free Router ويمكن تغييره من STAR_NETLIFY_MODEL.</div>
+    <div class="notice">محادثة STAR عبر Netlify AI Gateway. الردود التفسيرية ليست إثباتاً لتنفيذ فحص أو تعديل.</div>
     <label>اكتب طلبك</label>
-    <textarea id="chatPrompt" dir="rtl" style="text-align:right;font-family:inherit" placeholder="حلل هذا الكود، اشرح الثغرة، اقترح إصلاحاً، أو ساعدني في المشروع..."></textarea>
+    <textarea id="chatPrompt" dir="auto" placeholder="حلل هذا الكود، اشرح الثغرة، اقترح إصلاحاً، أو ساعدني في المشروع..."></textarea>
     <div class="row" style="margin-top:10px">
       <button id="chatButton" class="primary" onclick="askStar()">إرسال إلى STAR</button>
       <span id="chatMeta" class="small"></span>
     </div>
-    <pre id="chatOutput" style="min-height:180px">جاهز.</pre>
+    <div id="chatOutput" class="chat-response item" role="status" aria-live="polite" style="min-height:150px">جاهز.</div>
   </section>
 
   <div id="status" class="panel small">جاهز.</div>
@@ -206,7 +229,14 @@ async function health(){
     const ai=d.ai_gateway===true?"AI ready":(d.ai_gateway===false?"AI pending":"");
     $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · ${runtime}${ai?" · "+ai:""}`;
     if(runtime==="netlify"&&!d.full_backend){
-      setStatus("Netlify mode: AI Chat متاح بعد تفعيل أول Production Deploy. وظائف Projects/Scopes/Findings الكاملة تبقى ضمن FastAPI.");
+      $("backendPanel").hidden=true;
+      $("backendStats").hidden=true;
+      document.querySelectorAll(".tabs button").forEach(b=>{
+        const action=b.getAttribute("onclick")||"";
+        if(!action.includes("'chat'")&&!action.includes("'overview'"))b.hidden=true;
+      });
+      showTab("chat");
+      setStatus("Netlify: المحادثة متاحة. إدارة المشاريع والتقارير تتطلب خادم FastAPI منفصلاً.");
     }
   }catch(e){$("healthBox").textContent="ERROR · "+e.message}
 }
@@ -322,7 +352,7 @@ async function askStar(){
     });
     const data=await r.json().catch(()=>({error:"Invalid response"}));
     if(!r.ok)throw Error(data.error||("HTTP "+r.status));
-    $("chatOutput").textContent=data.content||"No content";
+    $("chatOutput").innerHTML=renderStarMarkdown(data.content||"No content");
     $("chatMeta").textContent=data.model?("Model: "+data.model):"";
   }catch(e){
     $("chatOutput").textContent="ERROR\n"+e.message;
@@ -338,6 +368,45 @@ async function openReport(){
     if(!r.ok)throw Error(await r.text());
     const blob=await r.blob();window.open(URL.createObjectURL(blob),"_blank","noopener");
   }catch(e){setStatus("خطأ: "+e.message)}
+}
+
+function renderStarMarkdown(source){
+  const lines=String(source||"").replace(/\r\n?/g,"\n").split("\n");
+  let html="",inCode=false,code=[],list="";
+  const inline=value=>{
+    let safe=escapeHtml(value);
+    const spans=[];
+    safe=safe.replace(/`([^`]+)`/g,(_,v)=>{
+      spans.push("<code dir='ltr'>"+v+"</code>");
+      return "@@CODE"+(spans.length-1)+"@@";
+    });
+    safe=safe.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
+    safe=safe.replace(/\*([^*\n]+)\*/g,"<em>$1</em>");
+    return safe.replace(/@@CODE(\d+)@@/g,(_,i)=>spans[Number(i)]||"");
+  };
+  const close=()=>{if(list){html+="</"+list+">";list=""}};
+  for(const line of lines){
+    if(/^\s*```/.test(line)){
+      close();
+      if(inCode){html+="<pre><code>"+escapeHtml(code.join("\n"))+"</code></pre>";code=[];inCode=false}
+      else inCode=true;
+      continue;
+    }
+    if(inCode){code.push(line);continue}
+    if(!line.trim()){close();continue}
+    const h=line.match(/^\s*(#{1,4})\s+(.+)$/);
+    if(h){close();const level=Math.min(4,h[1].length+1);html+="<h"+level+">"+inline(h[2])+"</h"+level+">";continue}
+    const item=line.match(/^\s*([-*]|\d+\.)\s+(.+)$/);
+    if(item){
+      const kind=/\d/.test(item[1])?"ol":"ul";
+      if(list!==kind){close();html+="<"+kind+">";list=kind}
+      html+="<li>"+inline(item[2])+"</li>";continue;
+    }
+    close();html+="<p dir='auto'>"+inline(line)+"</p>";
+  }
+  close();
+  if(inCode)html+="<pre><code>"+escapeHtml(code.join("\n"))+"</code></pre>";
+  return html;
 }
 
 function escapeHtml(v){
