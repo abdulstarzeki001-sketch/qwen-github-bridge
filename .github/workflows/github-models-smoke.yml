@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 5
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_MODELS_MODEL: openai/gpt-4.1
+      GITHUB_MODELS_MODEL: openai/gpt-4o
     steps:
       - uses: actions/checkout@v7
       - name: Test STAR GitHub-native AI brain
