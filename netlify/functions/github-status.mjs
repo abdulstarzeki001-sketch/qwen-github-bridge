@@ -41,7 +41,7 @@ export default async function handler(req) {
   if (!authorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   try {
     const installation = get("GITHUB_INSTALLATION_ID");
-    if (!/^\\d+$/.test(installation)) throw new Error("Invalid installation ID");
+    if (!/^[0-9]+$/.test(installation)) throw new Error("Invalid installation ID");
     const credentials = await github("/app/installations/" + installation + "/access_tokens", signedAppJWT(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
