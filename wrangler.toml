@@ -8,3 +8,6 @@ compatibility_flags = ["nodejs_compat"]
 # STAR_GITHUB_ADMIN_TOKEN, GITHUB_APP_ID,
 # GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 # Optional variable: STAR_CLOUDFLARE_MODEL (default: openrouter/free).
+
+[ai]
+binding = "AI"
