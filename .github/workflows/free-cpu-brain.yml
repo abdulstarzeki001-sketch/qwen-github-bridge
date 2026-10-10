@@ -1,0 +1,58 @@
+name: STAR Free CPU Brain
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/free-cpu-brain.yml"
+      - "scripts/free_cpu_brain.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: star-free-cpu-brain
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Zero-secret local AI review
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      STAR_CPU_MODEL: qwen2.5-coder:1.5b-instruct
+      OLLAMA_URL: http://127.0.0.1:11434/api/chat
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Start Ollama CPU server
+        run: |
+          docker run -d             --name star-ollama             -p 11434:11434             ollama/ollama:latest
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs star-ollama
+          exit 1
+
+      - name: Pull Qwen coder model
+        run: docker exec star-ollama ollama pull "$STAR_CPU_MODEL"
+
+      - name: Run zero-secret STAR review
+        run: python scripts/free_cpu_brain.py
+
+      - name: Add report to workflow summary
+        run: cat star-cpu-brain-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-cpu-brain-report
+          path: star-cpu-brain-report.md
+          if-no-files-found: error
+          retention-days: 14
