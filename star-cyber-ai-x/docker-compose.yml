@@ -1,0 +1,16 @@
+services:
+  star-cyber-ai:
+    build: .
+    container_name: star-cyber-ai-x
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - starcyber-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  starcyber-data:
