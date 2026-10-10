@@ -3,11 +3,9 @@ import os
 import pathlib
 import subprocess
 import sys
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 token = os.environ.get("GITHUB_TOKEN", "").strip()
-model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-4.1").strip()
+model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-4o").strip()
 prompt = os.environ.get("STAR_BRAIN_PROMPT", "").strip()
 
 if not token:
@@ -60,47 +58,42 @@ Return concise Markdown with:
 5. What needs runtime validation
 """
 
-user = prompt + "\n\nRepository context:\n" + "".join(context_parts)
-
-payload = {
+payload = json.dumps({
     "model": model,
     "messages": [
         {"role": "system", "content": system},
-        {"role": "user", "content": user}
+        {"role": "user", "content": prompt + "\n\nRepository context:\n" + "".join(context_parts)}
     ],
     "temperature": 0.1,
-    "max_tokens": 3500,
-    "stream": False
-}
+    "max_tokens": 3500
+})
 
-req = Request(
-    "https://models.github.ai/inference/chat/completions",
-    data=json.dumps(payload).encode("utf-8"),
-    headers={
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "star-cyber-ai-x"
-    },
-    method="POST"
+proc = subprocess.run(
+    [
+        "curl", "--silent", "--show-error", "--fail-with-body",
+        "https://models.github.ai/inference/chat/completions",
+        "-H", "Content-Type: application/json",
+        "-H", f"Authorization: Bearer {token}",
+        "-d", payload,
+    ],
+    text=True,
+    capture_output=True,
+    timeout=150,
 )
 
-try:
-    with urlopen(req, timeout=120) as response:
-        raw_body = response.read().decode("utf-8", errors="replace")
-        if not raw_body.strip():
-            print(f"ERROR: Empty response from GitHub Models (HTTP {response.status}, Content-Type={response.headers.get('Content-Type')})", file=sys.stderr)
-            sys.exit(1)
-        data = json.loads(raw_body)
-except HTTPError as exc:
-    body = exc.read().decode("utf-8", errors="replace")
-    print(f"GitHub Models HTTP {exc.code}\n{body[:4000]}", file=sys.stderr)
-    raise SystemExit(1)
-except URLError as exc:
-    print(f"Could not reach GitHub Models: {exc}", file=sys.stderr)
-    raise SystemExit(1)
+if proc.returncode != 0:
+    print("GitHub Models request failed.", file=sys.stderr)
+    print(proc.stderr[:3000], file=sys.stderr)
+    print(proc.stdout[:3000], file=sys.stderr)
+    raise SystemExit(proc.returncode)
 
-result = data["choices"][0]["message"]["content"]
-out = pathlib.Path("star-github-brain-report.md")
-out.write_text(result, encoding="utf-8")
+try:
+    data = json.loads(proc.stdout)
+    result = data["choices"][0]["message"]["content"]
+except (json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+    print("Unexpected GitHub Models response.", file=sys.stderr)
+    print(repr(proc.stdout[:3000]), file=sys.stderr)
+    raise SystemExit(1) from exc
+
+pathlib.Path("star-github-brain-report.md").write_text(result, encoding="utf-8")
 print(result)
