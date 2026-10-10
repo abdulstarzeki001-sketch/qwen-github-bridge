@@ -8,8 +8,8 @@ export async function onRequest({request,env}){
   const policy=ownerPolicy(env);
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
-    return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
-      ai_model:env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
+    return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:env.STAR_AI_PROVIDER==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
+      ai_model:env.STAR_AI_PROVIDER==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
   }
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
     return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
@@ -18,8 +18,10 @@ export async function onRequest({request,env}){
   if(expected.length<32 || request.headers.get("authorization")!=="Bearer "+expected)
     return json({error:"Unauthorized"},401);
   const useOpenAI=env.STAR_AI_PROVIDER==="openai";
+  const selfHosted=env.STAR_AI_PROVIDER==="selfhosted";
+  if(selfHosted&&(!env.STAR_SELFHOSTED_URL||!env.STAR_SELFHOSTED_TOKEN))return json({error:"Self-hosted backend not configured"},503);
   if(useOpenAI&&!env.OPENAI_API_KEY)return json({error:"Set OPENAI_API_KEY for OpenAI mode"},503);
-  if(!useOpenAI&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
+  if(!selfHosted&&!useOpenAI&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
   const ip=request.headers.get("cf-connecting-ip")||"unknown";
   if(env.STAR_RATE_LIMIT){
     const id=new URL("https://rate.local/"+encodeURIComponent(ip));
@@ -30,9 +32,11 @@ export async function onRequest({request,env}){
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
   try{
-    const model=useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
-    const upstream=await fetch(useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",headers:{"Authorization":"Bearer "+(useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
+    const model=selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
+    let endpoint=selfHosted?env.STAR_SELFHOSTED_URL:useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
+    if(selfHosted){const url=new URL(endpoint);if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||!url.pathname.endsWith("/chat/completions"))return json({error:"Invalid self-hosted endpoint"},503);endpoint=url.toString()}
+    const upstream=await fetch(endpoint,{
+      method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
       body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
         {role:"system",content:policy.identity+". "+policy.instructions+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
         {role:"user",content:prompt}
