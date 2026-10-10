@@ -1,82 +1,58 @@
 import json
 import os
+import subprocess
 import sys
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 token = os.environ.get("GITHUB_TOKEN", "").strip()
-model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-4.1").strip()
+model = os.environ.get("GITHUB_MODELS_MODEL", "openai/gpt-4o").strip()
 
 if not token:
-    print("ERROR: GITHUB_TOKEN is missing.", file=sys.stderr)
-    sys.exit(2)
+    raise SystemExit("GITHUB_TOKEN is missing")
 
-payload = {
+payload = json.dumps({
     "model": model,
     "messages": [
-        {
-            "role": "system",
-            "content": "You are the STAR CYBER AI X GitHub-native brain connectivity test."
-        },
-        {
-            "role": "user",
-            "content": "Reply exactly with: STAR GITHUB BRAIN ONLINE"
-        }
-    ],
-    "temperature": 0,
-    "max_tokens": 32,
-    "stream": False
-}
+        {"role": "user", "content": "Reply exactly with: STAR GITHUB BRAIN ONLINE"}
+    ]
+})
 
-req = Request(
-    "https://models.github.ai/inference/chat/completions",
-    data=json.dumps(payload).encode("utf-8"),
-    headers={
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "star-cyber-ai-x"
-    },
-    method="POST"
+proc = subprocess.run(
+    [
+        "curl", "--silent", "--show-error", "--fail-with-body",
+        "https://models.github.ai/inference/chat/completions",
+        "-H", "Content-Type: application/json",
+        "-H", f"Authorization: Bearer {token}",
+        "-d", payload,
+    ],
+    text=True,
+    capture_output=True,
+    timeout=60,
 )
 
+if proc.returncode != 0:
+    print("ERROR: GitHub Models curl request failed.", file=sys.stderr)
+    print(proc.stderr[:2000], file=sys.stderr)
+    print(proc.stdout[:2000], file=sys.stderr)
+    raise SystemExit(proc.returncode)
+
+raw = proc.stdout.strip()
 try:
-    with urlopen(req, timeout=60) as response:
-        raw_body = response.read().decode("utf-8", errors="replace")
-        if not raw_body.strip():
-            print(f"ERROR: Empty response from GitHub Models (HTTP {response.status}, Content-Type={response.headers.get('Content-Type')})", file=sys.stderr)
-            sys.exit(1)
-        try:
-            data = json.loads(raw_body)
-        except json.JSONDecodeError:
-            print(
-                "ERROR: GitHub Models returned a non-JSON body "
-                f"(HTTP {response.status}, Content-Type={response.headers.get('Content-Type')}, "
-                f"Length={len(raw_body)}).",
-                file=sys.stderr,
-            )
-            print("BODY_PREFIX=" + repr(raw_body[:1200]), file=sys.stderr)
-            sys.exit(1)
-except HTTPError as exc:
-    body = exc.read().decode("utf-8", errors="replace")
-    print(f"ERROR: GitHub Models returned HTTP {exc.code}", file=sys.stderr)
-    print(body[:3000], file=sys.stderr)
-    sys.exit(1)
-except URLError as exc:
-    print(f"ERROR: Could not reach GitHub Models: {exc}", file=sys.stderr)
-    sys.exit(1)
+    data = json.loads(raw)
+except json.JSONDecodeError:
+    print("ERROR: GitHub Models returned non-JSON output.", file=sys.stderr)
+    print("BODY_PREFIX=" + repr(raw[:1200]), file=sys.stderr)
+    raise SystemExit(1)
 
 try:
     message = data["choices"][0]["message"]["content"]
 except (KeyError, IndexError, TypeError):
-    print("ERROR: Unexpected GitHub Models response.", file=sys.stderr)
+    print("ERROR: Unexpected GitHub Models response shape.", file=sys.stderr)
     print(json.dumps(data)[:3000], file=sys.stderr)
-    sys.exit(1)
+    raise SystemExit(1)
 
 print("GitHub Models connection: OK")
 print(f"Model: {model}")
 print(f"Response: {message}")
 
 if "STAR GITHUB BRAIN ONLINE" not in str(message):
-    print("ERROR: Model responded but marker was not returned.", file=sys.stderr)
-    sys.exit(1)
+    raise SystemExit("Model responded but the smoke-test marker was not returned.")
