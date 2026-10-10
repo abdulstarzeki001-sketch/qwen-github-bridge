@@ -66,13 +66,29 @@ Protected API endpoints require:
 Authorization: Bearer <STAR_API_TOKEN>
 ```
 
-## Model
+## AI brain
+
+The recommended **free starting provider** is Cloudflare Workers AI:
 
 ```env
-LLM_BASE_URL=http://host.docker.internal:8000/v1
-LLM_API_KEY=local
-LLM_MODEL=Qwen3-Coder
+AI_PROVIDER=cloudflare
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_API_TOKEN=...
+CLOUDFLARE_AI_MODEL=@cf/qwen/qwen3.8-27b
 ```
+
+STAR calls Cloudflare through its OpenAI-compatible Chat Completions endpoint.
+
+Later, you can switch to a private GPU without changing the rest of STAR:
+
+```env
+AI_PROVIDER=self_hosted
+LLM_BASE_URL=https://your-private-model.example/v1
+LLM_API_KEY=...
+LLM_MODEL=...
+```
+
+See `docs/FREE_AI_BRAIN.md`.
 
 ## GitHub Repository Intelligence
 

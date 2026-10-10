@@ -1,4 +1,6 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
+from app.llm import _extract_json
+from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
     review_priority,
@@ -99,3 +101,37 @@ def test_burp_compare_reports_status_and_body_delta():
     assert result["differences"]["status_changed"] is True
     assert result["first"]["response"]["status"] == 403
     assert result["second"]["response"]["status"] == 200
+
+
+def test_llm_extract_json_from_fence():
+    result = _extract_json('''```json
+{"ok": true, "n": 3}
+```''')
+    assert result == {"ok": True, "n": 3}
+
+
+def test_cloudflare_provider_resolution():
+    s = Settings(
+        ai_provider="cloudflare",
+        cloudflare_account_id="abc123",
+        cloudflare_api_token="secret",
+        cloudflare_ai_model="@cf/qwen/qwen3.8-27b",
+    )
+    base_url, key, model = s.resolved_llm()
+    assert base_url == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
+    assert key == "secret"
+    assert model == "@cf/qwen/qwen3.8-27b"
+
+
+def test_self_hosted_provider_resolution():
+    s = Settings(
+        ai_provider="self_hosted",
+        llm_base_url="http://localhost:8000/v1",
+        llm_api_key="local",
+        llm_model="demo",
+    )
+    assert s.resolved_llm() == (
+        "http://localhost:8000/v1",
+        "local",
+        "demo",
+    )
