@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -8,14 +9,14 @@ MODEL = os.getenv("STAR_CPU_MODEL", "qwen2.5-coder:1.5b-instruct")
 ENDPOINT = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 
 CHECK_PATTERNS = (
-    ("shell=True", "Python subprocess call enables a shell."),
-    ("verify=False", "TLS certificate verification is explicitly disabled."),
-    ("eval(", "Dynamic eval() call requires manual review."),
-    ("exec(", "Dynamic exec() call requires manual review."),
-    ("pickle.loads(", "pickle.loads() processes serialized Python objects."),
-    ("yaml.load(", "yaml.load() should be checked for a safe loader."),
-    ("Runtime.getRuntime().exec(", "Java Runtime.exec() launches an external process."),
-    ("new ProcessBuilder(", "Java ProcessBuilder launches an external process."),
+    (re.compile(r"\bshell\s*=\s*True\b"), "A Python subprocess call enables a shell."),
+    (re.compile(r"\bverify\s*=\s*False\b"), "TLS certificate verification is explicitly disabled."),
+    (re.compile(r"(?<![A-Za-z0-9_])eval\s*\("), "A direct eval() call requires manual review."),
+    (re.compile(r"(?<![A-Za-z0-9_])exec\s*\("), "A direct exec() call requires manual review."),
+    (re.compile(r"\bpickle\.loads\s*\("), "pickle.loads() processes serialized Python objects."),
+    (re.compile(r"\byaml\.load\s*\("), "yaml.load() should be checked for a safe loader."),
+    (re.compile(r"Runtime\.getRuntime\(\)\.exec\s*\("), "Java Runtime.exec() launches an external process."),
+    (re.compile(r"\bnew\s+ProcessBuilder\s*\("), "Java ProcessBuilder launches an external process."),
 )
 
 
@@ -45,7 +46,9 @@ def deterministic_facts() -> list[str]:
         )
 
     if '@app.get("/api/health")' in main:
-        facts.append("The /api/health endpoint is public for health monitoring.")
+        facts.append(
+            "The /api/health endpoint is intentionally public and returns only service-health metadata."
+        )
 
     if ".env" in gitignore:
         facts.append(".env is excluded by .gitignore.")
@@ -74,21 +77,25 @@ def deterministic_signals() -> list[dict]:
         text = read_text(str(path))
         if not text:
             continue
+
         for line_number, line in enumerate(text.splitlines(), start=1):
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or stripped.startswith("//"):
                 continue
-            for needle, description in CHECK_PATTERNS:
-                if needle in line:
+
+            for pattern, description in CHECK_PATTERNS:
+                match = pattern.search(line)
+                if match:
                     signals.append(
                         {
                             "file": str(path),
                             "line": line_number,
-                            "match": needle,
+                            "match": match.group(0),
                             "description": description,
                             "excerpt": stripped[:220],
                         }
                     )
+
     return signals[:20]
 
 
@@ -153,14 +160,12 @@ signals = deterministic_signals()
 
 summary_prompt = f"""You are a small local model used only as a report explainer.
 
-You MUST use only the supplied deterministic facts and deterministic code signals.
-Do not invent additional findings, files, line numbers, risks, credentials, or runtime behavior.
-Do not restate a signal as proven exploitable.
-Write 4 to 7 concise sentences:
-- summarize the current security posture,
-- explain what the signals mean if any,
-- state what should be validated next.
-If signals are empty, say that the configured quick checks found no high-signal code pattern.
+Use only the supplied deterministic facts and deterministic code signals.
+Do not invent additional findings, files, line numbers, consequences, credentials, or runtime behavior.
+Do not describe the public health endpoint as a vulnerability or as exposing vulnerabilities.
+Do not describe a deterministic signal as proven dangerous.
+If there are no signals, explicitly say that the configured quick checks found no high-signal code pattern.
+Write one compact paragraph of 3 to 5 sentences.
 
 FACTS:
 {json.dumps(facts, indent=2)}
@@ -171,7 +176,7 @@ SIGNALS:
 
 ai_summary = call_ollama(
     [{"role": "user", "content": summary_prompt}],
-    260,
+    180,
 )
 
 report = f"""# STAR CPU Brain Report
