@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "check:netlify": "node --check netlify/functions/chat.mjs && node --check netlify/functions/health.mjs && node --check netlify/functions/github-status.mjs"
+    "check:netlify": "node --check netlify/functions/chat.mjs && node --check netlify/functions/health.mjs && node --check netlify/functions/github-status.mjs && npm run check:cloudflare",
+    "check:cloudflare": "node --check functions/_github.js && node --check 'functions/api/[[path]].js'"
   },
   "dependencies": {
     "@openrouter/sdk": "^1.2.43"
