@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "check:netlify": "node --check netlify/functions/chat.mjs && node --check netlify/functions/health.mjs"
+    "check:netlify": "node --check netlify/functions/chat.mjs && node --check netlify/functions/health.mjs && node --check netlify/functions/github-status.mjs"
   },
   "dependencies": {
     "@openrouter/sdk": "^1.2.43"
