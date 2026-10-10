@@ -204,7 +204,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
   <section id="chat" class="section panel">
     <h2>STAR AI Chat</h2>
-    <div class="notice">محادثة STAR عبر Netlify AI Gateway. الردود التفسيرية ليست إثباتاً لتنفيذ فحص أو تعديل.</div>
+    <div class="notice">محادثة STAR عبر OpenAI API على Cloudflare. الردود التفسيرية ليست إثباتاً لتنفيذ فحص أو تعديل.</div>
     <label>اكتب طلبك</label>
     <textarea id="chatPrompt" dir="auto" placeholder="حلل هذا الكود، اشرح الثغرة، اقترح إصلاحاً، أو ساعدني في المشروع..."></textarea>
     <div class="row" style="margin-top:10px">
@@ -253,7 +253,7 @@ async function health(){
         if(!action.includes("'chat'")&&!action.includes("'overview'")&&!action.includes("'github'"))b.hidden=true;
       });
       showTab("chat");
-      setStatus("Netlify: المحادثة متاحة. إدارة المشاريع والتقارير تتطلب خادم FastAPI منفصلاً.");
+      setStatus("Cloudflare: المحادثة متاحة. إدارة المشاريع والتقارير تتطلب خادم FastAPI منفصلاً.");
     }
   }catch(e){$("healthBox").textContent="ERROR · "+e.message}
 }
