@@ -97,6 +97,17 @@ def health():
         "env": settings.app_env,
         "api_auth_configured": bool(settings.api_token),
         "github_configured": bool(settings.github_token),
+        "ai_provider": settings.ai_provider,
+        "ai_model": (
+            settings.cloudflare_ai_model
+            if settings.ai_provider == "cloudflare"
+            else settings.llm_model
+        ),
+        "ai_configured": (
+            bool(settings.cloudflare_account_id and settings.cloudflare_api_token)
+            if settings.ai_provider == "cloudflare"
+            else bool(settings.llm_base_url and settings.llm_model)
+        ),
     }
 
 
