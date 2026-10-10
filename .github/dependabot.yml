@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
 
-  - package-ecosystem: gradle
+  - package-ecosystem: maven
     directory: /burp-extension
     schedule:
       interval: weekly
