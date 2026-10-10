@@ -5,7 +5,7 @@ STAR BURP AI is a Java 17 Montoya API extension.
 ## Build
 
 ```bash
-gradle -p burp-extension jar
+mvn -B -f burp-extension/pom.xml clean package
 ```
 
 The CI workflow compiles it on every pull request.
