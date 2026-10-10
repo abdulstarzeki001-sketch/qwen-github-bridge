@@ -1,0 +1,27 @@
+name: GitHub Models Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/github-models-smoke.yml"
+      - "scripts/github_models_smoke.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  smoke:
+    name: Test GitHub Models
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_MODELS_MODEL: openai/gpt-4.1
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test STAR GitHub-native AI brain
+        run: python scripts/github_models_smoke.py
