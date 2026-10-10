@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 15
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_MODELS_MODEL: openai/gpt-4.1
+      GITHUB_MODELS_MODEL: openai/gpt-4o
       STAR_BRAIN_PROMPT: ${{ inputs.prompt }}
     steps:
       - uses: actions/checkout@v7
