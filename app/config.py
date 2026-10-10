@@ -6,6 +6,7 @@ import os
 class Settings:
     app_name: str = os.getenv("APP_NAME", "STAR CYBER AI X")
     app_env: str = os.getenv("APP_ENV", "dev")
+    api_token: str = os.getenv("STAR_API_TOKEN", "")
     database_path: str = os.getenv("DATABASE_PATH", "/data/starcyber.db")
     evidence_dir: str = os.getenv("EVIDENCE_DIR", "/data/evidence")
     llm_base_url: str = os.getenv("LLM_BASE_URL", "http://host.docker.internal:8000/v1")

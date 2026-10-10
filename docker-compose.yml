@@ -10,6 +10,12 @@ services:
       - starcyber-data:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
     restart: unless-stopped
 
 volumes:

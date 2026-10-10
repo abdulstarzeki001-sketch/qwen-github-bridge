@@ -1,5 +1,27 @@
-node_modules/
-.dev.vars
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Secrets / local runtime
 .env
+.dev.vars
+/data/
+data/
+
+# Burp extension
+burp-extension/.gradle/
+burp-extension/build/
+
+# Legacy Worker
+node_modules/
 .wrangler/
+
+# OS / editors
 .DS_Store
+.idea/
+.vscode/
