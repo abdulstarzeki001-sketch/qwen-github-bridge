@@ -68,7 +68,7 @@ def _extract_json(raw: str) -> dict:
         pass
 
     fenced = re.search(
-        r"```(?:json)?\\s*(\\{.*\\})\\s*```",
+        r"```(?:json)?\s*(\{.*\})\s*```",
         raw,
         flags=re.IGNORECASE | re.DOTALL,
     )
