@@ -7,7 +7,7 @@ export async function onRequest({request,env}){
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
     return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
-      ai_model:env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"openrouter/free"),full_backend:false});
+      ai_model:env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
   }
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
     return makeGithubHandler(env)(request);
@@ -28,7 +28,7 @@ export async function onRequest({request,env}){
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>16000)return json({error:"Prompt must contain 1-16000 characters"},400);
   try{
-    const model=useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"openrouter/free");
+    const model=useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
     const upstream=await fetch(useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",headers:{"Authorization":"Bearer "+(useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
       body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
