@@ -29,7 +29,7 @@ LLM Analyst             Verifier       Evidence Store
 
 - OpenAI-compatible LLM adapter for self-hosted models
 - Analyst + independent verifier workflow
-- Burp Suite Montoya extension with **Analyze with STAR AI**
+- Burp Suite Montoya extension with **Analyze**, **Passive Inspect**, and **Compare 2 selected** actions
 - **GitHub Repository Intelligence** for read-only source indexing and AI-assisted secure-code review
 - **Finding retest workflow** with `fix-verified / still-vulnerable / inconclusive`
 - Explicit project/scope authorization gate

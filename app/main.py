@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from .burp_tools import compare_exchanges, inspect_exchange
 from .config import settings
 from .db import init_db, connect, one, all_rows, audit
 from .evidence import add_attachment, read_manifest, save_bundle
@@ -18,7 +19,7 @@ from .scanners import run_scanner
 from .security import require_api_token
 
 
-app = FastAPI(title=settings.app_name, version="0.3.0")
+app = FastAPI(title=settings.app_name, version="0.4.0")
 
 
 class ProjectCreate(BaseModel):
@@ -40,6 +41,16 @@ class BurpAnalyzeRequest(BaseModel):
     request: str = Field(min_length=1, max_length=500000)
     response: str = Field(default="", max_length=1000000)
     note: str = Field(default="", max_length=4000)
+
+
+class BurpExchange(BaseModel):
+    request: str = Field(min_length=1, max_length=500000)
+    response: str = Field(default="", max_length=1000000)
+
+
+class BurpCompareRequest(BaseModel):
+    first: BurpExchange
+    second: BurpExchange
 
 
 class ScanCreate(BaseModel):
@@ -211,6 +222,41 @@ async def burp_analyze(data: BurpAnalyzeRequest):
         "analysis": result,
         "evidence": manifest,
     }
+
+
+@app.post("/api/burp/inspect", dependencies=[Depends(require_api_token)])
+def burp_inspect(data: BurpExchange):
+    result = inspect_exchange(data.request, data.response)
+    audit(
+        "burp.inspect",
+        "http_exchange",
+        "",
+        {
+            "method": result["request"].get("method"),
+            "host": result["request"].get("host"),
+            "status": result["response"].get("status"),
+        },
+    )
+    return result
+
+
+@app.post("/api/burp/compare", dependencies=[Depends(require_api_token)])
+def burp_compare(data: BurpCompareRequest):
+    result = compare_exchanges(
+        data.first.model_dump(),
+        data.second.model_dump(),
+    )
+    audit(
+        "burp.compare",
+        "http_exchange_pair",
+        "",
+        {
+            "first_status": result["first"]["response"].get("status"),
+            "second_status": result["second"]["response"].get("status"),
+            "body_similarity": result["differences"].get("response_body_similarity"),
+        },
+    )
+    return result
 
 
 @app.post("/api/evidence/{project_id}/{bundle_id}/attachments", dependencies=[Depends(require_api_token)])

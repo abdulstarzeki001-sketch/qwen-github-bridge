@@ -32,11 +32,12 @@
 - [x] Manual request/response send
 - [x] Evidence bundle creation
 - [x] Finding retest API
+- [x] Passive HTTP exchange inspector
+- [x] JWT/header/session observations
+- [x] Structured comparison of two selected exchanges
 - [ ] Repeater assistant panel
 - [ ] HTTP history triage
 - [ ] WebSocket analyzer
-- [ ] JWT/session analyzer
-- [ ] Structured request diff engine
 - [ ] One-click evidence screenshot attachment
 - [ ] Retest action directly from Burp finding view
 

@@ -1,3 +1,4 @@
+from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
 from app.github_intel import (
     is_text_candidate,
     review_priority,
@@ -56,3 +57,45 @@ def test_source_candidate_filter():
 
 def test_review_priority_prefers_auth_code():
     assert review_priority("app/auth/routes.py") > review_priority("assets/theme.css")
+
+
+def test_jwt_passive_decode_and_observation():
+    import base64
+    import json
+
+    def enc(value):
+        raw = json.dumps(value, separators=(",", ":")).encode()
+        return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+    token = enc({"alg": "none", "typ": "JWT"}) + "." + enc({"sub": "123"}) + ".sig"
+    result = inspect_jwt(token)
+    assert result["jwt_like"] is True
+    assert result["header"]["alg"] == "none"
+    assert any("alg=none" in item for item in result["observations"])
+    assert any("no exp" in item for item in result["observations"])
+
+
+def test_burp_exchange_inspection():
+    request = "GET /account?id=1 HTTP/1.1\r\nHost: example.test\r\nCookie: sid=abc\r\n\r\n"
+    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nX-Content-Type-Options: nosniff\r\n\r\nhello"
+    result = inspect_exchange(request, response)
+    assert result["request"]["method"] == "GET"
+    assert result["request"]["host"] == "example.test"
+    assert result["request"]["query_keys"] == ["id"]
+    assert result["response"]["status"] == 200
+    assert result["response"]["security_headers"]["X-Content-Type-Options"] is True
+
+
+def test_burp_compare_reports_status_and_body_delta():
+    first = {
+        "request": "GET /x HTTP/1.1\r\nHost: e.test\r\n\r\n",
+        "response": "HTTP/1.1 403 Forbidden\r\n\r\nno",
+    }
+    second = {
+        "request": "GET /x HTTP/1.1\r\nHost: e.test\r\n\r\n",
+        "response": "HTTP/1.1 200 OK\r\n\r\nyes",
+    }
+    result = compare_exchanges(first, second)
+    assert result["differences"]["status_changed"] is True
+    assert result["first"]["response"]["status"] == 403
+    assert result["second"]["response"]["status"] == 200
