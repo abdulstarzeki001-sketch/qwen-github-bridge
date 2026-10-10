@@ -58,7 +58,7 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backd
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <span class="badge"><span class="dot"></span> STAR CYBER AI X v0.4</span>
+      <span class="badge"><span class="dot"></span> STAR CYBER AI X v0.5</span>
       <h1>Security Control Center</h1>
       <p>Burp + Repository Intelligence + Evidence + Retest + Reports</p>
     </div>
@@ -97,6 +97,7 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backd
       <button onclick="showTab('repos')">Repository Intelligence</button>
       <button onclick="showTab('findings')">Findings</button>
       <button onclick="showTab('audit')">Audit</button>
+      <button onclick="showTab('chat')">AI Chat</button>
     </div>
   </section>
 
@@ -161,6 +162,18 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(7,16,28,.94);backd
     <div id="auditList" class="list"></div>
   </section>
 
+  <section id="chat" class="section panel">
+    <h2>STAR AI Chat</h2>
+    <div class="notice">يعمل هذا المسار على Netlify AI Gateway عند نشر الموقع على Netlify. النموذج الافتراضي هو OpenRouter Free Router ويمكن تغييره من STAR_NETLIFY_MODEL.</div>
+    <label>اكتب طلبك</label>
+    <textarea id="chatPrompt" dir="rtl" style="text-align:right;font-family:inherit" placeholder="حلل هذا الكود، اشرح الثغرة، اقترح إصلاحاً، أو ساعدني في المشروع..."></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="chatButton" class="primary" onclick="askStar()">إرسال إلى STAR</button>
+      <span id="chatMeta" class="small"></span>
+    </div>
+    <pre id="chatOutput" style="min-height:180px">جاهز.</pre>
+  </section>
+
   <div id="status" class="panel small">جاهز.</div>
 </div>
 
@@ -189,7 +202,12 @@ async function api(path,opts={}){
 async function health(){
   try{
     const d=await api("/api/health");
-    $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · GitHub ${d.github_configured?"configured":"public-only"}`;
+    const runtime=d.runtime||"fastapi";
+    const ai=d.ai_gateway===true?"AI ready":(d.ai_gateway===false?"AI pending":"");
+    $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · ${runtime}${ai?" · "+ai:""}`;
+    if(runtime==="netlify"&&!d.full_backend){
+      setStatus("Netlify mode: AI Chat متاح بعد تفعيل أول Production Deploy. وظائف Projects/Scopes/Findings الكاملة تبقى ضمن FastAPI.");
+    }
   }catch(e){$("healthBox").textContent="ERROR · "+e.message}
 }
 
@@ -288,6 +306,29 @@ async function loadAudit(){
       d.innerHTML=`<h3>${escapeHtml(a.action)}</h3><div class="meta"><span class="pill">${escapeHtml(a.object_type)}</span><span class="pill">${escapeHtml(a.object_id)}</span><span class="pill">${escapeHtml(a.created_at)}</span></div><pre>${escapeHtml(a.detail_json)}</pre>`;return d;
     }));
   }catch{}
+}
+
+async function askStar(){
+  const prompt=$("chatPrompt").value.trim();
+  if(!prompt){$("chatOutput").textContent="اكتب طلباً أولاً.";return}
+  $("chatButton").disabled=true;
+  $("chatOutput").textContent="يفكر...";
+  $("chatMeta").textContent="";
+  try{
+    const r=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt})
+    });
+    const data=await r.json().catch(()=>({error:"Invalid response"}));
+    if(!r.ok)throw Error(data.error||("HTTP "+r.status));
+    $("chatOutput").textContent=data.content||"No content";
+    $("chatMeta").textContent=data.model?("Model: "+data.model):"";
+  }catch(e){
+    $("chatOutput").textContent="ERROR\n"+e.message;
+  }finally{
+    $("chatButton").disabled=false;
+  }
 }
 
 async function openReport(){
