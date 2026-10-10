@@ -6,30 +6,17 @@ from urllib.error import HTTPError, URLError
 
 MODEL = os.getenv("STAR_CPU_MODEL", "qwen2.5-coder:1.5b-instruct")
 ENDPOINT = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
-MAX_TOTAL_CHARS = 22000
-MAX_FILE_CHARS = 4000
 
-ALLOWED_SUFFIXES = {
-    ".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx",
-    ".java", ".go", ".rs", ".php", ".rb", ".c", ".h", ".cpp",
-    ".cs", ".swift", ".kt", ".html", ".css", ".scss", ".sql",
-    ".graphql", ".gql", ".yaml", ".yml", ".json", ".toml", ".ini",
-    ".cfg", ".conf", ".md", ".sh", ".xml"
-}
-SPECIAL_NAMES = {
-    "Dockerfile", "Containerfile", "Makefile", "requirements.txt",
-    "pyproject.toml", "package.json", "composer.json", "Gemfile"
-}
-PRIORITY = (
-    "auth", "security", "login", "session", "token", "permission",
-    "admin", "api", "route", "middleware", "config", "main", "db", "database"
+CHECK_PATTERNS = (
+    ("shell=True", "Python subprocess call enables a shell."),
+    ("verify=False", "TLS certificate verification is explicitly disabled."),
+    ("eval(", "Dynamic eval() call requires manual review."),
+    ("exec(", "Dynamic exec() call requires manual review."),
+    ("pickle.loads(", "pickle.loads() processes serialized Python objects."),
+    ("yaml.load(", "yaml.load() should be checked for a safe loader."),
+    ("Runtime.getRuntime().exec(", "Java Runtime.exec() launches an external process."),
+    ("new ProcessBuilder(", "Java ProcessBuilder launches an external process."),
 )
-
-
-def priority(path: str) -> tuple[int, str]:
-    low = path.lower()
-    score = sum(1 for term in PRIORITY if term in low)
-    return (-score, path)
 
 
 def read_text(path: str) -> str:
@@ -69,46 +56,40 @@ def deterministic_facts() -> list[str]:
     return facts
 
 
-def collect_context() -> tuple[str, list[str]]:
-    candidates = []
-    for p in Path(".").rglob("*"):
-        if not p.is_file():
+def reviewable_files() -> list[Path]:
+    roots = [Path("app"), Path("burp-extension/src/main/java")]
+    out = []
+    for root in roots:
+        if not root.exists():
             continue
-        if any(part.startswith(".git") for part in p.parts):
-            continue
-        if "legacy" in p.parts or "node_modules" in p.parts or "__pycache__" in p.parts:
-            continue
-        try:
-            size = p.stat().st_size
-        except OSError:
-            continue
-        if size > 120_000:
-            continue
-        if p.name in SPECIAL_NAMES or p.suffix.lower() in ALLOWED_SUFFIXES:
-            candidates.append(str(p))
+        for path in root.rglob("*"):
+            if path.is_file() and path.suffix.lower() in {".py", ".java", ".js", ".ts"}:
+                out.append(path)
+    return sorted(out)
 
-    candidates.sort(key=priority)
-    total = 0
-    chunks = []
-    used = []
 
-    for raw in candidates:
-        if len(used) >= 9:
-            break
-        content = read_text(raw)
-        if not content:
+def deterministic_signals() -> list[dict]:
+    signals = []
+    for path in reviewable_files():
+        text = read_text(str(path))
+        if not text:
             continue
-        content = content[:MAX_FILE_CHARS]
-        if total + len(content) > MAX_TOTAL_CHARS:
-            remain = MAX_TOTAL_CHARS - total
-            if remain <= 0:
-                break
-            content = content[:remain]
-        chunks.append(f"\n===== FILE: {raw} =====\n{content}")
-        used.append(raw)
-        total += len(content)
-
-    return "".join(chunks), used
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or stripped.startswith("//"):
+                continue
+            for needle, description in CHECK_PATTERNS:
+                if needle in line:
+                    signals.append(
+                        {
+                            "file": str(path),
+                            "line": line_number,
+                            "match": needle,
+                            "description": description,
+                            "excerpt": stripped[:220],
+                        }
+                    )
+    return signals[:20]
 
 
 def call_ollama(messages, max_tokens: int):
@@ -117,9 +98,9 @@ def call_ollama(messages, max_tokens: int):
         "messages": messages,
         "stream": False,
         "options": {
-            "temperature": 0.05,
+            "temperature": 0.0,
             "num_predict": max_tokens,
-            "num_ctx": 12288,
+            "num_ctx": 4096,
         },
     }
     req = Request(
@@ -129,7 +110,7 @@ def call_ollama(messages, max_tokens: int):
         method="POST",
     )
     try:
-        with urlopen(req, timeout=900) as response:
+        with urlopen(req, timeout=600) as response:
             data = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
@@ -138,73 +119,89 @@ def call_ollama(messages, max_tokens: int):
         raise SystemExit(f"Could not reach Ollama: {exc}") from exc
 
     try:
-        return data["message"]["content"]
+        return data["message"]["content"].strip()
     except (KeyError, TypeError) as exc:
         raise SystemExit("Unexpected Ollama response: " + json.dumps(data)[:2000]) from exc
 
 
+def bullet_lines(items: list[str]) -> str:
+    if not items:
+        return "- None."
+    return "\n".join(f"- {item}" for item in items)
+
+
+def signal_lines(signals: list[dict]) -> str:
+    if not signals:
+        return "- No configured high-signal code patterns were detected."
+    rows = []
+    for item in signals:
+        rows.append(
+            f"- \`{item['file']}:{item['line']}\` — {item['description']} "
+            f"Matched \`{item['match']}\`. Evidence: \`{item['excerpt']}\`"
+        )
+    return "\n".join(rows)
+
+
 smoke = call_ollama(
     [{"role": "user", "content": "Reply exactly with: STAR CPU BRAIN ONLINE"}],
-    32,
+    24,
 )
 print("Smoke:", smoke)
 
-context, files = collect_context()
 facts = deterministic_facts()
+signals = deterministic_signals()
 
-system = """You are STAR CYBER AI X running as a small local model on a GitHub Actions CPU runner.
-Perform a defensive code-quality and security review only.
-Accuracy rules:
-- DETERMINISTIC FACTS are higher-authority than your own inference.
-- Never contradict a deterministic fact.
-- If protected routes use require_api_token, do not claim those routes lack authentication.
-- A local desktop configuration panel is not a remote authentication boundary.
-- Do not repeat the same observation in multiple sections.
-- Every review candidate must name a file and include an exact short code quote.
-- If evidence is weak, say that no confirmed issue was established.
-- Never invent line numbers, credentials, runtime behavior, or network observations.
-"""
+summary_prompt = f"""You are a small local model used only as a report explainer.
 
-user = f"""Review this repository conservatively.
+You MUST use only the supplied deterministic facts and deterministic code signals.
+Do not invent additional findings, files, line numbers, risks, credentials, or runtime behavior.
+Do not restate a signal as proven exploitable.
+Write 4 to 7 concise sentences:
+- summarize the current security posture,
+- explain what the signals mean if any,
+- state what should be validated next.
+If signals are empty, say that the configured quick checks found no high-signal code pattern.
 
-Return Markdown with exactly these sections:
-# STAR CPU Brain Report
-## Deterministic Security Facts
-## Evidence-Based Review Candidates
-## Remediation Priorities
-## Runtime Validation Needed
-
-Rules:
-- Maximum 4 review candidates.
-- Each candidate must include: confidence, file, exact code quote, rationale, and recommendation.
-- Candidates are advisory and must not be described as confirmed runtime issues.
-- Do not repeat candidates.
-- Prefer saying 'no strong evidence found' over guessing.
-
-DETERMINISTIC FACTS:
+FACTS:
 {json.dumps(facts, indent=2)}
 
-REPOSITORY CONTEXT:
-{context}
+SIGNALS:
+{json.dumps(signals, indent=2)}
 """
 
-report = call_ollama(
-    [
-        {"role": "system", "content": system},
-        {"role": "user", "content": user},
-    ],
-    650,
+ai_summary = call_ollama(
+    [{"role": "user", "content": summary_prompt}],
+    260,
 )
 
-metadata = (
-    "# STAR CPU Brain Run Metadata\n\n"
-    f"- Model: \`{MODEL}\`\n"
-    f"- Files reviewed: {len(files)}\n"
-    "- Runtime: GitHub Actions CPU / Ollama\n"
-    "- External AI credential: none\n"
-    "- Evidence policy: deterministic repository facts outrank model inference\n\n"
-    "Files:\n" + "\n".join(f"- \`{p}\`" for p in files) + "\n\n"
-)
+report = f"""# STAR CPU Brain Report
 
-Path("star-cpu-brain-report.md").write_text(metadata + report, encoding="utf-8")
+## Run Metadata
+
+- Model: \`{MODEL}\`
+- Runtime: GitHub Actions CPU / Ollama
+- External AI credential: none
+- Report mode: deterministic-first
+- AI role: explanation only; it cannot add findings
+
+## Deterministic Security Facts
+
+{bullet_lines(facts)}
+
+## Deterministic Code Signals
+
+{signal_lines(signals)}
+
+## AI Interpretation (Non-Authoritative)
+
+{ai_summary}
+
+## Validation Notes
+
+- A deterministic code signal is a review pointer, not proof of a security issue.
+- Runtime behavior is not inferred from this CPU workflow.
+- The always-on STAR runtime should use the stronger provider path when available.
+"""
+
+Path("star-cpu-brain-report.md").write_text(report, encoding="utf-8")
 print(report)
