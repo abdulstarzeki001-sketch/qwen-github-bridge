@@ -10,6 +10,15 @@ function authorized(req) {
   return a.length >= 32 && a.length === b.length && timingSafeEqual(a, b);
 }
 
+// Env UIs often store multi-line keys with "\n" escapes or spaces instead of
+// line breaks; rebuild a standard PEM so either form parses.
+function normalizePem(value) {
+  const match = value.replaceAll("\\n", "\n").match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!match) return value;
+  const body = match[2].replace(/\s+/g, "").match(/.{1,64}/g).join("\n");
+  return `-----BEGIN ${match[1]}-----\n${body}\n-----END ${match[1]}-----\n`;
+}
+
 function signedAppJWT() {
   const now = Math.floor(Date.now() / 1000);
   const data = encode({ alg: "RS256", typ: "JWT" }) + "." +
@@ -17,7 +26,7 @@ function signedAppJWT() {
   const signer = createSign("RSA-SHA256");
   signer.update(data);
   signer.end();
-  const pem = get("GITHUB_APP_PRIVATE_KEY").replaceAll("\\n", "\n");
+  const pem = normalizePem(get("GITHUB_APP_PRIVATE_KEY"));
   return data + "." + signer.sign(pem).toString("base64url");
 }
 
