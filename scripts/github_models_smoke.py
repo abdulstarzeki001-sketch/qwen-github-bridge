@@ -46,7 +46,17 @@ try:
         if not raw_body.strip():
             print(f"ERROR: Empty response from GitHub Models (HTTP {response.status}, Content-Type={response.headers.get('Content-Type')})", file=sys.stderr)
             sys.exit(1)
-        data = json.loads(raw_body)
+        try:
+            data = json.loads(raw_body)
+        except json.JSONDecodeError:
+            print(
+                "ERROR: GitHub Models returned a non-JSON body "
+                f"(HTTP {response.status}, Content-Type={response.headers.get('Content-Type')}, "
+                f"Length={len(raw_body)}).",
+                file=sys.stderr,
+            )
+            print("BODY_PREFIX=" + repr(raw_body[:1200]), file=sys.stderr)
+            sys.exit(1)
 except HTTPError as exc:
     body = exc.read().decode("utf-8", errors="replace")
     print(f"ERROR: GitHub Models returned HTTP {exc.code}", file=sys.stderr)
