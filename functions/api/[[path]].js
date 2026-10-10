@@ -9,7 +9,7 @@ export async function onRequest({request,env}){
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
     return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:env.STAR_AI_PROVIDER==="cloudflare"?Boolean(env.AI):env.STAR_AI_PROVIDER==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
-      ai_model:env.STAR_AI_PROVIDER==="cloudflare"?"@cf/qwen/qwen2.5-coder-32b-instruct":env.STAR_AI_PROVIDER==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
+      ai_model:env.STAR_AI_PROVIDER==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":env.STAR_AI_PROVIDER==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
   }
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
     return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
@@ -35,7 +35,7 @@ export async function onRequest({request,env}){
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
   try{
     if(useCloudflare){
-      const model="@cf/qwen/qwen2.5-coder-32b-instruct";
+      const model="@cf/meta/llama-3.1-8b-instruct";
       const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:prompt}],max_tokens:1024});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
