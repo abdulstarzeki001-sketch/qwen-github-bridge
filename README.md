@@ -1,26 +1,28 @@
 # STAR CYBER AI X
 
-**Self-hosted AI security workspace** for authorized application-security testing, Burp Suite traffic analysis, evidence management, secure code review, remediation, retesting, and reporting.
+**Self-hosted AI security workspace** for authorized application-security testing, Burp Suite traffic analysis, repository security review, evidence management, remediation, retesting, and reporting.
 
 > The previous Qwen GitHub Bridge is preserved under `legacy/qwen-github-bridge/`.
 
 ## Architecture
 
 ```text
-Burp Suite / Browser / iPhone
-            |
-            v
-      STAR CYBER AI X API
-            |
-   +--------+---------+----------------+
-   |                  |                |
-   v                  v                v
-LLM Analyst        Verifier       Evidence Store
-   |                                   |
-   +----------> Findings <-------------+
-                 |
-                 +--> Reports
-                 +--> Authorized scanner runner
+Burp Suite / Browser / iPhone / GitHub
+               |
+               v
+         STAR CYBER AI X API
+               |
+   +-----------+-----------+----------------+
+   |                       |                |
+   v                       v                v
+LLM Analyst             Verifier       Evidence Store
+   |                       |                |
+   +------> Findings <------+----------------+
+              |
+              +--> Retest history
+              +--> HTML / JSON reports
+              +--> Authorized scanner runner
+              +--> Repository Intelligence
 ```
 
 ## Features
@@ -28,18 +30,21 @@ LLM Analyst        Verifier       Evidence Store
 - OpenAI-compatible LLM adapter for self-hosted models
 - Analyst + independent verifier workflow
 - Burp Suite Montoya extension with **Analyze with STAR AI**
+- **GitHub Repository Intelligence** for read-only source indexing and AI-assisted secure-code review
+- **Finding retest workflow** with `fix-verified / still-vulnerable / inconclusive`
 - Explicit project/scope authorization gate
 - Evidence bundles with SHA-256 integrity hashes
 - Evidence attachments for screenshots, HAR, JSON, PCAP, text, and related artifacts
 - Findings database with severity, status, confidence, CWE, OWASP, evidence, and remediation
+- Audit log for security-relevant platform actions
 - Controlled scanner runner
-- Printable HTML reports
-- Mobile-first dashboard
+- Printable HTML + machine-readable JSON reports
+- Mobile-first control dashboard
 - Docker / Docker Compose
 - GitHub Actions CI
 - Automatic GHCR container publishing from `main`
 - Optional deployment webhook
-- Dependabot for Python, Gradle, and GitHub Actions
+- Dependabot for Python, Maven, and GitHub Actions
 
 ## Quick start
 
@@ -69,6 +74,33 @@ LLM_API_KEY=local
 LLM_MODEL=Qwen3-Coder
 ```
 
+## GitHub Repository Intelligence
+
+For private repositories, configure a fine-grained read-only token:
+
+```env
+GITHUB_TOKEN=...
+```
+
+Recommended GitHub permissions on selected repositories:
+
+- Metadata: Read
+- Contents: Read
+
+Import a repository:
+
+```http
+POST /api/repositories/import
+```
+
+Then review selected indexed files:
+
+```http
+POST /api/repositories/{repository_id}/analyze
+```
+
+Static-review findings are saved as `suspected` or `likely`; the platform does not claim runtime exploitation from source review alone.
+
 ## Burp Suite
 
 ```bash
@@ -77,13 +109,23 @@ mvn -B -f burp-extension/pom.xml clean package
 
 Load `burp-extension/target/star-burp-ai-0.2.0.jar` into Burp, configure the **STAR AI** tab, then right-click a request/response and select **Analyze with STAR AI**.
 
+## Retesting
+
+A Burp/API finding tied to an authorized scope can be retested with:
+
+```http
+POST /api/findings/{finding_id}/retest
+```
+
+The original finding is only promoted to `fix-verified` when the independent retest verifier has clear equivalent evidence and confidence of at least 80%.
+
 ## Security testing model
 
 Active testing only runs for targets registered in a scope with `authorized=true`. The default scanner profile is non-destructive.
 
 ## CI / deployment
 
-Pull requests test Python, compile the Burp extension, and build the Docker image. Pushes to `main` publish:
+Pull requests test Python, compile the Burp extension, publish the JAR as a CI artifact, and build the Docker image. Pushes to `main` publish:
 
 ```text
 ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge:latest
@@ -91,4 +133,4 @@ ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge:latest
 
 If `DEPLOY_WEBHOOK_URL` is configured as a repository secret, the publish workflow calls it after a successful image push.
 
-See `docs/` for deployment, Burp integration, security model, and roadmap.
+See `docs/` for deployment, Burp integration, repository intelligence, security model, and roadmap.

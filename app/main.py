@@ -2,21 +2,23 @@ from pathlib import Path
 import json
 import shlex
 
+import httpx
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .config import settings
-from .db import init_db, connect, one, all_rows
+from .db import init_db, connect, one, all_rows, audit
 from .evidence import add_attachment, read_manifest, save_bundle
-from .llm import analyze_and_verify
+from .github_intel import GitHubRepositoryClient, validate_repo_name, language_hint
+from .llm import analyze_and_verify, review_source_bundle, verify_retest
 from .reports import render_report
 from .scanners import run_scanner
 from .security import require_api_token
 
 
-app = FastAPI(title=settings.app_name, version="0.2.0")
+app = FastAPI(title=settings.app_name, version="0.3.0")
 
 
 class ProjectCreate(BaseModel):
@@ -45,6 +47,22 @@ class ScanCreate(BaseModel):
     scanner: str
 
 
+class RepositoryImportRequest(BaseModel):
+    project_id: int
+    full_name: str = Field(min_length=3, max_length=200)
+    ref: str | None = Field(default=None, max_length=200)
+
+
+class RepositoryAnalyzeRequest(BaseModel):
+    paths: list[str] = Field(default_factory=list, max_length=12)
+
+
+class RetestRequest(BaseModel):
+    request: str = Field(min_length=1, max_length=500000)
+    response: str = Field(default="", max_length=1000000)
+    note: str = Field(default="", max_length=4000)
+
+
 @app.on_event("startup")
 def startup():
     init_db()
@@ -67,6 +85,7 @@ def health():
         "version": app.version,
         "env": settings.app_env,
         "api_auth_configured": bool(settings.api_token),
+        "github_configured": bool(settings.github_token),
     }
 
 
@@ -78,6 +97,7 @@ def create_project(data: ProjectCreate):
             (data.name, data.description),
         )
         project_id = cur.lastrowid
+    audit("project.create", "project", str(project_id), {"name": data.name})
     return one("SELECT * FROM projects WHERE id=?", (project_id,))
 
 
@@ -97,6 +117,13 @@ def create_scope(data: ScopeCreate):
             (data.project_id, data.name, data.target, int(data.authorized), data.notes),
         )
         scope_id = cur.lastrowid
+
+    audit(
+        "scope.create",
+        "scope",
+        str(scope_id),
+        {"project_id": data.project_id, "target": data.target, "authorized": data.authorized},
+    )
     return one("SELECT * FROM scopes WHERE id=?", (scope_id,))
 
 
@@ -140,6 +167,16 @@ async def burp_analyze(data: BurpAnalyzeRequest):
         "validation_notes": analyst.get("validation_notes", ""),
     }
 
+    severity = str(analyst.get("severity", "info")).lower()
+    if severity not in {"critical", "high", "medium", "low", "info"}:
+        severity = "info"
+
+    status = str(analyst.get("status", "suspected")).lower()
+    if status not in {"suspected", "likely", "verified", "fixed", "fix-verified"}:
+        status = "suspected"
+
+    confidence = max(0, min(100, int(analyst.get("confidence", 0) or 0)))
+
     with connect() as conn:
         cur = conn.execute(
             """INSERT INTO findings(
@@ -150,9 +187,9 @@ async def burp_analyze(data: BurpAnalyzeRequest):
                 data.project_id,
                 data.scope_id,
                 str(analyst.get("title", "Burp traffic observation")),
-                str(analyst.get("severity", "info")).lower(),
-                str(analyst.get("status", "suspected")).lower(),
-                int(analyst.get("confidence", 0) or 0),
+                severity,
+                status,
+                confidence,
                 analyst.get("cwe"),
                 analyst.get("owasp"),
                 str(analyst.get("summary", "")),
@@ -161,6 +198,13 @@ async def burp_analyze(data: BurpAnalyzeRequest):
             ),
         )
         finding_id = cur.lastrowid
+
+    audit(
+        "burp.analyze",
+        "finding",
+        str(finding_id),
+        {"scope_id": data.scope_id, "bundle_id": manifest["bundle_id"]},
+    )
 
     return {
         "finding": one("SELECT * FROM findings WHERE id=?", (finding_id,)),
@@ -176,7 +220,7 @@ async def upload_evidence_attachment(project_id: int, bundle_id: str, file: Uplo
         raise HTTPException(413, "Attachment exceeds 20 MB")
 
     try:
-        return add_attachment(
+        result = add_attachment(
             project_id,
             bundle_id,
             file.filename or "attachment.bin",
@@ -187,6 +231,14 @@ async def upload_evidence_attachment(project_id: int, bundle_id: str, file: Uplo
         raise HTTPException(404, "Evidence bundle not found")
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+
+    audit(
+        "evidence.attach",
+        "evidence",
+        bundle_id,
+        {"project_id": project_id, "name": result["name"], "sha256": result["sha256"]},
+    )
+    return result
 
 
 @app.get("/api/evidence/{project_id}/{bundle_id}", dependencies=[Depends(require_api_token)])
@@ -204,6 +256,295 @@ def list_findings(project_id: int | None = None):
     if project_id:
         return all_rows("SELECT * FROM findings WHERE project_id=? ORDER BY id DESC", (project_id,))
     return all_rows("SELECT * FROM findings ORDER BY id DESC")
+
+
+@app.post("/api/findings/{finding_id}/retest", dependencies=[Depends(require_api_token)])
+async def retest_finding(finding_id: int, data: RetestRequest):
+    finding = one("SELECT * FROM findings WHERE id=?", (finding_id,))
+    if not finding:
+        raise HTTPException(404, "Finding not found")
+    if not finding.get("scope_id"):
+        raise HTTPException(400, "This finding is not associated with an active-test scope")
+
+    scope = require_authorized_scope(int(finding["scope_id"]))
+    manifest = save_bundle(
+        int(finding["project_id"]),
+        int(scope["id"]),
+        data.request,
+        data.response,
+        data.note or f"Retest for finding #{finding_id}",
+    )
+
+    try:
+        result = await verify_retest(finding, data.request, data.response)
+    except Exception as exc:
+        raise HTTPException(502, f"LLM retest verification failed: {exc}")
+
+    verdict = str(result.get("verdict", "inconclusive")).lower()
+    if verdict not in {"fix-verified", "still-vulnerable", "inconclusive"}:
+        verdict = "inconclusive"
+    confidence = max(0, min(100, int(result.get("confidence", 0) or 0)))
+    rationale = str(result.get("rationale", ""))
+
+    with connect() as conn:
+        cur = conn.execute(
+            """INSERT INTO retests(finding_id,bundle_id,verdict,confidence,rationale)
+               VALUES (?,?,?,?,?)""",
+            (finding_id, manifest["bundle_id"], verdict, confidence, rationale),
+        )
+        retest_id = cur.lastrowid
+
+        if verdict == "fix-verified" and confidence >= 80:
+            conn.execute("UPDATE findings SET status='fix-verified' WHERE id=?", (finding_id,))
+        elif verdict == "still-vulnerable" and confidence >= 70:
+            conn.execute("UPDATE findings SET status='verified' WHERE id=?", (finding_id,))
+
+    audit(
+        "finding.retest",
+        "finding",
+        str(finding_id),
+        {
+            "retest_id": retest_id,
+            "bundle_id": manifest["bundle_id"],
+            "verdict": verdict,
+            "confidence": confidence,
+        },
+    )
+
+    return {
+        "retest": one("SELECT * FROM retests WHERE id=?", (retest_id,)),
+        "finding": one("SELECT * FROM findings WHERE id=?", (finding_id,)),
+        "verification": result,
+        "evidence": manifest,
+    }
+
+
+@app.get("/api/findings/{finding_id}/retests", dependencies=[Depends(require_api_token)])
+def list_retests(finding_id: int):
+    if not one("SELECT id FROM findings WHERE id=?", (finding_id,)):
+        raise HTTPException(404, "Finding not found")
+    return all_rows("SELECT * FROM retests WHERE finding_id=? ORDER BY id DESC", (finding_id,))
+
+
+@app.post("/api/repositories/import", dependencies=[Depends(require_api_token)])
+async def import_repository(data: RepositoryImportRequest):
+    if not one("SELECT id FROM projects WHERE id=?", (data.project_id,)):
+        raise HTTPException(404, "Project not found")
+    if not validate_repo_name(data.full_name):
+        raise HTTPException(400, "Repository must be owner/name")
+
+    client = GitHubRepositoryClient()
+
+    try:
+        meta = await client.repo_metadata(data.full_name)
+        ref = data.ref or str(meta.get("default_branch") or "main")
+        files, truncated = await client.tree(data.full_name, ref)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        if code == 404:
+            raise HTTPException(404, "Repository or ref not found, or token lacks access")
+        if code in {401, 403}:
+            raise HTTPException(code, "GitHub access denied. Check GITHUB_TOKEN permissions.")
+        raise HTTPException(502, f"GitHub API returned HTTP {code}")
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"GitHub request failed: {exc}")
+
+    default_branch = str(meta.get("default_branch") or "main")
+
+    with connect() as conn:
+        conn.execute(
+            """INSERT INTO repositories(project_id,full_name,ref,default_branch,file_count)
+               VALUES (?,?,?,?,?)
+               ON CONFLICT(project_id,full_name,ref)
+               DO UPDATE SET default_branch=excluded.default_branch,
+                             file_count=excluded.file_count,
+                             imported_at=CURRENT_TIMESTAMP""",
+            (data.project_id, data.full_name, ref, default_branch, len(files)),
+        )
+        row = conn.execute(
+            "SELECT id FROM repositories WHERE project_id=? AND full_name=? AND ref=?",
+            (data.project_id, data.full_name, ref),
+        ).fetchone()
+        repository_id = int(row["id"])
+
+        conn.execute("DELETE FROM repo_files WHERE repository_id=?", (repository_id,))
+        conn.executemany(
+            """INSERT INTO repo_files(repository_id,path,sha,size,language_hint)
+               VALUES (?,?,?,?,?)""",
+            [
+                (
+                    repository_id,
+                    str(item.get("path", "")),
+                    str(item.get("sha", "")),
+                    int(item.get("size", 0) or 0),
+                    language_hint(str(item.get("path", ""))),
+                )
+                for item in files
+            ],
+        )
+
+    audit(
+        "repository.import",
+        "repository",
+        str(repository_id),
+        {
+            "project_id": data.project_id,
+            "full_name": data.full_name,
+            "ref": ref,
+            "file_count": len(files),
+            "github_tree_truncated": truncated,
+        },
+    )
+
+    return {
+        "repository": one("SELECT * FROM repositories WHERE id=?", (repository_id,)),
+        "indexed_files": len(files),
+        "github_tree_truncated": truncated,
+    }
+
+
+@app.get("/api/repositories", dependencies=[Depends(require_api_token)])
+def list_repositories(project_id: int | None = None):
+    if project_id:
+        return all_rows(
+            "SELECT * FROM repositories WHERE project_id=? ORDER BY imported_at DESC",
+            (project_id,),
+        )
+    return all_rows("SELECT * FROM repositories ORDER BY imported_at DESC")
+
+
+@app.get("/api/repositories/{repository_id}/files", dependencies=[Depends(require_api_token)])
+def list_repository_files(repository_id: int):
+    if not one("SELECT id FROM repositories WHERE id=?", (repository_id,)):
+        raise HTTPException(404, "Repository import not found")
+    return all_rows(
+        """SELECT path,sha,size,language_hint
+           FROM repo_files WHERE repository_id=? ORDER BY id ASC""",
+        (repository_id,),
+    )
+
+
+@app.post("/api/repositories/{repository_id}/analyze", dependencies=[Depends(require_api_token)])
+async def analyze_repository(repository_id: int, data: RepositoryAnalyzeRequest):
+    repository = one("SELECT * FROM repositories WHERE id=?", (repository_id,))
+    if not repository:
+        raise HTTPException(404, "Repository import not found")
+
+    indexed = all_rows(
+        "SELECT path,size FROM repo_files WHERE repository_id=? ORDER BY id ASC",
+        (repository_id,),
+    )
+    indexed_map = {row["path"]: row for row in indexed}
+
+    if data.paths:
+        missing = [path for path in data.paths if path not in indexed_map]
+        if missing:
+            raise HTTPException(400, f"Paths are not indexed: {', '.join(missing[:3])}")
+        selected = data.paths
+    else:
+        selected = [row["path"] for row in indexed[:8]]
+
+    if not selected:
+        raise HTTPException(400, "No reviewable text files were indexed")
+
+    client = GitHubRepositoryClient()
+    source_bundle = {}
+    total_chars = 0
+
+    try:
+        for path in selected[:12]:
+            text = await client.file_text(repository["full_name"], path, repository["ref"])
+            text = text[:60_000]
+            if total_chars + len(text) > 240_000:
+                remaining = 240_000 - total_chars
+                if remaining <= 0:
+                    break
+                text = text[:remaining]
+            source_bundle[path] = text
+            total_chars += len(text)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(502, f"GitHub API returned HTTP {exc.response.status_code}")
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"GitHub request failed: {exc}")
+
+    if not source_bundle:
+        raise HTTPException(400, "No source content available for review")
+
+    try:
+        review = await review_source_bundle(
+            repository["full_name"],
+            repository["ref"],
+            source_bundle,
+        )
+    except Exception as exc:
+        raise HTTPException(502, f"LLM code review failed: {exc}")
+
+    saved_ids = []
+    findings = review.get("findings", [])
+    if isinstance(findings, list):
+        with connect() as conn:
+            for item in findings[:30]:
+                if not isinstance(item, dict):
+                    continue
+
+                severity = str(item.get("severity", "info")).lower()
+                if severity not in {"critical", "high", "medium", "low", "info"}:
+                    severity = "info"
+                confidence = max(0, min(100, int(item.get("confidence", 0) or 0)))
+                status = "likely" if confidence >= 80 else "suspected"
+                file_path = str(item.get("file", ""))
+
+                evidence = {
+                    "source": "repository-code-review",
+                    "repository_id": repository_id,
+                    "repository": repository["full_name"],
+                    "ref": repository["ref"],
+                    "file": file_path,
+                    "code_evidence": item.get("evidence", ""),
+                }
+
+                cur = conn.execute(
+                    """INSERT INTO findings(
+                        project_id,scope_id,title,severity,status,confidence,cwe,owasp,
+                        summary,evidence_json,remediation
+                    ) VALUES (?,NULL,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        repository["project_id"],
+                        str(item.get("title", "Code review finding")),
+                        severity,
+                        status,
+                        confidence,
+                        item.get("cwe"),
+                        item.get("owasp"),
+                        str(item.get("summary", "")),
+                        json.dumps(evidence, ensure_ascii=False),
+                        str(item.get("remediation", "")),
+                    ),
+                )
+                saved_ids.append(cur.lastrowid)
+
+    audit(
+        "repository.analyze",
+        "repository",
+        str(repository_id),
+        {
+            "paths": list(source_bundle.keys()),
+            "chars_reviewed": total_chars,
+            "saved_findings": saved_ids,
+        },
+    )
+
+    return {
+        "repository": repository,
+        "files_reviewed": list(source_bundle.keys()),
+        "chars_reviewed": total_chars,
+        "review": review,
+        "saved_finding_ids": saved_ids,
+    }
 
 
 @app.post("/api/scans", dependencies=[Depends(require_api_token)])
@@ -231,6 +572,12 @@ async def create_scan(data: ScanCreate):
             (status, shlex.join(command), output[-200000:], run_id),
         )
 
+    audit(
+        "scan.run",
+        "scan_run",
+        str(run_id),
+        {"scope_id": data.scope_id, "scanner": data.scanner, "status": status},
+    )
     return one("SELECT * FROM scan_runs WHERE id=?", (run_id,))
 
 
@@ -241,6 +588,12 @@ def list_scans(scope_id: int | None = None):
     return all_rows("SELECT * FROM scan_runs ORDER BY id DESC")
 
 
+@app.get("/api/audit", dependencies=[Depends(require_api_token)])
+def list_audit(limit: int = 100):
+    limit = max(1, min(500, limit))
+    return all_rows("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (limit,))
+
+
 @app.get("/api/reports/{project_id}", response_class=HTMLResponse, dependencies=[Depends(require_api_token)])
 def report(project_id: int):
     project = one("SELECT * FROM projects WHERE id=?", (project_id,))
@@ -249,3 +602,24 @@ def report(project_id: int):
 
     findings = all_rows("SELECT * FROM findings WHERE project_id=? ORDER BY id DESC", (project_id,))
     return HTMLResponse(render_report(project, findings))
+
+
+@app.get("/api/reports/{project_id}/json", dependencies=[Depends(require_api_token)])
+def report_json(project_id: int):
+    project = one("SELECT * FROM projects WHERE id=?", (project_id,))
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    findings = all_rows("SELECT * FROM findings WHERE project_id=? ORDER BY id DESC", (project_id,))
+    repositories = all_rows(
+        "SELECT * FROM repositories WHERE project_id=? ORDER BY imported_at DESC",
+        (project_id,),
+    )
+
+    return JSONResponse(
+        {
+            "project": project,
+            "findings": findings,
+            "repositories": repositories,
+        }
+    )

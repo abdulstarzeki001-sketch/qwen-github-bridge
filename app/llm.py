@@ -19,6 +19,42 @@ Return JSON only with: supported, confidence, rationale, missing_evidence,
 safer_retest_plan. Never invent observations.
 """
 
+CODE_REVIEW_SYSTEM = """You are STAR CYBER AI X performing defensive secure-code review.
+Review only the supplied repository source files. Identify security weaknesses
+that are directly supported by code evidence. Do not invent files, line numbers,
+runtime behavior, or exploit success. Prefer root-cause analysis and concrete
+remediation. Return JSON only:
+{
+  "overview": "short summary",
+  "findings": [
+    {
+      "title": "...",
+      "severity": "critical|high|medium|low|info",
+      "confidence": 0,
+      "cwe": "CWE-...",
+      "owasp": "...",
+      "file": "path",
+      "evidence": "what the code shows",
+      "summary": "risk and root cause",
+      "remediation": "specific defensive fix"
+    }
+  ]
+}
+If evidence is weak, omit the finding rather than guessing.
+"""
+
+RETEST_SYSTEM = """You are an independent security retest verifier.
+Compare an original finding with new authorized HTTP evidence.
+Return JSON only with:
+verdict ("fix-verified"|"still-vulnerable"|"inconclusive"),
+confidence (0-100),
+rationale,
+evidence.
+Only use fix-verified when the new evidence clearly demonstrates the original
+weakness is no longer reproducible under an equivalent test condition.
+Never invent observations.
+"""
+
 
 async def _chat(system: str, user: str) -> dict:
     url = settings.llm_base_url.rstrip("/") + "/chat/completions"
@@ -62,3 +98,28 @@ async def analyze_and_verify(request: str, response: str) -> dict:
         )
 
     return {"analyst": analyst, "verifier": verifier}
+
+
+async def review_source_bundle(repository: str, ref: str, files: dict[str, str]) -> dict:
+    sections = []
+    for path, content in files.items():
+        sections.append(
+            f"\n===== FILE: {path} =====\n{content}\n===== END FILE ====="
+        )
+    prompt = (
+        f"REPOSITORY: {repository}\nREF: {ref}\n"
+        + "".join(sections)
+    )
+    return await _chat(CODE_REVIEW_SYSTEM, prompt)
+
+
+async def verify_retest(original_finding: dict, request: str, response: str) -> dict:
+    prompt = (
+        "ORIGINAL FINDING\n"
+        + json.dumps(original_finding, ensure_ascii=False)
+        + "\n\nNEW HTTP REQUEST\n"
+        + request
+        + "\n\nNEW HTTP RESPONSE\n"
+        + response
+    )
+    return await _chat(RETEST_SYSTEM, prompt)

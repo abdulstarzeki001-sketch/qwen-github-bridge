@@ -51,6 +51,7 @@ jobs:
           from app.main import app
           init_db()
           assert app.title == "STAR CYBER AI X"
+          assert app.version == "0.3.0"
           print(app.title, app.version)
           PY
 
@@ -67,6 +68,13 @@ jobs:
 
       - name: Build JAR
         run: mvn -B -f burp-extension/pom.xml clean package
+
+      - name: Upload Burp JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-burp-ai
+          path: burp-extension/target/star-burp-ai-0.2.0.jar
+          if-no-files-found: error
 
   docker:
     name: Docker image
