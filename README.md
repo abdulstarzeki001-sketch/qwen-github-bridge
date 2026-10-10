@@ -150,3 +150,12 @@ ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge:latest
 If `DEPLOY_WEBHOOK_URL` is configured as a repository secret, the publish workflow calls it after a successful image push.
 
 See `docs/` for deployment, Burp integration, repository intelligence, security model, and roadmap.
+
+
+## AI provider status
+
+GitHub Models inference was fully retired by GitHub on July 30, 2026, so STAR no longer uses that endpoint.
+
+For the always-on AI brain, the current free-start path is **Cloudflare Workers AI**. GitHub continues to handle source control, CI, Burp extension builds, GHCR publishing, repository intelligence, and release history.
+
+The Cloudflare adapter and connectivity test are already included; activation requires the Cloudflare account ID and scoped Workers AI API token to be stored as secrets, never committed to the repository.
