@@ -246,7 +246,7 @@ async function health(){
     const ai=d.ai_gateway===true?"AI ready":(d.ai_gateway===false?"AI pending":"");
     $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · ${runtime}${ai?" · "+ai:""}`;
     if(runtime==="netlify"&&!d.full_backend){
-      $("backendPanel").hidden=true;
+      if ($("backendPanel")) $("backendPanel").hidden=true;
       $("backendStats").hidden=true;
       document.querySelectorAll(".tabs button").forEach(b=>{
         const action=b.getAttribute("onclick")||"";
