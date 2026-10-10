@@ -245,7 +245,7 @@ async function health(){
     const runtime=d.runtime||"fastapi";
     const ai=d.ai_gateway===true?"AI ready":(d.ai_gateway===false?"AI pending":"");
     $("healthBox").textContent=`${d.ok?"ONLINE":"OFFLINE"} · v${d.version} · ${runtime}${ai?" · "+ai:""}`;
-    if(runtime==="netlify"&&!d.full_backend){
+    if((runtime==="netlify"||runtime==="cloudflare")&&!d.full_backend){
       if ($("backendPanel")) $("backendPanel").hidden=true;
       $("backendStats").hidden=true;
       document.querySelectorAll(".tabs button").forEach(b=>{
@@ -398,7 +398,7 @@ async function askStar(){
   try{
     const r=await fetch("/api/chat",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json",...(token()?{"Authorization":"Bearer "+token()}:{})},
       body:JSON.stringify({prompt})
     });
     const data=await r.json().catch(()=>({error:"Invalid response"}));
