@@ -122,6 +122,7 @@ html,body{max-width:100%;overflow-x:hidden}
       <button onclick="showTab('findings')">Findings</button>
       <button onclick="showTab('audit')">Audit</button>
       <button onclick="showTab('chat')">AI Chat</button>
+      <button onclick="showTab('github')">GitHub Files</button>
     </div>
   </section>
 
@@ -186,6 +187,21 @@ html,body{max-width:100%;overflow-x:hidden}
     <div id="auditList" class="list"></div>
   </section>
 
+  <section id="github" class="section panel">
+    <h2>GitHub Files — Read only</h2>
+    <div class="notice">استعراض مستودع qwen-github-bridge باستخدام GitHub App. رمز الإدارة يُستخدم لهذا الطلب فقط ولا يُحفظ في المتصفح. لا تضع GitHub PAT هنا.</div>
+    <label for="githubAdminToken">STAR_GITHUB_ADMIN_TOKEN</label>
+    <input id="githubAdminToken" type="password" autocomplete="off" spellcheck="false" placeholder="رمز الإدارة الخاص بـ STAR">
+    <label for="githubPath">مسار الملف أو المجلد</label>
+    <input id="githubPath" dir="ltr" placeholder="مثال: netlify/functions">
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="githubBrowseButton" onclick="browseGithub()">استعراض الملفات</button>
+      <button onclick="document.getElementById('githubAdminToken').value=''">مسح الرمز</button>
+    </div>
+    <div id="githubEntries" class="list" style="margin-top:12px"></div>
+    <pre id="githubFilePreview" aria-live="polite">لا يوجد ملف مفتوح.</pre>
+  </section>
+
   <section id="chat" class="section panel">
     <h2>STAR AI Chat</h2>
     <div class="notice">محادثة STAR عبر Netlify AI Gateway. الردود التفسيرية ليست إثباتاً لتنفيذ فحص أو تعديل.</div>
@@ -234,12 +250,46 @@ async function health(){
       $("backendStats").hidden=true;
       document.querySelectorAll(".tabs button").forEach(b=>{
         const action=b.getAttribute("onclick")||"";
-        if(!action.includes("'chat'")&&!action.includes("'overview'"))b.hidden=true;
+        if(!action.includes("'chat'")&&!action.includes("'overview'")&&!action.includes("'github'"))b.hidden=true;
       });
       showTab("chat");
       setStatus("Netlify: المحادثة متاحة. إدارة المشاريع والتقارير تتطلب خادم FastAPI منفصلاً.");
     }
   }catch(e){$("healthBox").textContent="ERROR · "+e.message}
+}
+
+async function browseGithub(pathOverride){
+  const key=$("githubAdminToken").value.trim();
+  if(key.length<32){$("githubFilePreview").textContent="أدخل STAR_GITHUB_ADMIN_TOKEN الصحيح (32 حرفاً على الأقل).";return}
+  const path=pathOverride??$("githubPath").value.trim();
+  $("githubPath").value=path;
+  $("githubBrowseButton").disabled=true;
+  $("githubFilePreview").textContent="جاري الاتصال...";
+  $("githubEntries").replaceChildren();
+  try{
+    const r=await fetch("/api/github/browse?path="+encodeURIComponent(path),{
+      headers:{Authorization:"Bearer "+key},cache:"no-store"
+    });
+    const data=await r.json();
+    if(!r.ok)throw Error(data.error||"HTTP "+r.status);
+    if(data.type==="file"){
+      $("githubFilePreview").textContent=data.content;
+    }else{
+      $("githubFilePreview").textContent="اختر ملفاً للمعاينة، أو مجلداً لفتحه.";
+      if(path){
+        const up=path.split("/").slice(0,-1).join("/");
+        const back=document.createElement("button");back.textContent="↩ المجلد السابق";
+        back.onclick=()=>browseGithub(up);$("githubEntries").append(back);
+      }
+      for(const entry of data.entries){
+        const b=document.createElement("button");
+        b.textContent=(entry.type==="dir"?"📁 ":"📄 ")+entry.name;
+        b.style.textAlign="start";b.onclick=()=>browseGithub(entry.path);
+        $("githubEntries").append(b);
+      }
+    }
+  }catch(e){$("githubFilePreview").textContent="تعذر الاستعراض: "+e.message}
+  finally{$("githubBrowseButton").disabled=false}
 }
 
 function fillProjectSelects(){

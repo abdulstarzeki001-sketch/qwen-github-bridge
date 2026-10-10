@@ -57,6 +57,27 @@ export default async function handler(req) {
       body: JSON.stringify({ repositories: ["qwen-github-bridge"], permissions: { contents: "read" } }),
     });
     const repository = await github("/repos/abdulstarzeki001-sketch/qwen-github-bridge", credentials.token);
+    const url = new URL(req.url);
+    if (url.pathname === "/api/github/browse") {
+      const path = url.searchParams.get("path") || "";
+      if (path.length > 500 || path.split("/").some(x => x === "." || x === "..") || path.includes("\\") || [...path].some(ch => ch.charCodeAt(0) < 32)) {
+        return Response.json({ error: "Invalid path" }, { status: 400, headers });
+      }
+      const resource = await github("/repos/abdulstarzeki001-sketch/qwen-github-bridge/contents/" +
+        path.split("/").map(encodeURIComponent).join("/") + "?ref=" + encodeURIComponent(repository.default_branch), credentials.token);
+      if (Array.isArray(resource)) {
+        return Response.json({ ok: true, path, type: "directory", entries: resource.map(x => ({
+          name: x.name, path: x.path, type: x.type, size: x.size
+        })) }, { headers });
+      }
+      if (resource.type !== "file" || resource.size > 131072 || resource.encoding !== "base64") {
+        return Response.json({ error: "File type or size unsupported (max 128 KiB)" }, { status: 400, headers });
+      }
+      const bytes = Buffer.from(resource.content.replace(/\\s/g, ""), "base64");
+      if (bytes.includes(0)) return Response.json({ error: "Binary files unsupported" }, { status: 400, headers });
+      return Response.json({ ok: true, path: resource.path, type: "file", size: resource.size,
+        content: new TextDecoder("utf-8", { fatal: true }).decode(bytes) }, { headers });
+    }
     return Response.json({
       ok: true, repository: repository.full_name, default_branch: repository.default_branch,
       installation_authenticated: true, access: "read-only",
@@ -67,4 +88,4 @@ export default async function handler(req) {
   }
 }
 
-export const config = { path: "/api/github/status", method: "GET" };
+export const config = { path: ["/api/github/status", "/api/github/browse"], method: "GET" };
