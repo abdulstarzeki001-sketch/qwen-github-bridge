@@ -1,0 +1,10 @@
+name = "star-cyber-ai-x"
+pages_build_output_dir = "./web"
+compatibility_date = "2026-10-10"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages reads secrets from its own environment settings.
+# Required secrets: STAR_API_TOKEN, OPENROUTER_API_KEY,
+# STAR_GITHUB_ADMIN_TOKEN, GITHUB_APP_ID,
+# GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
+# Optional variable: STAR_CLOUDFLARE_MODEL (default: openrouter/free).
