@@ -70,7 +70,7 @@ jobs:
         run: mvn -B -f burp-extension/pom.xml clean package
 
       - name: Upload Burp JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: star-burp-ai
           path: burp-extension/target/star-burp-ai-0.2.0.jar
