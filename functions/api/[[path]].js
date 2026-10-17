@@ -4,14 +4,98 @@ import { makeGithubHandler } from "../_github.js";
 
 const json=(body,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
 function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
+
+async function secretMatches(expected,received){
+  if(typeof expected!=="string"||typeof received!=="string"||expected.length<32||received.length<32)return false;
+  const enc=new TextEncoder();
+  const [a,b]=await Promise.all([
+    crypto.subtle.digest("SHA-256",enc.encode(expected)),
+    crypto.subtle.digest("SHA-256",enc.encode(received))
+  ]);
+  const aa=new Uint8Array(a),bb=new Uint8Array(b);let diff=0;
+  for(let i=0;i<aa.length;i++)diff|=aa[i]^bb[i];
+  return diff===0;
+}
+
+function proxyCredential(request){
+  const key=(request.headers.get("x-api-key")||"").trim();
+  if(key)return key;
+  const auth=request.headers.get("authorization")||"";
+  return auth.startsWith("Bearer ")?auth.slice(7).trim():"";
+}
+
+async function claudeProxy(request,env,path){
+  if(!env.ANTHROPIC_API_KEY||!env.STAR_CLAUDE_PROXY_TOKEN)
+    return json({type:"error",error:{type:"configuration_error",message:"Claude gateway is not configured"}},503);
+
+  if(!(await secretMatches(env.STAR_CLAUDE_PROXY_TOKEN,proxyCredential(request))))
+    return json({type:"error",error:{type:"authentication_error",message:"Invalid proxy API key"}},401);
+
+  const prefix="/api/claude/v1/";
+  const suffix=path.startsWith(prefix)?path.slice(prefix.length):"";
+  const allowed=
+    (suffix==="messages"&&request.method==="POST")||
+    (suffix==="messages/count_tokens"&&request.method==="POST")||
+    (suffix==="models"&&request.method==="GET")||
+    (/^models\/[A-Za-z0-9._:-]+$/.test(suffix)&&request.method==="GET");
+  if(!allowed)return json({type:"error",error:{type:"not_found_error",message:"Unsupported Claude API route"}},404);
+
+  const upstreamUrl=new URL("https://api.anthropic.com/v1/"+suffix);
+  upstreamUrl.search=new URL(request.url).search;
+  const headers={
+    "x-api-key":env.ANTHROPIC_API_KEY,
+    "anthropic-version":request.headers.get("anthropic-version")||"2023-06-01",
+    "content-type":"application/json"
+  };
+
+  let upstreamBody;
+  if(request.method==="POST"){
+    let body;try{body=await request.json()}catch{return json({type:"error",error:{type:"invalid_request_error",message:"Invalid JSON"}},400)}
+    if(!body||typeof body!=="object"||Array.isArray(body))
+      return json({type:"error",error:{type:"invalid_request_error",message:"Request body must be an object"}},400);
+
+    body.model=(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6").trim();
+    if(suffix==="messages"){
+      const requested=Number(body.max_tokens);
+      body.max_tokens=Number.isInteger(requested)?Math.max(1,Math.min(requested,8192)):2048;
+    }
+    upstreamBody=JSON.stringify(body);
+  }
+
+  try{
+    const upstream=await fetch(upstreamUrl,{
+      method:request.method,
+      headers,
+      body:upstreamBody,
+      signal:AbortSignal.timeout(55000)
+    });
+    const responseHeaders={
+      "content-type":upstream.headers.get("content-type")||"application/json",
+      "cache-control":"no-store",
+      "x-content-type-options":"nosniff"
+    };
+    return new Response(upstream.body,{status:upstream.status,headers:responseHeaders});
+  }catch(error){
+    console.error("Claude proxy request failed",error.message);
+    return json({type:"error",error:{type:"api_error",message:"Claude gateway request failed"}},502);
+  }
+}
 export async function onRequest({request,env}){
   const path=new URL(request.url).pathname;
   const policy=ownerPolicy(env);
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
-    return json({ok:true,version:"0.6.0",runtime:"cloudflare",ai_gateway:env.STAR_AI_PROVIDER==="cloudflare"?Boolean(env.AI):env.STAR_AI_PROVIDER==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):Boolean(env.OPENROUTER_API_KEY||env.OPENAI_API_KEY),
-      ai_model:env.STAR_AI_PROVIDER==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":env.STAR_AI_PROVIDER==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):env.STAR_AI_PROVIDER==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),full_backend:false});
+    const provider=env.STAR_AI_PROVIDER||"openrouter";
+    return json({
+      ok:true,version:"0.7.0",runtime:"cloudflare",
+      ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
+      claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6",
+      full_backend:false
+    });
   }
+  if(path.startsWith("/api/claude/v1/"))return claudeProxy(request,env,path);
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
     return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
@@ -21,11 +105,13 @@ export async function onRequest({request,env}){
     return json({error:"Owner sign-in required"},401);
   const useCloudflare=env.STAR_AI_PROVIDER==="cloudflare";
   const useOpenAI=env.STAR_AI_PROVIDER==="openai";
+  const useAnthropic=env.STAR_AI_PROVIDER==="anthropic";
   if(useCloudflare&&!env.AI)return json({error:"Cloudflare AI binding missing"},503);
   const selfHosted=env.STAR_AI_PROVIDER==="selfhosted";
   if(selfHosted&&(!env.STAR_SELFHOSTED_URL||!env.STAR_SELFHOSTED_TOKEN))return json({error:"Self-hosted backend not configured"},503);
   if(useOpenAI&&!env.OPENAI_API_KEY)return json({error:"Set OPENAI_API_KEY for OpenAI mode"},503);
-  if(!useCloudflare&&!selfHosted&&!useOpenAI&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
+  if(useAnthropic&&!env.ANTHROPIC_API_KEY)return json({error:"Set ANTHROPIC_API_KEY for Anthropic mode"},503);
+  if(!useCloudflare&&!selfHosted&&!useOpenAI&&!useAnthropic&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
   const ip=request.headers.get("cf-connecting-ip")||"unknown";
   if(env.STAR_RATE_LIMIT){
     const id=new URL("https://rate.local/"+encodeURIComponent(ip));
@@ -42,6 +128,29 @@ export async function onRequest({request,env}){
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
+    }
+    if(useAnthropic){
+      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6";
+      const upstream=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{
+          "x-api-key":env.ANTHROPIC_API_KEY,
+          "anthropic-version":"2023-06-01",
+          "content-type":"application/json"
+        },
+        body:JSON.stringify({
+          model,
+          max_tokens:1400,
+          system:policy.identity+". "+policy.instructions+" Answer in the user's language. Never claim to have executed actions you did not execute.",
+          messages:[{role:"user",content:prompt}]
+        }),
+        signal:AbortSignal.timeout(25000)
+      });
+      if(!upstream.ok){console.error("Anthropic upstream status",upstream.status);return json({error:"AI provider unavailable"},502)}
+      const result=await upstream.json();
+      const content=Array.isArray(result?.content)?result.content.filter(x=>x?.type==="text"&&typeof x.text==="string").map(x=>x.text).join("\n").trim():"";
+      if(!content)return json({error:"Anthropic returned no content"},502);
+      return json({ok:true,model:result.model||model,content});
     }
     const model=selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
     let endpoint=selfHosted?env.STAR_SELFHOSTED_URL:useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
