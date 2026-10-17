@@ -4,10 +4,15 @@ compatibility_date = "2026-10-10"
 compatibility_flags = ["nodejs_compat"]
 
 # Cloudflare Pages reads secrets from its own environment settings.
-# Required secrets: STAR_API_TOKEN, OPENROUTER_API_KEY,
-# STAR_GITHUB_ADMIN_TOKEN, GITHUB_APP_ID,
-# GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
-# Optional variable: STAR_CLOUDFLARE_MODEL (default: openrouter/free).
+# Core owner/API secrets may include STAR_API_TOKEN and GitHub App credentials.
+#
+# Claude-through-Cloudflare:
+#   Secret: ANTHROPIC_API_KEY
+#   Secret: STAR_CLAUDE_PROXY_TOKEN (32+ chars; this goes in InferrLM's API Key field)
+#   Variable: STAR_ANTHROPIC_MODEL (default: claude-sonnet-4-6)
+#   Variable: STAR_AI_PROVIDER=anthropic to make STAR POWER mode use Claude
+#
+# Other optional providers remain supported (Workers AI, OpenAI, OpenRouter, self-hosted).
 
 [ai]
 binding = "AI"
