@@ -59,6 +59,14 @@ Never invent observations.
 """
 
 
+def _bounded_confidence(value) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = 0
+    return max(0, min(100, parsed))
+
+
 def _extract_json(raw: str) -> dict:
     raw = (raw or "").strip()
 
@@ -142,8 +150,8 @@ async def analyze_and_verify(request: str, response: str) -> dict:
     if not verifier.get("supported", False):
         analyst["status"] = "suspected"
         analyst["confidence"] = min(
-            int(analyst.get("confidence", 0) or 0),
-            int(verifier.get("confidence", 0) or 0),
+            _bounded_confidence(analyst.get("confidence", 0)),
+            _bounded_confidence(verifier.get("confidence", 0)),
         )
 
     return {"analyst": analyst, "verifier": verifier}
