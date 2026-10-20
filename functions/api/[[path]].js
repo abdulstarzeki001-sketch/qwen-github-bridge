@@ -89,7 +89,7 @@ export async function onRequest({request,env}){
     return json({
       ok:true,version:"0.7.1",runtime:"cloudflare",
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/qwen/qwen3.8-27b":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ai_model:provider==="cloudflare"?(env.STAR_WORKERS_AI_MODEL||"@cf/qwen/qwen3.8-27b"):provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
       claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6",
       full_backend:false
@@ -123,7 +123,7 @@ export async function onRequest({request,env}){
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
   try{
     if(useCloudflare){
-      const model="@cf/qwen/qwen3.8-27b";
+      const model=env.STAR_WORKERS_AI_MODEL||"@cf/qwen/qwen3.8-27b";
       const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:prompt}],max_tokens:1024});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
