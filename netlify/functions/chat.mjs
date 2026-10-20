@@ -1,5 +1,7 @@
 import { OpenRouter } from "@openrouter/sdk";
 
+const SECURITY_HEADERS = { "cache-control":"no-store", "x-content-type-options":"nosniff", "x-frame-options":"DENY", "referrer-policy":"no-referrer", "permissions-policy":"camera=(), microphone=(), geolocation=()" };
+
 function normalizeContent(content) {
   if (typeof content === "string") return content.trim();
   if (!Array.isArray(content)) return "";
@@ -23,7 +25,7 @@ export default async (req) => {
         error:
           "Netlify AI Gateway is not active yet. Publish one production deploy first.",
       },
-      { status: 503, headers: { "cache-control": "no-store" } },
+      { status: 503, headers: SECURITY_HEADERS },
     );
   }
 
@@ -33,7 +35,7 @@ export default async (req) => {
   } catch {
     return Response.json(
       { error: "Request body must be valid JSON." },
-      { status: 400, headers: { "cache-control": "no-store" } },
+      { status: 400, headers: SECURITY_HEADERS },
     );
   }
 
@@ -41,14 +43,14 @@ export default async (req) => {
   if (!prompt) {
     return Response.json(
       { error: "prompt is required." },
-      { status: 400, headers: { "cache-control": "no-store" } },
+      { status: 400, headers: SECURITY_HEADERS },
     );
   }
 
   if (prompt.length > 16000) {
     return Response.json(
       { error: "prompt is too large; maximum is 16000 characters." },
-      { status: 413, headers: { "cache-control": "no-store" } },
+      { status: 413, headers: SECURITY_HEADERS },
     );
   }
 
@@ -83,7 +85,7 @@ export default async (req) => {
           error: "The AI provider returned no readable text.",
           model: result?.model || model,
         },
-        { status: 502, headers: { "cache-control": "no-store" } },
+        { status: 502, headers: SECURITY_HEADERS },
       );
     }
 
@@ -94,9 +96,7 @@ export default async (req) => {
         content,
       },
       {
-        headers: {
-          "cache-control": "no-store",
-        },
+        headers: SECURITY_HEADERS,
       },
     );
   } catch (error) {
@@ -105,7 +105,7 @@ export default async (req) => {
       {
         error: "AI request failed.",
       },
-      { status: 502, headers: { "cache-control": "no-store" } },
+      { status: 502, headers: SECURITY_HEADERS },
     );
   }
 };
