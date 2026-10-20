@@ -162,9 +162,12 @@ async function askLocal(prompt){
 }
 
 async function askPower(prompt){
+  const savedToken=sessionStorage.getItem("starToken")||"";
+  const headers={"Content-Type":"application/json"};
+  if(savedToken)headers.Authorization="Bearer "+savedToken;
   const d=await requestJson("/api/chat",{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers,
     body:JSON.stringify({prompt})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
