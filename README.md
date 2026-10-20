@@ -29,6 +29,7 @@ LLM Analyst             Verifier       Evidence Store
 
 - OpenAI-compatible LLM adapter for self-hosted models
 - Analyst + independent verifier workflow
+- Secret/DLP redaction before HTTP evidence or source text is sent to an LLM
 - Burp Suite Montoya extension with **Analyze**, **Passive Inspect**, and **Compare 2 selected** actions
 - **GitHub Repository Intelligence** for read-only source indexing and AI-assisted secure-code review
 - **Finding retest workflow** with `fix-verified / still-vulnerable / inconclusive`
@@ -156,7 +157,7 @@ See `docs/` for deployment, Burp integration, repository intelligence, security 
 
 GitHub Models inference was fully retired by GitHub on July 30, 2026, so STAR no longer uses that endpoint.
 
-For the always-on AI brain, the current free-start path is **Cloudflare Workers AI**. GitHub continues to handle source control, CI, Burp extension builds, GHCR publishing, repository intelligence, and release history.
+For the always-on AI brain, STAR supports **Cloudflare Workers AI** with the current Qwen 3.8 27B default. Usage is subject to the Cloudflare account's current allocation and pricing. GitHub continues to handle source control, CI, Burp extension builds, GHCR publishing, repository intelligence, and release history.
 
 The Cloudflare adapter and connectivity test are already included; activation requires the Cloudflare account ID and scoped Workers AI API token to be stored as secrets, never committed to the repository.
 
