@@ -33,7 +33,7 @@ STAR_CLAUDE_PROXY_TOKEN=<random 32+ character owner proxy token>
 ### Variables
 
 ```text
-STAR_ANTHROPIC_MODEL=claude-sonnet-4-6
+STAR_ANTHROPIC_MODEL=claude-sonnet-5-5
 STAR_AI_PROVIDER=anthropic
 ```
 
@@ -46,7 +46,7 @@ Set:
 ```text
 Display Name: STAR Claude
 API Key:      <STAR_CLAUDE_PROXY_TOKEN>
-Model Name:   claude-sonnet-4-6
+Model Name:   claude-sonnet-5-5
 Base URL:     https://star-cyber-ai-x.pages.dev/api/claude/v1
 ```
 
