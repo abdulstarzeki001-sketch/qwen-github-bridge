@@ -82,6 +82,14 @@ class RetestRequest(BaseModel):
     note: str = Field(default="", max_length=4000)
 
 
+def bounded_int(value, default: int = 0, minimum: int = 0, maximum: int = 100) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = default
+    return max(minimum, min(maximum, parsed))
+
+
 web_dir = Path(__file__).resolve().parent.parent / "web"
 app.mount("/static", StaticFiles(directory=web_dir), name="static")
 
@@ -200,7 +208,7 @@ async def burp_analyze(data: BurpAnalyzeRequest):
     if status not in {"suspected", "likely", "verified", "fixed", "fix-verified"}:
         status = "suspected"
 
-    confidence = max(0, min(100, int(analyst.get("confidence", 0) or 0)))
+    confidence = bounded_int(analyst.get("confidence", 0))
 
     with connect() as conn:
         cur = conn.execute(
@@ -343,7 +351,7 @@ async def retest_finding(finding_id: int, data: RetestRequest):
     verdict = str(result.get("verdict", "inconclusive")).lower()
     if verdict not in {"fix-verified", "still-vulnerable", "inconclusive"}:
         verdict = "inconclusive"
-    confidence = max(0, min(100, int(result.get("confidence", 0) or 0)))
+    confidence = bounded_int(result.get("confidence", 0))
     rationale = str(result.get("rationale", ""))
 
     with connect() as conn:
@@ -554,7 +562,7 @@ async def analyze_repository(repository_id: int, data: RepositoryAnalyzeRequest)
                 severity = str(item.get("severity", "info")).lower()
                 if severity not in {"critical", "high", "medium", "low", "info"}:
                     severity = "info"
-                confidence = max(0, min(100, int(item.get("confidence", 0) or 0)))
+                confidence = bounded_int(item.get("confidence", 0))
                 status = "likely" if confidence >= 80 else "suspected"
                 file_path = str(item.get("file", ""))
 
