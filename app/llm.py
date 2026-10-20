@@ -64,9 +64,9 @@ SENSITIVE_HEADER_RE = re.compile(
     r"X-API-Key|API-Key|X-Auth-Token|X-Amz-Security-Token):[ \t]*(.+)$"
 )
 SECRET_ASSIGNMENT_RE = re.compile(
-    r"(?i)\\b(password|passwd|secret|api[_-]?key|access[_-]?token|"
-    r"refresh[_-]?token|client[_-]?secret)\\b"
-    r"(\\s*[\"']?\\s*[:=]\\s*[\"']?)([^\"'\\s,&}\\]]{4,})"
+    r"(?i)\b(password|passwd|secret|api[_-]?key|access[_-]?token|"
+    r"refresh[_-]?token|client[_-]?secret)\b"
+    r"(\s*[\"']?\s*[:=]\s*[\"']?)([^\"'\s,&}\]]{4,})"
 )
 TOKEN_RE = re.compile(
     r"(?x)"
@@ -75,7 +75,7 @@ TOKEN_RE = re.compile(
     r"github_pat_[A-Za-z0-9_]{20,}|"
     r"gh[pousr]_[A-Za-z0-9]{20,}|"
     r"AKIA[0-9A-Z]{16}|"
-    r"eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,})"
+    r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})"
 )
 
 
