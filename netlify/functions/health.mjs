@@ -5,7 +5,7 @@ export default async () => {
   return Response.json(
     {
       ok: true,
-      version: "0.5.0",
+      version: "0.7.0",
       runtime: "netlify",
       ai_gateway: gatewayActive,
       ai_model: model,
