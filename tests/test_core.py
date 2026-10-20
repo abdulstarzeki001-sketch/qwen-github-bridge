@@ -1,5 +1,5 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
-from app.llm import _extract_json
+from app.llm import _bounded_confidence, _extract_json
 from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
@@ -178,3 +178,9 @@ def test_scanner_target_validation_rejects_credentials_and_bad_web_scheme():
         pass
 
     assert validate_scanner_target("nmap", "example.com") == "example.com"
+
+
+def test_llm_confidence_parser_is_fail_closed():
+    assert _bounded_confidence("95") == 95
+    assert _bounded_confidence("not-a-number") == 0
+    assert _bounded_confidence(500) == 100
