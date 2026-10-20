@@ -7,12 +7,37 @@ from .config import settings
 ALLOWED_SCANNERS = {"nmap", "nuclei", "zap-baseline"}
 
 
+def _clean_target(target: str) -> str:
+    value = (target or "").strip()
+    if not value or len(value) > 2048:
+        raise ValueError("Invalid target")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        raise ValueError("Target contains control characters")
+    return value
+
+
 def host_from_target(target: str) -> str:
-    parsed = urlparse(target if "://" in target else f"//{target}", scheme="")
-    return parsed.hostname or target.split("/")[0].split(":")[0]
+    value = _clean_target(target)
+    parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
+    if parsed.username or parsed.password:
+        raise ValueError("Credentials in target URLs are not allowed")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("Target hostname is missing")
+    return host
+
+
+def validate_scanner_target(scanner: str, target: str) -> str:
+    value = _clean_target(target)
+    parsed = urlparse(value)
+    if scanner in {"nuclei", "zap-baseline"} and parsed.scheme and parsed.scheme not in {"http", "https"}:
+        raise ValueError("Web scanners require an http or https target")
+    host_from_target(value)
+    return value
 
 
 def build_command(scanner: str, target: str) -> list[str]:
+    target = validate_scanner_target(scanner, target)
     host = host_from_target(target)
 
     if scanner == "nmap":
