@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 import json
 import shlex
 
@@ -19,7 +20,14 @@ from .scanners import run_scanner
 from .security import require_api_token
 
 
-app = FastAPI(title=settings.app_name, version="0.4.0")
+APP_VERSION = "0.7.1"
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title=settings.app_name, version=APP_VERSION, lifespan=lifespan)
 
 
 class ProjectCreate(BaseModel):
@@ -72,11 +80,6 @@ class RetestRequest(BaseModel):
     request: str = Field(min_length=1, max_length=500000)
     response: str = Field(default="", max_length=1000000)
     note: str = Field(default="", max_length=4000)
-
-
-@app.on_event("startup")
-def startup():
-    init_db()
 
 
 web_dir = Path(__file__).resolve().parent.parent / "web"
