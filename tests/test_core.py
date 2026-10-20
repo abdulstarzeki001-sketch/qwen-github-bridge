@@ -1,5 +1,5 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
-from app.llm import _extract_json
+from app.llm import _extract_json, redact_for_ai
 from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
@@ -108,6 +108,21 @@ def test_llm_extract_json_from_fence():
 {"ok": true, "n": 3}
 ```''')
     assert result == {"ok": True, "n": 3}
+
+
+def test_llm_redacts_credentials_before_provider_request():
+    source = (
+        "Authorization: Bearer top-secret-token\n"
+        "Cookie: session=abc123\n"
+        "password=hunter2\n"
+        "x-api-key: shared-key-value\n"
+    )
+    redacted = redact_for_ai(source)
+    assert "top-secret-token" not in redacted
+    assert "session=abc123" not in redacted
+    assert "hunter2" not in redacted
+    assert "shared-key-value" not in redacted
+    assert redacted.count("<redacted:") == 4
 
 
 def test_cloudflare_provider_resolution():
