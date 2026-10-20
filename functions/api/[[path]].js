@@ -2,7 +2,8 @@ import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 
-const json=(body,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
+const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
+const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
 function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
 
 async function secretMatches(expected,received){
@@ -78,9 +79,8 @@ async function claudeProxy(request,env,path){
       signal:AbortSignal.timeout(55000)
     });
     const responseHeaders={
-      "content-type":upstream.headers.get("content-type")||"application/json",
-      "cache-control":"no-store",
-      "x-content-type-options":"nosniff"
+      ...API_HEADERS,
+      "content-type":upstream.headers.get("content-type")||"application/json"
     };
     return new Response(upstream.body,{status:upstream.status,headers:responseHeaders});
   }catch(error){
