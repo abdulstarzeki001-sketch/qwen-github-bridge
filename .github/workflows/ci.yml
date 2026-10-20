@@ -51,7 +51,7 @@ jobs:
           from app.main import app
           init_db()
           assert app.title == "STAR CYBER AI X"
-          assert app.version == "0.4.0"
+          assert app.version == "0.7.0"
           print(app.title, app.version)
           PY
 
@@ -107,9 +107,11 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           import vm from "node:vm";
-          const html = fs.readFileSync("web/index.html", "utf8");
-          const scripts = html.split("<script>").slice(1).map(s => [null, s.split("</script>")[0]]);
-          if (!scripts.length) throw new Error("No dashboard script found");
-          for (const match of scripts) new vm.Script(match[1], {filename:"web/index.html"});
-          console.log("Dashboard inline JavaScript syntax valid");
+          for (const file of ["web/index.html", "web/ai.html"]) {
+            const html = fs.readFileSync(file, "utf8");
+            const scripts = html.split("<script>").slice(1).map(s => s.split("</script>")[0]);
+            if (!scripts.length) throw new Error("No inline script found in " + file);
+            for (const script of scripts) new vm.Script(script, {filename:file});
+          }
+          console.log("Dashboard and STAR AI inline JavaScript syntax valid");
           NODE
