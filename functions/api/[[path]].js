@@ -31,6 +31,14 @@ async function claudeProxy(request,env,path){
   if(!(await secretMatches(env.STAR_CLAUDE_PROXY_TOKEN,proxyCredential(request))))
     return json({type:"error",error:{type:"authentication_error",message:"Invalid proxy API key"}},401);
 
+  if(env.STAR_RATE_LIMIT){
+    const ip=request.headers.get("cf-connecting-ip")||"unknown";
+    const id=new URL("https://rate.local/claude/"+encodeURIComponent(ip));
+    const limited=await env.STAR_RATE_LIMIT.fetch(new Request(id,{method:"POST"}));
+    if(limited.status===429)
+      return json({type:"error",error:{type:"rate_limit_error",message:"Rate limit exceeded"}},429);
+  }
+
   const prefix="/api/claude/v1/";
   const suffix=path.startsWith(prefix)?path.slice(prefix.length):"";
   const allowed=
