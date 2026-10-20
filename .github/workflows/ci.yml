@@ -97,7 +97,7 @@ jobs:
           node-version: "24"
 
       - name: Install Netlify runtime dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Check Netlify functions
         run: npm run check:netlify
