@@ -16,7 +16,7 @@ from .evidence import add_attachment, read_manifest, save_bundle
 from .github_intel import GitHubRepositoryClient, validate_repo_name, language_hint
 from .llm import analyze_and_verify, review_source_bundle, verify_retest
 from .reports import render_report
-from .scanners import run_scanner
+from .scanners import run_scanner, validate_scanner_target
 from .security import require_api_token
 
 
@@ -621,6 +621,11 @@ async def create_scan(data: ScanCreate):
 
     if data.scanner not in {"nmap", "nuclei", "zap-baseline"}:
         raise HTTPException(400, "Unsupported scanner")
+
+    try:
+        validate_scanner_target(data.scanner, scope["target"])
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
     with connect() as conn:
         cur = conn.execute(
