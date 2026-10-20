@@ -102,14 +102,16 @@ jobs:
       - name: Check Netlify functions
         run: npm run check:netlify
 
-      - name: Check dashboard inline JavaScript
+      - name: Check web inline JavaScript
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           import vm from "node:vm";
-          const html = fs.readFileSync("web/index.html", "utf8");
-          const scripts = html.split("<script>").slice(1).map(s => [null, s.split("</script>")[0]]);
-          if (!scripts.length) throw new Error("No dashboard script found");
-          for (const match of scripts) new vm.Script(match[1], {filename:"web/index.html"});
-          console.log("Dashboard inline JavaScript syntax valid");
+          for (const filename of ["web/index.html", "web/ai.html"]) {
+            const html = fs.readFileSync(filename, "utf8");
+            const scripts = html.split("<script>").slice(1).map(s => s.split("</script>")[0]);
+            if (!scripts.length) throw new Error("No inline script found in " + filename);
+            for (const source of scripts) new vm.Script(source, {filename});
+            console.log(filename + " inline JavaScript syntax valid");
+          }
           NODE
