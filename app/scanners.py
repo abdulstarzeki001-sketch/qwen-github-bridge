@@ -1,10 +1,25 @@
 import asyncio
+import shutil
 from urllib.parse import urlparse
 
 from .config import settings
 
 
 ALLOWED_SCANNERS = {"nmap", "nuclei", "zap-baseline"}
+SCANNER_BINARIES = {
+    "nmap": "nmap",
+    "nuclei": "nuclei",
+    "zap-baseline": "zap-baseline.py",
+}
+
+
+def scanner_available(scanner: str) -> bool:
+    binary = SCANNER_BINARIES.get(scanner)
+    return bool(binary and shutil.which(binary))
+
+
+def available_scanners() -> list[str]:
+    return sorted(scanner for scanner in ALLOWED_SCANNERS if scanner_available(scanner))
 
 
 def host_from_target(target: str) -> str:
