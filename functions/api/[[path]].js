@@ -54,7 +54,7 @@ async function claudeProxy(request,env,path){
     if(!body||typeof body!=="object"||Array.isArray(body))
       return json({type:"error",error:{type:"invalid_request_error",message:"Request body must be an object"}},400);
 
-    body.model=(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6").trim();
+    body.model=(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5").trim();
     if(suffix==="messages"){
       const requested=Number(body.max_tokens);
       body.max_tokens=Number.isInteger(requested)?Math.max(1,Math.min(requested,8192)):2048;
@@ -89,9 +89,9 @@ export async function onRequest({request,env}){
     return json({
       ok:true,version:"0.7.0",runtime:"cloudflare",
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
-      claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6",
+      claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",
       full_backend:false
     });
   }
@@ -130,7 +130,7 @@ export async function onRequest({request,env}){
       return json({ok:true,model,content});
     }
     if(useAnthropic){
-      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6";
+      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
       const upstream=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{
