@@ -22,9 +22,33 @@ def available_scanners() -> list[str]:
     return sorted(scanner for scanner in ALLOWED_SCANNERS if scanner_available(scanner))
 
 
+def validate_scope_target(target: str) -> str:
+    value = (target or "").strip()
+    if not value or any(ord(ch) < 32 for ch in value) or any(ch.isspace() for ch in value):
+        raise ValueError("Scope target must be a non-empty URL or host without whitespace")
+
+    parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
+    if parsed.scheme and parsed.scheme.lower() not in {"http", "https"}:
+        raise ValueError("Scope target scheme must be http or https")
+    if parsed.username or parsed.password:
+        raise ValueError("Scope target must not contain embedded credentials")
+    if not parsed.hostname:
+        raise ValueError("Scope target must include a hostname or IP address")
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError("Scope target has an invalid port") from exc
+    if parsed.fragment:
+        raise ValueError("Scope target must not include a URL fragment")
+    if not parsed.scheme and (parsed.path not in {"", "/"} or parsed.query):
+        raise ValueError("Bare scope targets must be host[:port] only")
+    return value
+
+
 def host_from_target(target: str) -> str:
-    parsed = urlparse(target if "://" in target else f"//{target}", scheme="")
-    return parsed.hostname or target.split("/")[0].split(":")[0]
+    value = validate_scope_target(target)
+    parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
+    return parsed.hostname or ""
 
 
 def build_command(scanner: str, target: str) -> list[str]:
