@@ -6,6 +6,12 @@ const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff"
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
 function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
 
+function redactPrompt(value){
+  return String(value||"")
+    .replace(/^(Authorization|Proxy-Authorization|Cookie|Set-Cookie|X-API-Key|API-Key|X-Auth-Token):[ \t]*.+$/gim,"$1: <redacted>")
+    .replace(/\b(sk-ant-[A-Za-z0-9_-]{12,}|sk-(?:proj-)?[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})\b/g,"<redacted>");
+}
+
 async function secretMatches(expected,received){
   if(typeof expected!=="string"||typeof received!=="string"||expected.length<32||received.length<32)return false;
   const enc=new TextEncoder();
@@ -129,10 +135,11 @@ export async function onRequest({request,env}){
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
+  const safePrompt=redactPrompt(prompt);
   try{
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
-      const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:prompt}],max_tokens:1024});
+      const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:safePrompt}],max_tokens:1024});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
@@ -150,7 +157,7 @@ export async function onRequest({request,env}){
           model,
           max_tokens:1400,
           system:policy.identity+". "+policy.instructions+" Answer in the user's language. Never claim to have executed actions you did not execute.",
-          messages:[{role:"user",content:prompt}]
+          messages:[{role:"user",content:safePrompt}]
         }),
         signal:AbortSignal.timeout(25000)
       });
@@ -167,7 +174,7 @@ export async function onRequest({request,env}){
       method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
       body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
         {role:"system",content:policy.identity+". "+policy.instructions+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
-        {role:"user",content:prompt}
+        {role:"user",content:safePrompt}
       ]}),signal:AbortSignal.timeout(25000)
     });
     if(!upstream.ok){console.error("AI upstream status",upstream.status);return json({error:"AI provider unavailable"},502)}
