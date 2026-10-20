@@ -51,7 +51,7 @@ jobs:
           from app.main import app
           init_db()
           assert app.title == "STAR CYBER AI X"
-          assert app.version == "0.4.0"
+          assert app.version == "0.7.1"
           print(app.title, app.version)
           PY
 
