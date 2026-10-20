@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 
@@ -58,6 +59,56 @@ Never invent observations.
 """
 
 
+SENSITIVE_HEADER_RE = re.compile(
+    r"(?im)^(Authorization|Proxy-Authorization|Cookie|Set-Cookie|"
+    r"X-API-Key|API-Key|X-Auth-Token|X-Amz-Security-Token):[ \t]*(.+)$"
+)
+SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)\\b(password|passwd|secret|api[_-]?key|access[_-]?token|"
+    r"refresh[_-]?token|client[_-]?secret)\\b"
+    r"(\\s*[\"']?\\s*[:=]\\s*[\"']?)([^\"'\\s,&}\\]]{4,})"
+)
+TOKEN_RE = re.compile(
+    r"(?x)"
+    r"(?:sk-ant-[A-Za-z0-9_-]{12,}|"
+    r"sk-(?:proj-)?[A-Za-z0-9_-]{20,}|"
+    r"github_pat_[A-Za-z0-9_]{20,}|"
+    r"gh[pousr]_[A-Za-z0-9]{20,}|"
+    r"AKIA[0-9A-Z]{16}|"
+    r"eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,})"
+)
+
+
+def _redaction_marker(value: str) -> str:
+    digest = hashlib.sha256(value.encode("utf-8", errors="ignore")).hexdigest()[:12]
+    return f"<redacted:{digest}>"
+
+
+def redact_for_ai(text: str) -> str:
+    """Remove high-risk credentials before text leaves STAR for an LLM provider.
+
+    Raw evidence remains in STAR's evidence store. Stable hashes preserve enough
+    identity to compare whether the same secret appeared in more than one place.
+    """
+    value = text or ""
+
+    def header_repl(match: re.Match) -> str:
+        return f"{match.group(1)}: {_redaction_marker(match.group(2).strip())}"
+
+    value = SENSITIVE_HEADER_RE.sub(header_repl, value)
+
+    def assignment_repl(match: re.Match) -> str:
+        return (
+            match.group(1)
+            + match.group(2)
+            + _redaction_marker(match.group(3))
+        )
+
+    value = SECRET_ASSIGNMENT_RE.sub(assignment_repl, value)
+    value = TOKEN_RE.sub(lambda m: _redaction_marker(m.group(0)), value)
+    return value
+
+
 def _extract_json(raw: str) -> dict:
     raw = (raw or "").strip()
 
@@ -93,6 +144,7 @@ def _extract_json(raw: str) -> dict:
 
 async def _chat(system: str, user: str) -> dict:
     base_url, api_key, model = settings.resolved_llm()
+    user = redact_for_ai(user)
     url = base_url.rstrip("/") + "/chat/completions"
 
     payload = {
