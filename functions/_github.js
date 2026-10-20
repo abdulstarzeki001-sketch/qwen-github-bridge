@@ -75,7 +75,7 @@ async function handler(req) {
       if (resource.type !== "file" || resource.size > 131072 || resource.encoding !== "base64") {
         return Response.json({ error: "File type or size unsupported (max 128 KiB)" }, { status: 400, headers });
       }
-      const bytes = Buffer.from(resource.content.replace(/\\s/g, ""), "base64");
+      const bytes = Buffer.from(resource.content.replace(/\s/g, ""), "base64");
       if (bytes.includes(0)) return Response.json({ error: "Binary files unsupported" }, { status: 400, headers });
       return Response.json({ ok: true, path: resource.path, type: "file", size: resource.size,
         content: new TextDecoder("utf-8", { fatal: true }).decode(bytes) }, { headers });
