@@ -1,5 +1,5 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
-from app.llm import _extract_json
+from app.llm import _bounded_confidence, _extract_json
 from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
@@ -7,7 +7,8 @@ from app.github_intel import (
     validate_repo_name,
 )
 from app.reports import render_report
-from app.scanners import build_command, host_from_target
+from app.scanners import build_command, host_from_target, validate_scanner_target
+from app.redaction import redact_http_message, redact_source_text
 
 
 def test_host_from_target():
@@ -135,3 +136,51 @@ def test_self_hosted_provider_resolution():
         "local",
         "demo",
     )
+
+
+def test_redaction_masks_http_credentials_but_preserves_structure():
+    raw = (
+        "POST /login HTTP/1.1\r\n"
+        "Host: example.test\r\n"
+        "Authorization: Bearer topsecret-token-value\r\n"
+        "Cookie: sid=abcdef1234567890\r\n"
+        "Content-Type: application/json\r\n\r\n"
+        '{"username":"demo","password":"super-secret","token":"abc123456789"}'
+    )
+    result = redact_http_message(raw)
+    assert "topsecret-token-value" not in result
+    assert "abcdef1234567890" not in result
+    assert "super-secret" not in result
+    assert "abc123456789" not in result
+    assert "username" in result
+    assert "<redacted:" in result
+
+
+def test_source_redaction_masks_common_secret_patterns():
+    source = 'API_KEY=sk-example12345678901234567890\nAuthorization: Bearer token-value-123456789'
+    result = redact_source_text(source)
+    assert "sk-example12345678901234567890" not in result
+    assert "token-value-123456789" not in result
+    assert "<redacted:" in result
+
+
+def test_scanner_target_validation_rejects_credentials_and_bad_web_scheme():
+    try:
+        host_from_target("https://user:pass@example.com")
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+    try:
+        validate_scanner_target("nuclei", "file:///etc/passwd")
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+    assert validate_scanner_target("nmap", "example.com") == "example.com"
+
+
+def test_llm_confidence_parser_is_fail_closed():
+    assert _bounded_confidence("95") == 95
+    assert _bounded_confidence("not-a-number") == 0
+    assert _bounded_confidence(500) == 100

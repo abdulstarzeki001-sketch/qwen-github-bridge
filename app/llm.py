@@ -4,6 +4,7 @@ import re
 import httpx
 
 from .config import settings
+from .redaction import redact_http_message, redact_source_text
 
 
 ANALYST_SYSTEM = """You are STAR CYBER AI X, a senior application security analyst.
@@ -56,6 +57,14 @@ Only use fix-verified when the new evidence clearly demonstrates the original
 weakness is no longer reproducible under an equivalent test condition.
 Never invent observations.
 """
+
+
+def _bounded_confidence(value) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = 0
+    return max(0, min(100, parsed))
 
 
 def _extract_json(raw: str) -> dict:
@@ -125,7 +134,9 @@ async def _chat(system: str, user: str) -> dict:
 
 
 async def analyze_and_verify(request: str, response: str) -> dict:
-    raw = f"HTTP REQUEST\n{request}\n\nHTTP RESPONSE\n{response}"
+    safe_request = redact_http_message(request)
+    safe_response = redact_http_message(response)
+    raw = f"HTTP REQUEST\n{safe_request}\n\nHTTP RESPONSE\n{safe_response}"
     analyst = await _chat(ANALYST_SYSTEM, raw)
 
     verifier_input = (
@@ -139,8 +150,8 @@ async def analyze_and_verify(request: str, response: str) -> dict:
     if not verifier.get("supported", False):
         analyst["status"] = "suspected"
         analyst["confidence"] = min(
-            int(analyst.get("confidence", 0) or 0),
-            int(verifier.get("confidence", 0) or 0),
+            _bounded_confidence(analyst.get("confidence", 0)),
+            _bounded_confidence(verifier.get("confidence", 0)),
         )
 
     return {"analyst": analyst, "verifier": verifier}
@@ -149,8 +160,9 @@ async def analyze_and_verify(request: str, response: str) -> dict:
 async def review_source_bundle(repository: str, ref: str, files: dict[str, str]) -> dict:
     sections = []
     for path, content in files.items():
+        safe_content = redact_source_text(content)
         sections.append(
-            f"\n===== FILE: {path} =====\n{content}\n===== END FILE ====="
+            f"\n===== FILE: {path} =====\n{safe_content}\n===== END FILE ====="
         )
     prompt = (
         f"REPOSITORY: {repository}\nREF: {ref}\n"
@@ -160,12 +172,14 @@ async def review_source_bundle(repository: str, ref: str, files: dict[str, str])
 
 
 async def verify_retest(original_finding: dict, request: str, response: str) -> dict:
+    safe_request = redact_http_message(request)
+    safe_response = redact_http_message(response)
     prompt = (
         "ORIGINAL FINDING\n"
         + json.dumps(original_finding, ensure_ascii=False)
         + "\n\nNEW HTTP REQUEST\n"
-        + request
+        + safe_request
         + "\n\nNEW HTTP RESPONSE\n"
-        + response
+        + safe_response
     )
     return await _chat(RETEST_SYSTEM, prompt)

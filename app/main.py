@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 import json
 import shlex
 
@@ -15,11 +16,18 @@ from .evidence import add_attachment, read_manifest, save_bundle
 from .github_intel import GitHubRepositoryClient, validate_repo_name, language_hint
 from .llm import analyze_and_verify, review_source_bundle, verify_retest
 from .reports import render_report
-from .scanners import run_scanner
+from .scanners import run_scanner, validate_scanner_target
 from .security import require_api_token
 
 
-app = FastAPI(title=settings.app_name, version="0.4.0")
+APP_VERSION = "0.7.1"
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title=settings.app_name, version=APP_VERSION, lifespan=lifespan)
 
 
 class ProjectCreate(BaseModel):
@@ -74,9 +82,12 @@ class RetestRequest(BaseModel):
     note: str = Field(default="", max_length=4000)
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
+def bounded_int(value, default: int = 0, minimum: int = 0, maximum: int = 100) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = default
+    return max(minimum, min(maximum, parsed))
 
 
 web_dir = Path(__file__).resolve().parent.parent / "web"
@@ -197,7 +208,7 @@ async def burp_analyze(data: BurpAnalyzeRequest):
     if status not in {"suspected", "likely", "verified", "fixed", "fix-verified"}:
         status = "suspected"
 
-    confidence = max(0, min(100, int(analyst.get("confidence", 0) or 0)))
+    confidence = bounded_int(analyst.get("confidence", 0))
 
     with connect() as conn:
         cur = conn.execute(
@@ -340,7 +351,7 @@ async def retest_finding(finding_id: int, data: RetestRequest):
     verdict = str(result.get("verdict", "inconclusive")).lower()
     if verdict not in {"fix-verified", "still-vulnerable", "inconclusive"}:
         verdict = "inconclusive"
-    confidence = max(0, min(100, int(result.get("confidence", 0) or 0)))
+    confidence = bounded_int(result.get("confidence", 0))
     rationale = str(result.get("rationale", ""))
 
     with connect() as conn:
@@ -551,7 +562,7 @@ async def analyze_repository(repository_id: int, data: RepositoryAnalyzeRequest)
                 severity = str(item.get("severity", "info")).lower()
                 if severity not in {"critical", "high", "medium", "low", "info"}:
                     severity = "info"
-                confidence = max(0, min(100, int(item.get("confidence", 0) or 0)))
+                confidence = bounded_int(item.get("confidence", 0))
                 status = "likely" if confidence >= 80 else "suspected"
                 file_path = str(item.get("file", ""))
 
@@ -610,6 +621,11 @@ async def create_scan(data: ScanCreate):
 
     if data.scanner not in {"nmap", "nuclei", "zap-baseline"}:
         raise HTTPException(400, "Unsupported scanner")
+
+    try:
+        validate_scanner_target(data.scanner, scope["target"])
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
     with connect() as conn:
         cur = conn.execute(
