@@ -2,7 +2,8 @@ import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 
-const json=(body,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
+const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
+const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
 function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
 
 async function secretMatches(expected,received){
@@ -31,6 +32,14 @@ async function claudeProxy(request,env,path){
   if(!(await secretMatches(env.STAR_CLAUDE_PROXY_TOKEN,proxyCredential(request))))
     return json({type:"error",error:{type:"authentication_error",message:"Invalid proxy API key"}},401);
 
+  if(env.STAR_RATE_LIMIT){
+    const ip=request.headers.get("cf-connecting-ip")||"unknown";
+    const id=new URL("https://rate.local/claude/"+encodeURIComponent(ip));
+    const limited=await env.STAR_RATE_LIMIT.fetch(new Request(id,{method:"POST"}));
+    if(limited.status===429)
+      return json({type:"error",error:{type:"rate_limit_error",message:"Rate limit exceeded"}},429);
+  }
+
   const prefix="/api/claude/v1/";
   const suffix=path.startsWith(prefix)?path.slice(prefix.length):"";
   const allowed=
@@ -54,7 +63,7 @@ async function claudeProxy(request,env,path){
     if(!body||typeof body!=="object"||Array.isArray(body))
       return json({type:"error",error:{type:"invalid_request_error",message:"Request body must be an object"}},400);
 
-    body.model=(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6").trim();
+    body.model=(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5").trim();
     if(suffix==="messages"){
       const requested=Number(body.max_tokens);
       body.max_tokens=Number.isInteger(requested)?Math.max(1,Math.min(requested,8192)):2048;
@@ -70,9 +79,8 @@ async function claudeProxy(request,env,path){
       signal:AbortSignal.timeout(55000)
     });
     const responseHeaders={
-      "content-type":upstream.headers.get("content-type")||"application/json",
-      "cache-control":"no-store",
-      "x-content-type-options":"nosniff"
+      ...API_HEADERS,
+      "content-type":upstream.headers.get("content-type")||"application/json"
     };
     return new Response(upstream.body,{status:upstream.status,headers:responseHeaders});
   }catch(error){
@@ -89,9 +97,9 @@ export async function onRequest({request,env}){
     return json({
       ok:true,version:"0.7.0",runtime:"cloudflare",
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
-      claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6",
+      claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",
       full_backend:false
     });
   }
@@ -130,7 +138,7 @@ export async function onRequest({request,env}){
       return json({ok:true,model,content});
     }
     if(useAnthropic){
-      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-4-6";
+      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
       const upstream=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{

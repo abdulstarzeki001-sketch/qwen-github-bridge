@@ -1,5 +1,5 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
-from app.llm import _extract_json
+from app.llm import _extract_json, redact_for_ai
 from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
@@ -7,11 +7,29 @@ from app.github_intel import (
     validate_repo_name,
 )
 from app.reports import render_report
-from app.scanners import build_command, host_from_target
+from app.scanners import build_command, host_from_target, validate_scope_target
 
 
 def test_host_from_target():
     assert host_from_target("https://example.com:8443/api") == "example.com"
+
+
+def test_scope_target_validation_rejects_ambiguous_targets():
+    assert validate_scope_target("https://example.com:8443/api") == "https://example.com:8443/api"
+    assert validate_scope_target("10.0.0.5:8080") == "10.0.0.5:8080"
+    for value in (
+        "file:///etc/passwd",
+        "https://user:pass@example.com/",
+        "example.com/path",
+        "https://example.com/#fragment",
+        "example.com bad.test",
+    ):
+        try:
+            validate_scope_target(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"target should have been rejected: {value}")
 
 
 def test_default_nmap_profile_is_non_destructive():
@@ -108,6 +126,21 @@ def test_llm_extract_json_from_fence():
 {"ok": true, "n": 3}
 ```''')
     assert result == {"ok": True, "n": 3}
+
+
+def test_llm_redacts_credentials_before_provider_request():
+    source = (
+        "Authorization: Bearer top-secret-token\n"
+        "Cookie: session=abc123\n"
+        "password=hunter2\n"
+        "x-api-key: shared-key-value\n"
+    )
+    redacted = redact_for_ai(source)
+    assert "top-secret-token" not in redacted
+    assert "session=abc123" not in redacted
+    assert "hunter2" not in redacted
+    assert "shared-key-value" not in redacted
+    assert redacted.count("<redacted:") == 4
 
 
 def test_cloudflare_provider_resolution():

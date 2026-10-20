@@ -23,7 +23,7 @@ The UI also accepts RFC1918 private-LAN hosts for an InferrLM server on another 
 
 ## POWER
 
-The browser calls STAR's existing `POST /api/chat` backend. Provider selection remains server-side and credentials stay in server environment/secrets.
+The browser calls STAR's existing `POST /api/chat` backend. Provider selection remains server-side and credentials stay in server environment/secrets. For the Cloudflare runtime, `STAR_AI_PROVIDER=anthropic` with `STAR_ANTHROPIC_MODEL=claude-sonnet-5-5` routes POWER through Claude while keeping the Anthropic API key server-side.
 
 ## AUTO
 

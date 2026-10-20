@@ -1,6 +1,6 @@
 {
   "name": "star-cyber-ai-x-netlify",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,6 +11,7 @@
     "check:cloudflare": "node --check functions/_github.js && node --check 'functions/api/[[path]].js'"
   },
   "dependencies": {
-    "@openrouter/sdk": "^1.2.43"
+    "@openrouter/sdk": "1.2.43",
+    "zod": "4.6.7"
   }
 }
