@@ -12,7 +12,11 @@ compatibility_flags = ["nodejs_compat"]
 #   Variable: STAR_ANTHROPIC_MODEL (default: claude-sonnet-4-6)
 #   Variable: STAR_AI_PROVIDER=anthropic to make STAR POWER mode use Claude
 #
-# Other optional providers remain supported (Workers AI, OpenAI, OpenRouter, self-hosted).
+# Workers AI:
+#   Variable: STAR_AI_PROVIDER=cloudflare
+#   Variable: STAR_WORKERS_AI_MODEL (default: @cf/qwen/qwen3.8-27b)
+#
+# Other optional providers remain supported (OpenAI, OpenRouter, self-hosted).
 
 [ai]
 binding = "AI"
