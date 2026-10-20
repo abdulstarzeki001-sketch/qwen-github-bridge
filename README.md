@@ -177,3 +177,18 @@ The Netlify project already exists as `star-cyber-ai-x`.
 Netlify AI Gateway activates after the project's first production deploy. The site should stay protected until deployment and access controls are reviewed.
 
 See `docs/NETLIFY_DEPLOY.md`.
+
+## Claude through Cloudflare
+
+For POWER mode, STAR can proxy Anthropic through Cloudflare Pages so the real Anthropic key never needs to be stored on the iPhone.
+
+Recommended current model:
+
+```text
+STAR_AI_PROVIDER=anthropic
+STAR_ANTHROPIC_MODEL=claude-sonnet-5-5
+```
+
+Store `ANTHROPIC_API_KEY` and a separate 32+ character `STAR_CLAUDE_PROXY_TOKEN` as Cloudflare secrets. InferrLM receives only the proxy token. If Cloudflare Access protects the entire site, configure the dedicated `/api/claude/*` path so API clients can reach the function; the function still enforces the proxy token.
+
+See `docs/CLOUDFLARE_CLAUDE.md`.
