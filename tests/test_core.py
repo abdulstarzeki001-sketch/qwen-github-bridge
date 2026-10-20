@@ -7,11 +7,29 @@ from app.github_intel import (
     validate_repo_name,
 )
 from app.reports import render_report
-from app.scanners import build_command, host_from_target
+from app.scanners import build_command, host_from_target, validate_scope_target
 
 
 def test_host_from_target():
     assert host_from_target("https://example.com:8443/api") == "example.com"
+
+
+def test_scope_target_validation_rejects_ambiguous_targets():
+    assert validate_scope_target("https://example.com:8443/api") == "https://example.com:8443/api"
+    assert validate_scope_target("10.0.0.5:8080") == "10.0.0.5:8080"
+    for value in (
+        "file:///etc/passwd",
+        "https://user:pass@example.com/",
+        "example.com/path",
+        "https://example.com/#fragment",
+        "example.com bad.test",
+    ):
+        try:
+            validate_scope_target(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"target should have been rejected: {value}")
 
 
 def test_default_nmap_profile_is_non_destructive():
