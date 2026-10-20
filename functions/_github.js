@@ -3,6 +3,7 @@ export function makeGithubHandler(bindings) {
 
 
 const get = (key) => bindings[key] || "";
+const API_HEADERS = { "Cache-Control":"no-store", "X-Content-Type-Options":"nosniff", "X-Frame-Options":"DENY", "Referrer-Policy":"no-referrer", "Permissions-Policy":"camera=(), microphone=(), geolocation=()" };
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
 function authorized(req) {
@@ -48,7 +49,7 @@ async function github(path, token, options = {}) {
 }
 
 async function handler(req) {
-  const headers = { "Cache-Control": "no-store" };
+  const headers = API_HEADERS;
   if (!authorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   try {
     const installation = get("GITHUB_INSTALLATION_ID");
