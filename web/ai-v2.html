@@ -61,6 +61,13 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 @media(max-width:720px){.examples{grid-template-columns:repeat(2,minmax(0,1fr))}.v2-telemetry{gap:6px}.telemetry-item{padding:10px 5px}.telemetry-item strong{font-size:10px}.orb{width:111px;height:111px}.orb:before{inset:-23px}.orb:after{inset:19px -25px;right:-25px;top:19px}.hero{padding:27px 0 14px}.examples button{min-height:70px;font-size:11px}.examples button:before{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.orb,.orb:before,.message{animation:none!important}html{scroll-behavior:auto}}
 
+
+.v2-actionbar{margin-top:1px}
+.v2-actionbar>div{display:flex;gap:8px;align-items:center}
+.v2-missionpanel{margin:0 0 14px;padding:12px;border:1px solid #304d72aa;background:#08182c9c;border-radius:15px}
+.v2-missionhead{font:800 10px/1.6 ui-monospace,monospace;color:#76ecd9;letter-spacing:2px;direction:ltr;text-align:left;margin:0 0 8px}
+.v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
+.v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
 </style></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><a class="nav" href="/">↗ لوحة التحكم</a></header>
@@ -80,14 +87,16 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
   </div>
   <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
 </div>
-<div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><button type="button" id="ownerOpen">♙ دخول المالك</button></div><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
+<div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><div><button type="button" id="v2NewMission">＋ جديد</button><button type="button" id="ownerOpen">♙ دخول المالك</button></div></div><section class="v2-missionpanel"><div class="v2-missionhead">MISSION MEMORY // SESSION ONLY</div><div id="v2MissionLog"></div><button type="button" id="v2Export" class="nav" style="margin-top:8px;display:inline-block">↓ تصدير المحادثة</button></section><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
 </main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ وصول المالك</h2><p>أدخل رمز STAR_API_TOKEN الخاص بك. سيُحفَظ في جلسة التبويب فقط ولن يُكتب في GitHub.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">حفظ الرمز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
 <script>
 const $=id=>document.getElementById(id), messages=$("messages");
 let busy=false;
-let mode=localStorage.getItem("starAiMode")||"private";
+let mode=localStorage.getItem("starAiMode")||"power";
+let v2TokenVerified=false;
+let v2Tasks=[];
 
 const modeCopy={
   private:"PRIVATE: يرسل الطلب مباشرة من المتصفح إلى InferrLM على جهازك. لا يمر نص الطلب عبر STAR Cloud.",
@@ -107,6 +116,8 @@ function setMode(next){
   document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
   $("modeHelp").textContent=modeCopy[mode];
   $("localSettings").hidden=mode==="power";
+  $("localState").hidden=mode==="power";
+  $("v2Mode").textContent=mode.toUpperCase();
   $("localState").textContent=mode==="power"
     ?"POWER يستخدم /api/chat على خادم STAR. لا تضع مفاتيح API داخل هذه الصفحة."
     :"InferrLM المتوقع: /api/tags لاكتشاف النماذج و /api/chat للمحادثة.";
@@ -139,6 +150,7 @@ async function requestJson(url,options={},timeout=9000){
     return data;
   }catch(err){
     if(err?.name==="AbortError")throw Error("انتهت مهلة الاتصال");
+    if(err?.message==="Load failed"||err?.message==="Failed to fetch")throw Error("تعذر الوصول إلى الخادم. تحقق من الشبكة أو قيود iOS على الاتصال المحلي.");
     throw err;
   }finally{clearTimeout(timer)}
 }
@@ -212,11 +224,12 @@ async function askPower(prompt){
 }
 
 async function health(){
-  let cloud="Cloud: offline";
+  let cloud="Cloud: connection not verified";
   try{
     const r=await fetch("/api/health",{cache:"no-store"});
     const d=await r.json();
-    cloud=d.ok&&d.ai_gateway?("Cloud: "+(d.ai_model||"ready")):"Cloud: pending";
+    cloud=d.ok&&d.ai_gateway?("Cloud configured: "+(d.ai_model||"ready")):"Cloud: pending";
+    $("v2Cloud").textContent=d.ok&&d.ai_gateway?"الإعدادات جاهزة":"غير مهيأة";
   }catch{}
   if(mode==="power"){$("statusText").textContent=cloud;return}
   const local=await probeLocal(false);
@@ -234,6 +247,7 @@ $("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.pr
 $("form").addEventListener("submit",async e=>{
   e.preventDefault();const prompt=$("prompt").value.trim();if(!prompt||busy)return;
   busy=true;$("send").disabled=true;$("prompt").value="";add("user",prompt);const output=add("assistant","يفكر…");
+  v2StartTask(prompt);
   try{
     let result;
     if(mode==="private")result=await askLocal(prompt);
@@ -246,16 +260,58 @@ $("form").addEventListener("submit",async e=>{
     }
     output.textContent=result.content;
     $("meta").textContent=result.route+" · Model: "+result.model;
+    if(result.route==="POWER"){v2TokenVerified=true;v2AuthStatus();}
+    v2FinishTask(true);
   }catch(err){
     output.textContent="تعذر الاتصال: "+err.message;
+    v2FinishTask(false);
+    if(/Owner sign-in required|HTTP 401|Unauthorized/i.test(err.message)){$("meta").textContent="مطلوب توثيق المالك — اضغط زر دخول المالك";}
   }finally{busy=false;$("send").disabled=false;$("prompt").focus()}
 });
 
 $("localBaseUrl").value=localStorage.getItem("starLocalBase")||"http://127.0.0.1:8889";
 setMode(mode);
-probeLocal(false).then(()=>{
+if(mode!=="power")probeLocal(false).then(()=>{
   const saved=localStorage.getItem("starLocalModel");
   if(saved&&[...$("localModel").options].some(o=>o.value===saved))$("localModel").value=saved;
 });
 health();
+
+function v2AuthStatus(){
+  $("v2Auth").textContent=v2TokenVerified?"تم تأكيد الوصول":sessionStorage.getItem("starToken")?"رمز محفوظ":"غير مؤكد";
+}
+function v2StartTask(p){
+  v2Tasks.unshift({name:p.slice(0,50),status:"قيد التنفيذ"});v2Tasks=v2Tasks.slice(0,8);v2RenderTasks();
+}
+function v2FinishTask(ok){if(v2Tasks.length)v2Tasks[0].status=ok?"اكتملت":"تعذرت";v2RenderTasks();}
+function v2RenderTasks(){
+ const list=$("v2MissionLog");list.replaceChildren();
+ if(!v2Tasks.length){const empty=document.createElement("div");empty.className="v2-empty";empty.textContent="لا توجد مهام بعد · سجل الجلسة الحالية فقط";list.append(empty);return;}
+ v2Tasks.forEach((item,index)=>{
+   const row=document.createElement("div");row.className="v2-mission";const name=document.createElement("span");name.textContent="◈ "+item.name;
+   const label=document.createElement("small");label.textContent=item.status;row.append(name,label);list.append(row);
+ });
+}
+function v2OpenOwner(){const d=$("ownerDialog");if(typeof d.showModal==="function"){d.showModal();$("ownerToken").focus();}else{$("meta").textContent="متصفحك لا يدعم نافذة المصادقة. افتح الصفحة الرئيسية وأدخل STAR API Token من هناك.";}}
+$("ownerOpen").addEventListener("click",v2OpenOwner);
+$("ownerCancel").addEventListener("click",()=>$("ownerDialog").close());
+$("ownerForm").addEventListener("submit",event=>{
+ event.preventDefault();const token=$("ownerToken").value.trim();
+ if(token.length<32){$("ownerToken").setCustomValidity("الرمز يجب ألا يقل عن 32 حرفاً");$("ownerToken").reportValidity();return;}
+ $("ownerToken").setCustomValidity("");sessionStorage.setItem("starToken",token);v2TokenVerified=false;v2AuthStatus();
+ $("ownerToken").value="";$("ownerDialog").close();$("meta").textContent="حُفظ رمز المالك في الجلسة؛ سيُتحقق منه عند إرسال الطلب التالي.";
+});
+$("ownerToken").addEventListener("input",()=>$("ownerToken").setCustomValidity(""));
+$("v2NewMission").addEventListener("click",()=>{
+ if(busy)return;
+ messages.replaceChildren();$("meta").textContent="مهمة جديدة. اختر أمراً من مركز العمليات أو اكتب طلبك.";$("prompt").focus();
+});
+$("v2Export").addEventListener("click",()=>{
+ const entries=[...messages.querySelectorAll(".message")].map(node=>node.innerText).join("\n\n---\n\n");
+ if(!entries){$("meta").textContent="لا توجد محادثة لتصديرها بعد.";return;}
+ const blob=new Blob(["STAR CORE V2 — SESSION\n\n"+entries],{type:"text/plain;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="STAR-CORE-V2-chat.txt";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+v2AuthStatus();v2RenderTasks();
+
 </script></body></html>
