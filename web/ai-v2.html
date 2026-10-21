@@ -25,11 +25,47 @@ main{flex:1;display:flex;flex-direction:column;width:min(800px,100%);margin:auto
 .composer{position:sticky;bottom:12px;border:1px solid #35516d;border-radius:22px;padding:10px;background:#0a1729ed;box-shadow:0 8px 42px #0007;backdrop-filter:blur(20px);display:flex;align-items:end;gap:9px}.composer textarea{flex:1;min-width:0;min-height:54px;max-height:170px;resize:vertical;border:0;outline:0;background:transparent;color:white;padding:13px 10px;font:inherit;line-height:1.5}.composer button{background:linear-gradient(135deg,var(--mint),#83a7ff);color:#06152e;border:0;border-radius:15px;min-width:54px;min-height:54px;font-size:20px;font-weight:800;cursor:pointer}.composer button:disabled{opacity:.5}
 .bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);padding:12px 6px 0}.bottom button{color:var(--muted);border:none;background:transparent;cursor:pointer;text-decoration:underline}a{color:inherit}button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
 @media(max-width:550px){header{padding-bottom:12px}.logo{font-size:18px}.eyebrow{font-size:9px}.orb{width:80px;height:80px;margin-bottom:17px}.orb:after{width:110px;height:110px}.hero{padding:24px 0 12px}.examples{margin:13px 0}.message{max-width:100%}}@media(prefers-reduced-motion:reduce){.orb{animation:none}}
+
+/* STAR CORE V2 : cinema HUD / iPhone first */
+:root{--bg:#050915;--line:#315073;--light:#e9fbff;--muted:#97abc5;--mint:#74f5e5;--violet:#9b8cff}
+body{background:radial-gradient(ellipse 75% 28% at 50% 0,#172552 0,transparent 79%),radial-gradient(ellipse 40% 35% at 0 65%,#004e646b 0,transparent 90%),radial-gradient(ellipse 40% 40% at 100% 85%,#35205b65 0,transparent 90%),#040814}
+body:before{opacity:.3;background-size:54px 54px;mask-image:linear-gradient(transparent 0,#000 38%,#000 85%,transparent 100%)}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;background-image:radial-gradient(circle,#8dd6ff8e 1px,transparent 1.6px),radial-gradient(circle,#b2fdf8b8 .65px,transparent 1.2px);background-size:173px 193px,111px 157px;background-position:25px 40px,80px 70px}
+.shell{z-index:1;width:min(1170px,100%);padding:max(15px,env(safe-area-inset-top)) clamp(13px,3vw,32px) max(26px,env(safe-area-inset-bottom))}
+header{border-color:#3756759c;padding-bottom:15px}.logo{font-weight:900;letter-spacing:2.5px}.logo:after{content:"V2";font-size:9px;display:inline-block;vertical-align:middle;margin-right:9px;border:1px solid #6af2e889;padding:4px 7px;border-radius:99px;color:#9ef9e8}.nav{background:#101f37b6;color:#daeeff;border-color:#446488}
+main{width:min(920px,100%)}.hero{padding:clamp(22px,4vh,43px) 12px 15px;position:relative;overflow:visible}
+.hero:before{content:"NEURAL CORE // ACTIVE SYSTEM";display:block;color:#74efd8;font:800 10px/1.8 ui-monospace,monospace;letter-spacing:3px;margin-bottom:10px;direction:ltr}
+.orb{position:relative;width:145px;height:145px;margin:2px auto 26px;border:1px solid #70faeb54;background:radial-gradient(circle at 34% 29%,#fff 0,#9efef1 8%,#43b9dd 25%,#324997 49%,#0e1545 68%,#4b317f 82%,#0a1630 100%);box-shadow:0 0 45px #64f3ec58,inset -18px -14px 24px #040e33,0 0 90px #7683ff2f;animation:corePulse 5s ease-in-out infinite}
+.orb:before{content:"";position:absolute;inset:-34px;border:1px solid #73d8fb4f;border-radius:50%;box-shadow:inset 0 0 26px #63f3e616;animation:spinOrb 24s linear infinite}
+.orb:after{content:"";position:absolute;inset:25px -33px;width:auto;height:auto;right:-33px;top:25px;border:1px solid #b3fdff9e;border-radius:50%;transform:rotate(-31deg) scaleY(.53);box-shadow:0 0 16px #9ce6ff25}
+.orb b{position:absolute;z-index:2;inset:0;display:grid;place-items:center;font-size:32px;color:#e4fffd;text-shadow:0 0 15px white}
+@keyframes corePulse{50%{filter:hue-rotate(15deg) brightness(1.12);transform:translateY(-4px) scale(1.025)}}@keyframes spinOrb{to{transform:rotate(360deg)}}
+h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;margin:auto;font-size:13px}
+.status{margin-top:18px;background:#09293d8f;color:#9cf7eb;box-shadow:0 0 22px #67efdc11;padding:9px 13px}
+.v2-telemetry{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:20px 0}
+.telemetry-item{background:linear-gradient(145deg,#101f37eb,#0b1528e0);border:1px solid #38587cb3;border-radius:16px;padding:12px 10px;text-align:center;min-width:0;box-shadow:inset 0 1px #ffffff0c}
+.telemetry-item small{font:700 9px/1.5 ui-monospace,monospace;color:#86a4c5;letter-spacing:1.1px;display:block;direction:ltr}.telemetry-item strong{color:#b8fff2;font-size:12px;font-weight:750;display:block;margin-top:6px;overflow-wrap:anywhere}
+.v2-sectiontitle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:12px;font-weight:850}.v2-sectiontitle span{color:#80a7c6;font:650 10px/1.6 ui-monospace,monospace;letter-spacing:1px}
+.examples{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 16px}
+.examples button{display:flex;min-height:87px;align-items:flex-start;flex-direction:column;justify-content:space-between;gap:8px;text-align:right;background:linear-gradient(145deg,#0d2840df,#10162ede);border:1px solid #3f62899e;border-radius:16px;font-weight:800;padding:13px 12px;transition:transform .2s,border-color .2s}
+.examples button:hover{transform:translateY(-2px);border-color:#8efbe9}.examples button:before{content:attr(data-icon);font-size:22px;color:#8cf9e6;font-weight:500}.examples button small{display:block;color:#89a3bd;font-weight:600;font-size:10px}
+.modepanel{border-color:#46648d9c;border-radius:21px;padding:15px;background:linear-gradient(140deg,#0e1b34e8,#071629ea);box-shadow:0 15px 35px #0003,inset 0 1px #ffffff0a}
+.modebar button{min-height:61px;border-color:#405b82;border-radius:14px;line-height:1.5;transition:transform .2s}.modebar button:hover{transform:translateY(-2px)}.modebar button.active{background:linear-gradient(130deg,#74f5e5,#8d9fff);box-shadow:0 0 20px #72ffe02d}
+.localsettings[hidden]{display:none!important}.localstate[hidden]{display:none!important}.modehelp{min-height:41px;padding-top:13px}
+#messages{background:linear-gradient(155deg,#09182ba8,#06152c86);border:1px solid #34527a85;border-radius:21px;padding:17px;min-height:220px;margin:0 0 14px;box-shadow:inset 0 0 30px #07132679}
+.message{box-shadow:inset 0 1px #ffffff0b;max-width:88%;animation:messageRise .28s both}.user{background:linear-gradient(130deg,#0d4048,#0b3041);border-color:#3b8c91}.assistant{background:#101f37ec;border-color:#36577e}
+@keyframes messageRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.composer{background:#0b192ced;box-shadow:0 10px 30px #0006,0 0 25px #6de5e60a;border-color:#4a6d91}
+.bottom{align-items:center}.v2-actionbar{display:flex;align-items:center;gap:8px;margin:0 0 13px;justify-content:space-between}.v2-actionbar strong{font:800 12px/1.4 ui-monospace,monospace;letter-spacing:1.8px}.v2-actionbar button{background:#12233c;border:1px solid #456583;border-radius:11px;color:#b6f6ed;padding:9px 12px;font-size:11px;font-weight:800;cursor:pointer}
+.owner-dialog{border:1px solid #65a9b8;border-radius:22px;padding:22px;max-width:min(400px,calc(100vw - 28px));background:linear-gradient(145deg,#12213c,#081227);color:#ebfbff;box-shadow:0 30px 100px #000c}.owner-dialog::backdrop{background:#000b;backdrop-filter:blur(7px)}.owner-dialog h2{margin:0 0 7px;font-size:21px}.owner-dialog p{color:#a6b8cc;font-size:12px;line-height:1.9}.owner-dialog input{width:100%;background:#09192b;border:1px solid #4b688a;color:#eaffff;border-radius:11px;padding:12px;direction:ltr}.owner-actions{display:flex;gap:8px;margin-top:12px}.owner-actions button{flex:1;min-height:43px;border:1px solid #547493;border-radius:11px;color:#d4eefc;background:#14243d;font-weight:800}.owner-actions button[type=submit]{background:linear-gradient(130deg,#73f2db,#89a2ff);color:#07182a;border:0}
+@media(max-width:720px){.examples{grid-template-columns:repeat(2,minmax(0,1fr))}.v2-telemetry{gap:6px}.telemetry-item{padding:10px 5px}.telemetry-item strong{font-size:10px}.orb{width:111px;height:111px}.orb:before{inset:-23px}.orb:after{inset:19px -25px;right:-25px;top:19px}.hero{padding:27px 0 14px}.examples button{min-height:70px;font-size:11px}.examples button:before{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.orb,.orb:before,.message{animation:none!important}html{scroll-behavior:auto}}
+
 </style></head>
 <body><div class="shell">
-<header><div><div class="eyebrow">NEXT CENTURY INTERFACE · 2126</div><div class="logo">STAR <span>AI</span> ∞</div></div><a class="nav" href="/">↗ لوحة التحكم</a></header>
-<main><div class="hero"><div class="orb" aria-hidden="true"></div><h1>ذكاء يتجاوز المألوف</h1><p class="subtitle">واجهة مستقلة مستوحاة من المستقبل · برمجة، تحليل، أفكار وتقنيات جديدة</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
-<div class="examples"><button data-p="صمم لي تطبيقاً ذكياً بتقنيات مستقبلية">ابتكر تطبيقاً</button><button data-p="راجع بنية مشروع Cloudflare وGitHub واقترح تحسينات عملية">هندسة البرمجيات</button><button data-p="اشرح تقنية أمن سيبراني متقدمة مع مثال دفاعي">الأمن السيبراني</button></div>
+<header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><a class="nav" href="/">↗ لوحة التحكم</a></header>
+<main><div class="hero"><div class="orb" aria-hidden="true"><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
+<div class="v2-telemetry"><div class="telemetry-item"><small>CLOUD CORE</small><strong id="v2Cloud">جارٍ الفحص</strong></div><div class="telemetry-item"><small>ACTIVE ROUTE</small><strong id="v2Mode">—</strong></div><div class="telemetry-item"><small>OWNER ACCESS</small><strong id="v2Auth">غير مؤكد</strong></div></div><div class="v2-sectiontitle">⌘ مركز العمليات <span>QUICK MISSIONS</span></div><div class="examples"><button data-icon="⌘" data-p="راجع مشروع GitHub واقترح تحسينات محددة دون الادعاء بقراءة ملفات لم تُفتح.">هندسة GitHub<small>REPO INTELLIGENCE</small></button><button data-icon="☁" data-p="اقترح خطة محسنة لنشر Cloudflare Workers وAI Gateway لمشروعي مع اختبارات واضحة.">نواة السحابة<small>CLOUD NEXUS</small></button><button data-icon="⬡" data-p="أجرِ مراجعة أمنية دفاعية لتطبيق ويب تشمل المصادقة والأسرار والمدخلات، مع خطوات إصلاح محددة.">الدفاع السيبراني<small>CYBER DEFENSE</small></button><button data-icon="✧" data-p="صمم لي تجربة واجهة خيال علمي مستقبلية قابلة للتنفيذ على iPhone.">استوديو المستقبل<small>FUTURE STUDIO</small></button></div>
 <div class="modepanel" aria-label="وضع الذكاء">
   <div class="modebar">
     <button type="button" data-mode="private">PRIVATE · Qwen</button>
@@ -44,10 +80,10 @@ main{flex:1;display:flex;flex-direction:column;width:min(800px,100%);margin:auto
   </div>
   <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
 </div>
-<section id="messages" aria-live="polite" aria-label="المحادثة"></section>
+<div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><button type="button" id="ownerOpen">♙ دخول المالك</button></div><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
-</main></div>
+</main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ وصول المالك</h2><p>أدخل رمز STAR_API_TOKEN الخاص بك. سيُحفَظ في جلسة التبويب فقط ولن يُكتب في GitHub.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">حفظ الرمز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
 <script>
 const $=id=>document.getElementById(id), messages=$("messages");
 let busy=false;
