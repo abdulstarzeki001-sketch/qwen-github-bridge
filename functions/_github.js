@@ -1,5 +1,5 @@
 import { createSign, timingSafeEqual } from "node:crypto";
-export function makeGithubHandler(bindings) {
+export function makeGithubHandler(bindings, ownerSessionAuthorized = false) {
 
 
 const get = (key) => bindings[key] || "";
@@ -50,7 +50,7 @@ async function github(path, token, options = {}) {
 
 async function handler(req) {
   const headers = API_HEADERS;
-  if (!authorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+  if (!ownerSessionAuthorized && !authorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   try {
     const installation = get("GITHUB_INSTALLATION_ID");
     if (!/^[0-9]+$/.test(installation)) throw new Error("Invalid installation ID");
