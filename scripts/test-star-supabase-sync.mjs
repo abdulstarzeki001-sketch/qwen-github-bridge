@@ -16,7 +16,7 @@ const fetch=async (url,opts={})=>{
  throw Error("Unexpected URL in mock: "+u);
 };
 const window={STAR_VAULT:{sync:async()=>{synced++}}};
-const context={window,document:{readyState:"loading",addEventListener(){}},fetch,localStorage,sessionStorage,location:{hash:"",origin:"https://star-cyber-ai-x.pages.dev",pathname:"/ai-v2.html",search:""},URLSearchParams,Date,Math,JSON,Error,String,Number,Boolean,Object,console};
+const context={window,document:{readyState:"loading",addEventListener(){},getElementById(){return null}},fetch,localStorage,sessionStorage,location:{hash:"",origin:"https://star-cyber-ai-x.pages.dev",pathname:"/ai-v2.html",search:""},URLSearchParams,Date,Math,JSON,Error,String,Number,Boolean,Object,console};
 vm.runInNewContext(config,context);
 assert.equal(window.STAR_SUPABASE_PUBLIC.vaultTable,"star_ai_user_vault");
 assert.match(window.STAR_SUPABASE_PUBLIC.publishableKey,/^sb_publishable_/);
