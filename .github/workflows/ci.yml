@@ -105,8 +105,8 @@ jobs:
       - name: Test Commander III privacy and mission flow
         run: node scripts/test-commander.mjs
 
-      - name: Test persistent owner session security
-        run: node scripts/test-owner-session.mjs
+      - name: Test seamless sole-owner login, cookie security and Access SSO
+        run: node scripts/test-owner-session.mjs && node scripts/test-owner-access-autologin.mjs
 
       - name: Test SOVEREIGN owner inference controls and local gateway
         run: node scripts/test-sovereign.mjs && node scripts/test-sovereign-settings.mjs && node scripts/test-sovereign-gateway.mjs && node scripts/test-sovereign-ui.mjs && node --check web/star-sovereign.js && node --check sovereign-gateway/server.mjs

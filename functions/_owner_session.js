@@ -1,9 +1,11 @@
 // Persistent owner sign-in for a trusted browser, without storing API tokens in localStorage.
-// HMAC-signed, HttpOnly, Secure, SameSite=Strict cookie; rolling 90-day idle expiry.
+// HMAC-signed, HttpOnly, Secure, SameSite=Strict cookie; rolling 365-day trusted-device window.
 // Rotating STAR_API_TOKEN invalidates every issued owner cookie.
 const COOKIE="__Host-star_owner";
-const MAX_AGE=90*24*60*60;
-const RENEW_AT=45*24*60*60;
+const MAX_AGE=365*24*60*60;
+// Transparently reissue after the trusted browser has been used for 30 days.
+// Session remains valid without interaction with the sign-in UI.
+const RENEW_AT=(365-30)*24*60*60;
 const enc=new TextEncoder();
 function b64url(bytes){
   let binary="";for(const byte of bytes)binary+=String.fromCharCode(byte);

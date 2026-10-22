@@ -164,7 +164,15 @@ export async function onRequest({request,env}){
     const owner=await hasOwnerAccess(request,env);
     if(!owner.ok)return json({authenticated:false},401);
     const response=json({authenticated:true,method:owner.method});
-    if(owner.renew){
+    // Cloudflare Access proves ownership: silently enroll this trusted browser.
+    // Existing signed cookies renew after thirty days of use. Never enroll
+    // unauthenticated visitors, or turn a bare public GET into an auth bypass.
+    let shouldIssue=Boolean(owner.renew);
+    if(owner.method==="access"&&trustedBrowserRequest(request)){
+      const existing=await readOwnerCookie(request,env);
+      shouldIssue=!existing.ok||existing.renew;
+    }
+    if(shouldIssue){
       const cookie=await makeOwnerCookie(env);
       if(cookie)response.headers.set("Set-Cookie",cookie);
     }
