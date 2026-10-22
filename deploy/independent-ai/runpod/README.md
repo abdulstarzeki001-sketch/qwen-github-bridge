@@ -2,6 +2,10 @@
 
 This deployment mode is for **RunPod Pods** (containers), unlike the sibling GPU VM `compose.yaml`. It uses a single Docker image bundling Ollama + an authenticated Node inference gateway. It does not require a Docker daemon inside the running RunPod Pod.
 
+## Prebuilt image from GitHub Actions
+
+The STAR repository also builds a Runpod-ready image automatically with `.github/workflows/publish-independent-gpu.yml` on relevant main-branch updates. After its GHCR build succeeds, use `ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge-gpu:latest`. The package must be public to pull without registry credentials, or configure a private registry in Runpod. Inspect the [publish workflow](https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/publish-independent-gpu.yml) and package visibility before deployment. The main cloud service remains unchanged until an actual GPU Pod is tested.
+
 ## Build a container image
 
 On a computer with Docker, clone the STAR repository and run:
