@@ -20,3 +20,6 @@
 .vault-research-item{border:1px solid #294660;border-radius:8px;padding:7px 9px;color:#c8edff;font-size:12px}
 .vault-research-item summary{cursor:pointer}
 .vault-research-item pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#a9cadb;font-size:11px;max-height:160px;overflow:auto}
+
+.vault-search{width:100%;background:#09172b;border:1px solid #31506e;color:#d7f5ff;border-radius:12px;padding:11px;margin:0 0 10px;font:inherit;font-size:13px}
+.vault-search:focus{outline:2px solid #75f5d9;outline-offset:2px}
