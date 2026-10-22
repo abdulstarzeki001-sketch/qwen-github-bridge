@@ -1,0 +1,59 @@
+name: Publish STAR GPU image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/independent-ai/**"
+      - ".github/workflows/publish-independent-gpu.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: gpu-image-publish
+  cancel-in-progress: false
+
+jobs:
+  gpu-image:
+    name: Build and publish Runpod-ready image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify gateway and Pod boot script
+        run: |
+          node scripts/test-independent-gateway.mjs
+          node --check deploy/independent-ai/gateway.mjs
+          bash -n deploy/independent-ai/runpod/start-runpod.sh
+
+      - name: Build GPU image
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}-gpu"
+          docker build --pull --file deploy/independent-ai/runpod/Dockerfile \
+            --tag "$IMAGE:$GITHUB_SHA" \
+            --tag "$IMAGE:latest" \
+            deploy/independent-ai
+          docker run --rm --entrypoint /usr/local/bin/node "$IMAGE:$GITHUB_SHA" --version
+          docker run --rm --entrypoint /bin/bash "$IMAGE:$GITHUB_SHA" -n /opt/star/start-runpod.sh
+
+      - name: Authenticate to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push immutable and current image tags
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}-gpu"
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker push "$IMAGE:latest"
+
+      - name: Summarize
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}-gpu"
+          echo "### STAR GPU image published" >> "$GITHUB_STEP_SUMMARY"
+          echo "- $IMAGE:latest" >> "$GITHUB_STEP_SUMMARY"
+          echo "- $IMAGE:$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Make this GHCR package public before using it as a Runpod Pod image, or configure registry credentials." >> "$GITHUB_STEP_SUMMARY"
