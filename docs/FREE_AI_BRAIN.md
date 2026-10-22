@@ -13,7 +13,7 @@ STAR CYBER AI X uses Cloudflare Workers AI as the recommended free starting brai
 Default model:
 
 ```text
-@cf/qwen/qwen3.8-27b
+@cf/meta/llama-3.1-8b-instruct
 ```
 
 ## Required environment values
@@ -22,7 +22,7 @@ Default model:
 AI_PROVIDER=cloudflare
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_AI_MODEL=@cf/qwen/qwen3.8-27b
+CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
 ```
 
 STAR resolves this automatically to:
