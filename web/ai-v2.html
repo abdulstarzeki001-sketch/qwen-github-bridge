@@ -18,16 +18,9 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;bac
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0 18px}.logo{font-size:21px;font-weight:900;letter-spacing:.09em}.logo span{color:var(--mint)}.eyebrow{font-size:10px;letter-spacing:.24em;color:var(--muted)}.nav{color:var(--muted);text-decoration:none;font-size:12px;border:1px solid var(--line);padding:11px 14px;border-radius:14px}.nav:hover{color:white;border-color:var(--mint)}
 main{flex:1;display:flex;flex-direction:column;width:min(800px,100%);margin:auto}.hero{text-align:center;padding:clamp(24px,7vh,62px) 0 20px}.orb{width:110px;height:110px;border-radius:50%;margin:0 auto 24px;background:radial-gradient(circle at 40% 35%,#fff 0,#a0ffeb 8%,#55c7f6 23%,#5546a2 53%,#070a25 68%);box-shadow:0 0 35px #8ccaff77,0 0 110px #8b69ff55;animation:float 7s ease-in-out infinite}.orb:after{content:"";display:block;width:140px;height:140px;position:relative;right:-15px;top:-15px;border:1px solid #a8dcff50;border-radius:50%;transform:rotateX(68deg) rotate(-30deg)}@keyframes float{50%{transform:translateY(-9px)}}h1{font-size:clamp(29px,6vw,54px);line-height:1.2;margin:0 0 10px;background:linear-gradient(100deg,#fff,#abf6ff,#b39cff);background-clip:text;color:transparent}.subtitle{color:var(--muted);line-height:1.8;margin:0}.status{display:inline-flex;align-items:center;gap:8px;border:1px solid #266d75;border-radius:50px;color:var(--mint);font-size:12px;padding:8px 12px;margin-top:18px;background:#041d2970}.dot{height:7px;width:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
 .examples{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px 0 24px}.examples button{border:1px solid var(--line);border-radius:100px;padding:10px 13px;background:#12203799;color:#bfd9f4;cursor:pointer;font:inherit;font-size:12px}
-.modepanel{border:1px solid var(--line);border-radius:18px;padding:12px;background:#0b1528bb;margin:0 0 18px}
-.modebar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.modebar button{border:1px solid var(--line);border-radius:13px;min-height:46px;background:#101d34;color:#b8cae5;font-weight:850;letter-spacing:.05em;cursor:pointer}
-.modebar button.active{background:linear-gradient(135deg,#72ffe0,#8b9cff);color:#06152e;border-color:transparent;box-shadow:0 0 24px #72ffe033}
-.modehelp{font-size:11px;color:var(--muted);line-height:1.7;padding:10px 4px 2px}
-.localsettings{display:grid;grid-template-columns:1.35fr 1fr auto;gap:8px;margin-top:10px}
-.localsettings input,.localsettings select,.localsettings button{min-height:44px;border:1px solid #35516d;border-radius:12px;background:#101b31;color:white;padding:9px 10px;font:inherit}
-.localsettings button{cursor:pointer;font-weight:800}
-.localstate{font-size:11px;color:var(--muted);margin-top:8px;overflow-wrap:anywhere}
-@media(max-width:650px){.localsettings{grid-template-columns:1fr}.modebar button{font-size:12px}}
+.cloud-panel{border:1px solid #2e536f;border-radius:18px;padding:15px;background:linear-gradient(135deg,#0a2435,#101b36);margin:0 0 18px;color:#d3fcfa;display:flex;align-items:center;gap:12px}
+.cloud-panel strong{font-size:14px}.cloud-panel small{display:block;color:#90bdd0;margin-top:4px;line-height:1.8}
+.cloud-icon{font-size:24px}
 #messages{flex:1;display:grid;align-content:start;gap:14px;min-height:85px;padding-bottom:22px}.message{max-width:95%;padding:16px 18px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid var(--line);background:#101b31c9;border-radius:18px;unicode-bidi:plaintext}.user{justify-self:start;background:#15404899;border-color:#32817f}.assistant{justify-self:end}.who{font-size:11px;letter-spacing:.08em;color:var(--mint);margin-bottom:7px;direction:ltr;text-align:left}.message pre{overflow:auto;white-space:pre;background:#050c1b;border-radius:10px;padding:12px}.message code{font-family:ui-monospace,monospace}
 .composer{position:sticky;bottom:12px;border:1px solid #35516d;border-radius:22px;padding:10px;background:#0a1729ed;box-shadow:0 8px 42px #0007;backdrop-filter:blur(20px);display:flex;align-items:end;gap:9px}.composer textarea{flex:1;min-width:0;min-height:54px;max-height:170px;resize:vertical;border:0;outline:0;background:transparent;color:white;padding:13px 10px;font:inherit;line-height:1.5}.composer button{background:linear-gradient(135deg,var(--mint),#83a7ff);color:#06152e;border:0;border-radius:15px;min-width:54px;min-height:54px;font-size:20px;font-weight:800;cursor:pointer}.composer button:disabled{opacity:.5}
 .bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);padding:12px 6px 0}.bottom button{color:var(--muted);border:none;background:transparent;cursor:pointer;text-decoration:underline}a{color:inherit}button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
@@ -58,7 +51,6 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .examples button:hover{transform:translateY(-2px);border-color:#8efbe9}.examples button:before{content:attr(data-icon);font-size:22px;color:#8cf9e6;font-weight:500}.examples button small{display:block;color:#89a3bd;font-weight:600;font-size:10px}
 .modepanel{border-color:#46648d9c;border-radius:21px;padding:15px;background:linear-gradient(140deg,#0e1b34e8,#071629ea);box-shadow:0 15px 35px #0003,inset 0 1px #ffffff0a}
 .modebar button{min-height:61px;border-color:#405b82;border-radius:14px;line-height:1.5;transition:transform .2s}.modebar button:hover{transform:translateY(-2px)}.modebar button.active{background:linear-gradient(130deg,#74f5e5,#8d9fff);box-shadow:0 0 20px #72ffe02d}
-.localsettings[hidden]{display:none!important}.localstate[hidden]{display:none!important}.modehelp{min-height:41px;padding-top:13px}
 #messages{background:linear-gradient(155deg,#09182ba8,#06152c86);border:1px solid #34527a85;border-radius:21px;padding:17px;min-height:220px;margin:0 0 14px;box-shadow:inset 0 0 30px #07132679}
 .message{box-shadow:inset 0 1px #ffffff0b;max-width:88%;animation:messageRise .28s both}.user{background:linear-gradient(130deg,#0d4048,#0b3041);border-color:#3b8c91}.assistant{background:#101f37ec;border-color:#36577e}
 @keyframes messageRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -76,36 +68,12 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
 
-.hybrid-consent{margin-top:12px;border:1px solid #336775;border-radius:14px;padding:12px;background:#0b2733b8;font-size:12px;color:#daf7ef}
-.hybrid-consent label{display:flex;align-items:center;gap:9px;cursor:pointer;line-height:1.7}
-.hybrid-consent input{width:19px;height:19px;accent-color:#76f9da;flex-shrink:0}
-.hybrid-consent p{color:#a8c5d5;font-size:11px;line-height:1.9;margin:8px 0 0}
-.hybrid-consent #hybridStatus{color:#8ff6e4;font-weight:700}
 </style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"><link rel="stylesheet" href="/star-vault.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="nav" href="/sovereign.html">⚙ تحكم المالك</a><a class="nav" href="/">↗ لوحة التحكم</a></nav></header>
 <main><div class="hero"><div class="orb" aria-hidden="true"><canvas class="p2-core3d" id="p2Core3d" aria-hidden="true"></canvas><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
 <div class="v2-telemetry"><div class="telemetry-item"><small>CLOUD CORE</small><strong id="v2Cloud">جارٍ الفحص</strong></div><div class="telemetry-item"><small>ACTIVE ROUTE</small><strong id="v2Mode">—</strong></div><div class="telemetry-item"><small>OWNER ACCESS</small><strong id="v2Auth">غير مؤكد</strong></div></div><div class="v2-sectiontitle">⌘ مركز العمليات <span>QUICK MISSIONS</span></div><div class="examples"><button data-icon="⌘" data-p="راجع مشروع GitHub واقترح تحسينات محددة دون الادعاء بقراءة ملفات لم تُفتح.">هندسة GitHub<small>REPO INTELLIGENCE</small></button><button data-icon="☁" data-p="اقترح خطة محسنة لنشر Cloudflare Workers وAI Gateway لمشروعي مع اختبارات واضحة.">نواة السحابة<small>CLOUD NEXUS</small></button><button data-icon="⬡" data-p="أجرِ مراجعة أمنية دفاعية لتطبيق ويب تشمل المصادقة والأسرار والمدخلات، مع خطوات إصلاح محددة.">الدفاع السيبراني<small>CYBER DEFENSE</small></button><button data-icon="✧" data-p="صمم لي تجربة واجهة خيال علمي مستقبلية قابلة للتنفيذ على iPhone.">استوديو المستقبل<small>FUTURE STUDIO</small></button></div>
-<div class="modepanel" aria-label="وضع الذكاء">
-  <div class="modebar">
-    <button type="button" data-mode="private">PRIVATE · Qwen</button>
-    <button type="button" data-mode="power">POWER · Cloud</button>
-    <button type="button" data-mode="auto">HYBRID · Qwen + Cloud</button>
-  </div>
-  <div id="modeHelp" class="modehelp"></div>
-  <div id="localSettings" class="localsettings">
-    <input id="localBaseUrl" dir="ltr" inputmode="url" aria-label="عنوان خادم InferrLM" value="http://127.0.0.1:8889" placeholder="http://127.0.0.1:8889">
-    <select id="localModel" dir="ltr" aria-label="النموذج المحلي"><option value="">اكتشاف النموذج تلقائياً</option></select>
-    <button id="probeLocal" type="button">فحص InferrLM</button>
-  </div>
-  <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
-  <div id="hybridSettings" class="hybrid-consent" hidden>
-    <label for="hybridCloudConsent"><input type="checkbox" id="hybridCloudConsent"> <strong>أوافق على التحويل التلقائي للسحابة عندما يتوقف Qwen المحلي</strong></label>
-    <p>إذا فعّلت الخيار، تُرسل الرسالة الجديدة إلى نموذج STAR السحابي عند فشل الاتصال بالآيفون. إذا تركته مغلقًا، سيطلب STAR موافقتك لكل طلب قبل أي إرسال سحابي. لا تُرفع محادثات PRIVATE السابقة تلقائيًا.</p>
-    <p id="hybridStatus" role="status" aria-live="polite">سيستخدم HYBRID نموذج Qwen المحلي أولًا.</p>
-  </div>
-</div>
-
+<div class="cloud-panel" aria-label="نموذج STAR السحابي"><span class="cloud-icon" aria-hidden="true">☁</span><div><strong>STAR AI · السحابة</strong><small>واجهة ذكاء سحابية، دون إعداد نموذج محلي أو تشغيل خادم على الآيفون.</small></div></div>
 
 <section id="p3Commander" class="p3-panel" aria-labelledby="p3Title">
  <div class="p3-head"><strong id="p3Title">✦ STAR COMMANDER — المرحلة الثالثة</strong><span class="p3-chip">MISSION CONTROL / V3</span></div>
@@ -172,57 +140,22 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
 </main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ تفعيل الجهاز مرة واحدة</h2><p>أدخل رمز STAR_API_TOKEN لمرة واحدة. سيحفظ الخادم جلسة المالك في ملف تعريف ارتباط محمي HttpOnly على هذا الجهاز، دون حفظ الرمز في التخزين الدائم. ستبقى جلسة المالك محفوظة على جهازك لمدة تصل إلى سنة، وتتجدد تلقائيًا خلال الاستخدام. عند استخدام Cloudflare Access يتم اعتماد الجهاز تلقائيًا بعد التحقق من هويتك.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">الثقة بهذا الجهاز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
-<script src="/star-hybrid.js"></script>
 <script>
 const $=id=>document.getElementById(id), messages=$("messages");
 let busy=false;
-let mode=localStorage.getItem("starAiMode")||"power";
+const mode="power";
+try{
+  for(const key of ["starLocalBase","starLocalModel","star-hybrid-cloud-fallback-approved-v1"])localStorage.removeItem(key);
+  localStorage.setItem("starAiMode","power");
+}catch{}
 let v2TokenVerified=false;
 let v2Tasks=[];
-
-const modeCopy={
-  private:"PRIVATE: يرسل الطلب مباشرة من المتصفح إلى InferrLM على جهازك. لا يمر نص الطلب عبر STAR Cloud.",
-  power:"POWER: يستخدم خادم STAR السحابي للمهمات الثقيلة. مزود النموذج يعتمد على إعداد الخادم.",
-  auto:"HYBRID: يستخدم Qwen الموجود في الآيفون أولًا. إن توقف، يتحول للنموذج السحابي فقط بعد موافقتك أو إذا فعّلت الموافقة التلقائية."
-};
 
 function add(role,text){
   const el=document.createElement("div");el.className="message "+role;
   const title=document.createElement("div");title.className="who";title.textContent=role==="user"?"YOU":"STAR AI";
   const p=document.createElement("div");p.textContent=text;el.append(title,p);messages.append(el);
   el.scrollIntoView({behavior:"smooth",block:"end"});return p
-}
-
-function setMode(next){
-  mode=next;localStorage.setItem("starAiMode",mode);
-  if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();
-  document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
-  $("modeHelp").textContent=modeCopy[mode];
-  $("localSettings").hidden=mode==="power";
-  $("hybridSettings").hidden=mode!=="auto";
-  $("localState").hidden=mode==="power";
-  $("v2Mode").textContent=mode.toUpperCase();
-  $("localState").textContent=mode==="power"
-    ?"POWER يستخدم /api/chat على خادم STAR. لا تضع مفاتيح API داخل هذه الصفحة."
-    :"InferrLM المتوقع: /api/tags لاكتشاف النماذج و /api/chat للمحادثة.";
-}
-
-function privateHost(host){
-  if(host==="localhost"||host==="127.0.0.1"||host==="::1"||host==="[::1]")return true;
-  const m=host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if(!m)return false;
-  const [a,b,c,d]=m.slice(1).map(Number);
-  if([a,b,c,d].some(n=>n<0||n>255))return false;
-  return a===10||a===127||(a===192&&b===168)||(a===172&&b>=16&&b<=31);
-}
-
-function localBase(){
-  const raw=$("localBaseUrl").value.trim()||"http://127.0.0.1:8889";
-  let u;try{u=new URL(raw)}catch{throw Error("عنوان InferrLM غير صالح")}
-  if(!["http:","https:"].includes(u.protocol)||!privateHost(u.hostname)||u.username||u.password||u.search||u.hash)
-    throw Error("استخدم localhost/127.0.0.1 أو عنوان شبكة محلية خاصة فقط");
-  u.pathname=u.pathname.replace(/\/+$/,"");
-  return u.toString().replace(/\/$/,"");
 }
 
 async function requestJson(url,options={},timeout=9000){
@@ -239,103 +172,30 @@ async function requestJson(url,options={},timeout=9000){
   }finally{clearTimeout(timer)}
 }
 
-function modelNames(data){
-  const rows=Array.isArray(data)?data:(Array.isArray(data?.models)?data.models:(Array.isArray(data?.data)?data.data:[]));
-  return [...new Set(rows.map(x=>typeof x==="string"?x:(x?.model||x?.name||x?.id||"")).filter(Boolean))];
-}
-
-async function probeLocal(show=true){
-  try{
-    const base=localBase();
-    if(show)$("localState").textContent="جاري فحص InferrLM…";
-    const d=await requestJson(base+"/api/tags",{},7000);
-    const names=modelNames(d);
-    const select=$("localModel"), current=select.value;
-    select.replaceChildren(new Option("اكتشاف النموذج تلقائياً",""),...names.map(n=>new Option(n,n)));
-    if(names.includes(current))select.value=current;
-    else if(names.find(n=>/qwen/i.test(n)))select.value=names.find(n=>/qwen/i.test(n));
-    else if(names.length===1)select.value=names[0];
-    $("localState").textContent=names.length
-      ?("InferrLM متصل · "+names.length+" model(s) · "+base)
-      :("InferrLM متصل، لكن /api/tags لم يُرجع نماذج · "+base);
-    return {ok:true,base,names};
-  }catch(err){
-    $("localState").textContent="InferrLM غير متصل: "+err.message;
-    return {ok:false,error:err};
-  }
-}
-
-function localContent(d){
-  return d?.message?.content||d?.response||d?.content||d?.choices?.[0]?.message?.content||"";
-}
-
-async function askLocal(prompt){
-  const base=localBase();
-  let model=$("localModel").value;
-  if(!model){
-    const probe=await probeLocal(false);
-    if(!probe.ok)throw probe.error;
-    model=$("localModel").value||probe.names?.[0]||"qwen2.5-coder-7b-instruct-q4_k_m";
-  }
-  const memoryPrompt=window.STAR_VAULT?.context(prompt)||prompt;
-  const d=await requestJson(base+"/api/chat",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      model,
-      messages:[
-        {role:"system",content:"You are STAR CYBER AI X. Respond in the user's language. Be precise about software engineering and defensive cybersecurity. Never invent evidence or claim actions you did not execute."},
-        {role:"user",content:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(memoryPrompt):memoryPrompt}
-      ],
-      stream:false
-    })
-  },60000);
-  const content=localContent(d);
-  if(!content)throw Error("InferrLM أعاد استجابة بدون نص قابل للقراءة");
-  return {content,model:d?.model||model,route:"PRIVATE"};
-}
-
-async function askPower(prompt,hybrid=false){
+async function askPower(prompt){
   const savedToken=sessionStorage.getItem("starToken")||"";
   const headers={"Content-Type":"application/json"};
   if(savedToken)headers.Authorization="Bearer "+savedToken;
-  // Server requests must NEVER silently inherit private, on-device history.
-  const memoryPrompt=hybrid?prompt:(window.STAR_VAULT?.context(prompt,"cloud")||prompt);
+  const memoryPrompt=window.STAR_VAULT?.context(prompt,"cloud")||prompt;
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
-    body:JSON.stringify({prompt:memoryPrompt,...(hybrid?{hybrid_cloud:true}:{})})
+    body:JSON.stringify({prompt:memoryPrompt})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
   if(!content)throw Error("الخادم السحابي أعاد استجابة فارغة");
-  return {content,model:d?.model||"cloud",route:"POWER",cloud_backup_used:Boolean(d?.cloud_backup_used)};
+  return {content,model:d?.model||"cloud",route:"POWER"};
 }
 
 async function health(){
-  let cloud="Cloud: connection not verified";
   try{
     const r=await fetch("/api/health",{cache:"no-store"});
     const d=await r.json();
-    cloud=d.ok&&d.ai_gateway?("Cloud configured: "+(d.ai_model||"ready")):"Cloud: pending";
     $("v2Cloud").textContent=d.ok&&d.ai_gateway?"الإعدادات جاهزة":"غير مهيأة";
-  }catch{}
-  if(mode==="power"){$("statusText").textContent=cloud;return}
-  const local=await probeLocal(false);
-  $("statusText").textContent=(local.ok?"Local: ready":"Local: offline")+" · "+cloud;
+    $("statusText").textContent=d.ok&&d.ai_gateway?"Cloud configured: "+(d.ai_model||"ready"):"Cloud: pending";
+  }catch{$("statusText").textContent="Cloud: connection failed"}
 }
 
-$("hybridCloudConsent").checked=window.STAR_HYBRID.loadConsent(localStorage);
-$("hybridCloudConsent").addEventListener("change",e=>{
-  const enabled=e.target.checked;
-  window.STAR_HYBRID.saveConsent(localStorage,enabled);
-  $("hybridStatus").textContent=enabled
-   ?"✓ وافقت على استخدام السحابة تلقائيًا إذا لم يعمل النموذج المحلي، ويمكنك سحب الموافقة في أي وقت."
-   :"لن يتم التحويل إلى السحابة دون استئذانك عند تعذر الاتصال المحلي.";
-});
-document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{setMode(b.dataset.mode);health()}));
-$("probeLocal").addEventListener("click",()=>probeLocal(true));
-$("localBaseUrl").addEventListener("change",()=>{localStorage.setItem("starLocalBase",$("localBaseUrl").value.trim());if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();probeLocal(true)});
-$("localModel").addEventListener("change",()=>{localStorage.setItem("starLocalModel",$("localModel").value);if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();});
 document.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{$("prompt").value=b.dataset.p;$("prompt").focus()}));
 $("clear").addEventListener("click",()=>{if(window.STAR_VAULT)window.STAR_VAULT.newThread();else messages.replaceChildren();$("meta").textContent="بدأت محادثة جديدة، والمحادثات السابقة محفوظة في STAR VAULT"});
 $("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("form").requestSubmit()}});
@@ -345,40 +205,20 @@ $("form").addEventListener("submit",async e=>{
   busy=true;$("send").disabled=true;$("prompt").value="";add("user",prompt);if(window.STAR_VAULT)await window.STAR_VAULT.capture("user",prompt,mode);const output=add("assistant","يفكر…");
   v2StartTask(prompt);
   try{
-    const result=await window.STAR_HYBRID.run({
-      mode,prompt,local:askLocal,cloud:askPower,
-      approveFallback:async localError=>{
-        $("hybridStatus").textContent="Qwen المحلي غير متاح: "+localError.message;
-        if(window.STAR_HYBRID.loadConsent(localStorage)){
-          $("hybridStatus").textContent="☁ تم تفعيل الموافقة المحفوظة · جارٍ التبديل إلى سحابة STAR…";
-          return true;
-        }
-        const approved=confirm("تعذر الوصول إلى Qwen المحلي على الآيفون.\n\nالسبب: "+localError.message+"\n\nهل توافق على إرسال رسالتك الحالية إلى نموذج STAR السحابي؟ لن تُرسل محادثات PRIVATE السابقة. يمكنك تفعيل الموافقة التلقائية من خيار HYBRID.");
-        $("hybridStatus").textContent=approved?"☁ وافقت على إرسال هذه الرسالة إلى السحابة فقط.":"لم تُرسل الرسالة إلى السحابة؛ ما زالت محفوظة محليًا.";
-        return approved;
-      }
-    });
+    const result=await askPower(prompt);
     output.textContent=result.content;
     if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",result.content,result.route);
     $("meta").textContent=result.route+" · Model: "+result.model;
-    if(mode==="auto")$("hybridStatus").textContent=result.route==="HYBRID_CLOUD"?(result.cloud_backup_used?"☁ تعذر Qwen السحابي، فأجاب النموذج الاحتياطي: ":"☁ أجاب Qwen السحابي: ")+result.model:"✓ Qwen المحلي أجاب من جهاز الآيفون: "+result.model;
-    if(result.route==="POWER"||result.route==="HYBRID_CLOUD"){v2TokenVerified=true;v2AuthStatus();}
+    if(result.route==="POWER"){v2TokenVerified=true;v2AuthStatus();}
     v2FinishTask(true);
   }catch(err){
     output.textContent="تعذر الاتصال: "+err.message;
-    if(mode==="auto")$("hybridStatus").textContent=err.message;
     if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",output.textContent,"error");
     v2FinishTask(false);
     if(/Owner sign-in required|HTTP 401|Unauthorized/i.test(err.message)){v2TokenVerified=false;v2AuthStatus();$("meta").textContent="انتهت جلسة المالك. فعّل هذا الجهاز مرة واحدة إذا لم يكن قد فُعّل."; }
   }finally{busy=false;$("send").disabled=false;$("prompt").focus()}
 });
 
-$("localBaseUrl").value=localStorage.getItem("starLocalBase")||"http://127.0.0.1:8889";
-setMode(mode);
-if(mode!=="power")probeLocal(false).then(()=>{
-  const saved=localStorage.getItem("starLocalModel");
-  if(saved&&[...$("localModel").options].some(o=>o.value===saved))$("localModel").value=saved;
-});
 health();
 
 function v2AuthStatus(){
