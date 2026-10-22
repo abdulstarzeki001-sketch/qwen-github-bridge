@@ -294,7 +294,7 @@ async function askLocal(prompt){
   return {content,model:d?.model||model,route:"PRIVATE"};
 }
 
-async function askPower(prompt){
+async function askPower(prompt,hybrid=false){
   const savedToken=sessionStorage.getItem("starToken")||"";
   const headers={"Content-Type":"application/json"};
   if(savedToken)headers.Authorization="Bearer "+savedToken;
@@ -303,11 +303,11 @@ async function askPower(prompt){
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
-    body:JSON.stringify({prompt:memoryPrompt})
+    body:JSON.stringify({prompt:memoryPrompt,...(hybrid?{hybrid_cloud:true}:{})})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
   if(!content)throw Error("الخادم السحابي أعاد استجابة فارغة");
-  return {content,model:d?.model||"cloud",route:"POWER"};
+  return {content,model:d?.model||"cloud",route:"POWER",cloud_backup_used:Boolean(d?.cloud_backup_used)};
 }
 
 async function health(){
@@ -360,7 +360,7 @@ $("form").addEventListener("submit",async e=>{
     output.textContent=result.content;
     if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",result.content,result.route);
     $("meta").textContent=result.route+" · Model: "+result.model;
-    if(mode==="auto")$("hybridStatus").textContent=result.route==="HYBRID_CLOUD"?"☁ تمت الإجابة عبر النموذج السحابي: "+result.model:"✓ Qwen المحلي أجاب من جهاز الآيفون: "+result.model;
+    if(mode==="auto")$("hybridStatus").textContent=result.route==="HYBRID_CLOUD"?(result.cloud_backup_used?"☁ تعذر Qwen السحابي، فأجاب النموذج الاحتياطي: ":"☁ أجاب Qwen السحابي: ")+result.model:"✓ Qwen المحلي أجاب من جهاز الآيفون: "+result.model;
     if(result.route==="POWER"||result.route==="HYBRID_CLOUD"){v2TokenVerified=true;v2AuthStatus();}
     v2FinishTask(true);
   }catch(err){
