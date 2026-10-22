@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "${#STAR_BACKEND_TOKEN}" -lt 32 ]]; then
+BACKEND_TOKEN="${STAR_BACKEND_TOKEN:-}"
+if [[ "${#BACKEND_TOKEN}" -lt 32 ]]; then
   echo "Set STAR_BACKEND_TOKEN in RunPod Pod environment (minimum 32 chars)" >&2
   exit 1
 fi
