@@ -1,10 +1,34 @@
 import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
+import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_session.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
-function corsless(req){return req.headers.get("origin") && new URL(req.headers.get("origin")).host!==new URL(req.url).host;}
+function corsless(req){
+  const origin=req.headers.get("origin");
+  if(!origin)return false;
+  try{return new URL(origin).origin!==new URL(req.url).origin;}catch{return true;}
+}
+function trustedBrowserRequest(req){
+  if(corsless(req))return false;
+  const site=req.headers.get("sec-fetch-site");
+  return !site||site==="same-origin"||site==="none";
+}
+async function bearerOwner(request,env){
+  const auth=request.headers.get("authorization")||"";
+  return auth.startsWith("Bearer ")&&await secretMatches(env.STAR_API_TOKEN||"",auth.slice(7).trim());
+}
+async function hasOwnerAccess(request,env){
+  if(await bearerOwner(request,env))return {ok:true,method:"bearer"};
+  if(await ownerAccess(request,env))return {ok:true,method:"access"};
+  if(trustedBrowserRequest(request)){
+    const cookie=await readOwnerCookie(request,env);
+    if(cookie.ok)return {ok:true,method:"cookie",renew:cookie.renew};
+  }
+  return {ok:false};
+}
+
 
 function redactPrompt(value){
   return String(value||"")
@@ -109,14 +133,41 @@ export async function onRequest({request,env}){
       full_backend:false
     });
   }
+  if(path==="/api/auth/session"&&request.method==="GET"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({authenticated:false},401);
+    const response=json({authenticated:true,method:owner.method});
+    if(owner.renew){
+      const cookie=await makeOwnerCookie(env);
+      if(cookie)response.headers.set("Set-Cookie",cookie);
+    }
+    return response;
+  }
+  if(path==="/api/auth/remember"&&request.method==="POST"){
+    if(!trustedBrowserRequest(request))return json({error:"Same-origin authentication required"},403);
+    if(!(await bearerOwner(request,env))&&!(await ownerAccess(request,env)))
+      return json({error:"Owner authentication required"},401);
+    const cookie=await makeOwnerCookie(env);
+    if(!cookie)return json({error:"Owner session secret is not configured"},503);
+    const response=json({authenticated:true,remembered:true});
+    response.headers.set("Set-Cookie",cookie);
+    return response;
+  }
+  if(path==="/api/auth/logout"&&request.method==="POST"){
+    if(!trustedBrowserRequest(request))return json({error:"Same-origin request required"},403);
+    const response=json({authenticated:false});
+    response.headers.set("Set-Cookie",clearOwnerCookie());
+    return response;
+  }
   if(path.startsWith("/api/claude/v1/"))return claudeProxy(request,env,path);
-  if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET")
-    return policy.allowGithubRead?makeGithubHandler(env)(request):json({error:"GitHub reading disabled by owner"},403);
+  if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET"){
+    if(!policy.allowGithubRead)return json({error:"GitHub reading disabled by owner"},403);
+    const owner=await hasOwnerAccess(request,env);
+    return makeGithubHandler(env,owner.ok)(request);
+  }
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
-  const expected=env.STAR_API_TOKEN||"";
-  const validBearer=expected.length>=32 && request.headers.get("authorization")==="Bearer "+expected;
-  if(!validBearer && !(await ownerAccess(request,env)))
-    return json({error:"Owner sign-in required"},401);
+  const owner=await hasOwnerAccess(request,env);
+  if(!owner.ok)return json({error:"Owner sign-in required"},401);
   const useCloudflare=env.STAR_AI_PROVIDER==="cloudflare";
   const useOpenAI=env.STAR_AI_PROVIDER==="openai";
   const useAnthropic=env.STAR_AI_PROVIDER==="anthropic";
