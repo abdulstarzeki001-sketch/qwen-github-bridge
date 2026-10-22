@@ -283,6 +283,15 @@ async function boot(){
  }
  for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=false;
  for(const item of await readLocal()){if(isValid(item))state.items.set(item.id,item)}
+ // Migrate the retired model connection preferences to the single cloud mode.
+ // Do not erase stored messages or research.
+ const previousSettings=state.items.get("star-v2-settings");
+ if(previousSettings?.kind==="settings"&&
+   (previousSettings.payload?.localBase!==undefined||previousSettings.payload?.localModel!==undefined||previousSettings.payload?.mode!=="power")){
+   previousSettings.payload={mode:"power"};
+   previousSettings.updated_at=now();
+   await putLocal(previousSettings);
+ }
  // Import older manual STAR CORE V2 archives without deleting their originals.
  try{
   const legacy=JSON.parse(localStorage.getItem("star-core-v2-sessions-v1")||"[]");
