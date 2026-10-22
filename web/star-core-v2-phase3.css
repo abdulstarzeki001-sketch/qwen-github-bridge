@@ -1,0 +1,30 @@
+/* STAR CORE V2 / PHASE III — COMMANDER */
+.p3-panel{position:relative;border:1px solid #6074a899;border-radius:21px;background:linear-gradient(155deg,#0a1830f7,#101839eb 61%,#092536e8);padding:16px;margin:1px 0 16px;box-shadow:0 12px 55px #0005,inset 0 1px #a7fff61c;overflow:hidden}
+.p3-panel:before{content:"";position:absolute;width:250px;height:250px;top:-188px;left:15%;border-radius:50%;background:#70eaff36;filter:blur(55px);pointer-events:none}
+.p3-head{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:12px}
+.p3-head strong{font:900 13px/1.5 system-ui;color:#e8fffd;letter-spacing:1px}.p3-chip{border:1px solid #71f1e174;background:#092d3b;color:#85fce6;border-radius:99px;padding:7px 10px;font:700 10px/1.2 ui-monospace,monospace;white-space:nowrap}
+.p3-sub{font-size:11px;line-height:1.9;color:#9bb8cc;margin:6px 0 13px}
+.p3-telemetry{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.p3-meter{border:1px solid #4463869c;border-radius:12px;padding:10px 8px;background:#091c32ce;min-width:0}
+.p3-meter small{display:block;font:700 9px/1.5 ui-monospace,monospace;color:#7fa6c4;direction:ltr;text-align:left}
+.p3-meter b{display:block;font-size:11px;font-weight:800;color:#ccedf1;margin-top:4px;overflow-wrap:anywhere}.p3-meter b.ok{color:#7af8d4}.p3-meter b.err{color:#ff9cb1}
+.p3-toolrow{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.p3-button{min-height:41px;padding:9px 12px;border:1px solid #52779a;border-radius:11px;background:#132842;color:#d3f5ff;font-size:11px;font-weight:800;cursor:pointer;transition:background .2s,border-color .2s}
+.p3-button:hover{border-color:#77edd9;background:#1a3651}.p3-button:disabled{opacity:.5;cursor:wait}
+.p3-button.primary{border:0;color:#051826;background:linear-gradient(110deg,#70f3dd,#98a3ff)}.p3-button.danger{border-color:#a56b82;color:#ffb8c8}
+.p3-label{font-size:11px;font-weight:700;color:#b7d5e4;display:block;margin:12px 0 6px}.p3-field{display:block;width:100%;background:#071528;border:1px solid #456383;border-radius:13px;padding:12px;color:#e7fcff;font:12px/1.7 system-ui;outline:none;resize:vertical}.p3-field:focus-visible{border-color:#86f2e3;outline:1px solid #86f2e3}.p3-field::placeholder{color:#7b99b7}
+.p3-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin:10px 0}.p3-controls .p3-button{width:100%}
+.p3-message{font-size:11px;color:#92f1e2;line-height:1.9;min-height:19px;margin:10px 0;overflow-wrap:anywhere}.p3-message.err{color:#ffa8bc}
+.p3-plan{display:grid;gap:9px;margin:12px 0}.p3-step{border:1px solid #375b79;background:#081c34bd;border-radius:13px;padding:12px}.p3-step.done{border-color:#4a957d;background:#0a2c38b3}
+.p3-stephead{display:flex;align-items:center;justify-content:space-between;gap:8px}.p3-number{color:#78f7dc;font:800 11px ui-monospace,monospace}.p3-stephead strong{flex:1;font-size:12px}.p3-status{font-size:10px;color:#85a8bf}
+.p3-detail{font-size:11px;color:#adc7d9;margin:9px 0 7px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}
+.p3-verify{font-size:10px;line-height:1.8;color:#8fded2;margin:0 0 10px}
+.p3-steptools{display:flex;gap:8px;flex-wrap:wrap}.p3-steptools button{flex:1}
+.p3-progress{height:5px;background:#183a56;border-radius:99px;overflow:hidden;margin:12px 0 5px}.p3-progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,#5deadd,#919efe);transition:width .3s}
+.p3-pmeta{display:flex;justify-content:space-between;gap:8px;color:#86acc4;font-size:10px}
+.p3-voice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.p3-voice button{min-width:0;font-size:10px;padding:8px}
+.p3-divider{height:1px;background:linear-gradient(90deg,transparent,#76e4ed66,transparent);margin:14px 0}
+.p3-foot{font-size:10px;line-height:1.85;color:#829eb5}
+.p3-head button{background:transparent;color:#95dae1;border:0;padding:5px 8px}
+.p3-hidden[hidden]{display:none!important}
+@media(max-width:530px){.p3-panel{padding:12px}.p3-head strong{font-size:12px}.p3-telemetry{gap:5px}.p3-meter{padding:8px 6px}.p3-meter b{font-size:10px}.p3-chip{font-size:9px}.p3-controls{grid-template-columns:1fr}.p3-toolrow button{flex:1}}
+@media(prefers-reduced-motion:reduce){.p3-progress i{transition:none}}
