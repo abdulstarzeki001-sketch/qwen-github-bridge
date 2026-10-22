@@ -285,7 +285,7 @@ $("ownerLogout").addEventListener("click",async()=>{
   const r=await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"}});
   if(!r.ok)throw Error("HTTP "+r.status);
   sessionStorage.removeItem("starToken");
-  v2TokenVerified=false;v2AuthStatus();if(window.STAR_KNOWLEDGE)window.STAR_KNOWLEDGE.lock();$("meta").textContent="تم إلغاء ثقة هذا الجهاز.";
+  v2TokenVerified=false;v2AuthStatus();if(window.STAR_VAULT)window.STAR_VAULT.lock();if(window.STAR_KNOWLEDGE)window.STAR_KNOWLEDGE.lock();$("meta").textContent="تم إلغاء ثقة هذا الجهاز.";
  }catch(err){$("meta").textContent="تعذر تسجيل الخروج: "+err.message;}
 });
 $("ownerCancel").addEventListener("click",()=>$("ownerDialog").close());
