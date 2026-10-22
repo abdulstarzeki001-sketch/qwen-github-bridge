@@ -120,6 +120,9 @@ jobs:
       - name: Test private knowledge library and cited retrieval
         run: node scripts/test-star-knowledge.mjs && node --check web/star-knowledge.js && node --check web/star-knowledge-core.js
 
+      - name: Test Supabase owner-scoped secure device synchronization
+        run: node scripts/test-star-supabase-sync.mjs && node --check web/star-supabase-sync.js && node --check web/star-supabase-config.js
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
