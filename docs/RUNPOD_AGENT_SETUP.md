@@ -7,6 +7,8 @@
 
 This repository now builds and publishes STAR's independent inference container to GitHub Container Registry (GHCR), without requiring Runpod credentials or a paid GPU. It also has an authenticated GPU gateway and instructions at [Runpod Pod setup](../deploy/independent-ai/runpod/README.md). The linked account and paid Pod must be created in **your own Runpod session**. No AI coding assistant can authorize OAuth or consent to new GPU charges on your behalf.
 
+For Codex on your own Mac, you may run the validated helper `bash scripts/setup-runpod-codex.sh` (it checks Node >=22.20, installs the official Skills + MCP plugin, and **does not** complete OAuth). The official manual commands are listed below.
+
 ## 1. Connect Runpod to your coding agent (official guide)
 
 The following commands run **on your own Mac/Windows/Linux machine with an agent installed**, not inside ChatGPT on iPhone.
