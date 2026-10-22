@@ -91,9 +91,9 @@ function updateSources(list){
 }
 function augment(question){
  lastSources=[];
- if(!enabled()||!vault()?.knowledgeItems)return question;
+ if(!enabled()||!vault()?.knowledgeItems){updateSources([]);return question;}
  const result=engine()?.augment(question,rows(),4900);
- if(!result)return question;
+ if(!result){updateSources([]);return question;}
  lastSources=result.hits;
  updateSources(lastSources);
  return result.prompt;
