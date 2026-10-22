@@ -183,6 +183,7 @@ function add(role,text){
 
 function setMode(next){
   mode=next;localStorage.setItem("starAiMode",mode);
+  if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();
   document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
   $("modeHelp").textContent=modeCopy[mode];
   $("localSettings").hidden=mode==="power";
@@ -310,8 +311,8 @@ async function health(){
 
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{setMode(b.dataset.mode);health()}));
 $("probeLocal").addEventListener("click",()=>probeLocal(true));
-$("localBaseUrl").addEventListener("change",()=>{localStorage.setItem("starLocalBase",$("localBaseUrl").value.trim());probeLocal(true)});
-$("localModel").addEventListener("change",()=>localStorage.setItem("starLocalModel",$("localModel").value));
+$("localBaseUrl").addEventListener("change",()=>{localStorage.setItem("starLocalBase",$("localBaseUrl").value.trim());if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();probeLocal(true)});
+$("localModel").addEventListener("change",()=>{localStorage.setItem("starLocalModel",$("localModel").value);if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();});
 document.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{$("prompt").value=b.dataset.p;$("prompt").focus()}));
 $("clear").addEventListener("click",()=>{if(window.STAR_VAULT)window.STAR_VAULT.newThread();else messages.replaceChildren();$("meta").textContent="بدأت محادثة جديدة، والمحادثات السابقة محفوظة في STAR VAULT"});
 $("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("form").requestSubmit()}});
