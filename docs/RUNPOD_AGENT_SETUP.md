@@ -62,14 +62,14 @@ Replace `--agent cursor` with `github-copilot`, `windsurf`, `cline`, `opencode`,
 
 ## 2. Container image (automatic, no Pod/billing yet)
 
-A GitHub Actions workflow at `.github/workflows/runpod-image.yml` builds:
+A GitHub Actions workflow at `.github/workflows/publish-star-runpod-image.yml` builds:
 ```text
 ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest
 ```
 
 The image bundles Ollama with the already-implemented token-protected Node HTTP gateway. The source repository is public; **the GHCR package may default to private** until you set its visibility to public via GitHub package settings. In Runpod, use a public image, or configure a compatible registry credential in Runpod without adding that credential to this repo.
 
-View workflow: https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/runpod-image.yml
+View workflow: https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/publish-star-runpod-image.yml
 
 ## 3. Create the paid GPU Pod (requires Runpod account access)
 
