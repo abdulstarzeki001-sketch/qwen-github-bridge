@@ -102,6 +102,9 @@ jobs:
       - name: Check Netlify functions
         run: npm run check:netlify
 
+      - name: Test Commander III privacy and mission flow
+        run: node scripts/test-commander.mjs
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
@@ -113,14 +116,14 @@ jobs:
             if (!scripts.length) throw new Error("No inline script found in " + file);
             for (const script of scripts) new vm.Script(script, {filename:file});
           }
-          for (const file of ["web/star-core-v2-scene.js","web/star-core-v2-phase2.js"]) {
+          for (const file of ["web/star-core-v2-scene.js","web/star-core-v2-phase2.js","web/star-core-v2-phase3.js"]) {
             const code = fs.readFileSync(file, "utf8");
             new vm.Script(code, {filename:file});
           }
           const html = fs.readFileSync("web/ai-v2.html", "utf8");
           const ids = ["p2Core3d","p2RepoConnect","p2RepoBrowse","p2AdminToken","p2RepoEntries","p2RepoPreview","p2PrepareReview","p2Save","p2SavedList","p2IncludeContext","p2MemoryStatus"];
           for (const id of ids) if (!html.includes('id="'+id+'"')) throw new Error("Missing phase-2 element "+id);
-          for (const asset of ["star-core-v2-phase2.css","star-core-v2-scene.js","star-core-v2-phase2.js"]) {
+          for (const asset of ["star-core-v2-phase2.css","star-core-v2-scene.js","star-core-v2-phase2.js","star-core-v2-phase3.css","star-core-v2-phase3.js"]) {
             if (!html.includes(asset) || !fs.existsSync("web/"+asset)) throw new Error("Missing V2 asset: "+asset);
           }
           const scripts = ["web/star-core-v2-phase2.js","web/ai-v2.html"].map(f=>fs.readFileSync(f,"utf8"));
