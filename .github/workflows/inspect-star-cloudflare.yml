@@ -1,0 +1,25 @@
+name: Inspect STAR Cloudflare Free AI
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-star-cloudflare.yml"
+      - "scripts/inspect-star-cloudflare.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd2680f7c5ff39f8d9177a51dbf7fec75' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Inspect production provider, bindings and plan without revealing secrets
+        run: node scripts/inspect-star-cloudflare.mjs
