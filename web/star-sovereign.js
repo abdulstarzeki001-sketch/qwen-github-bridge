@@ -5,11 +5,11 @@ let history=[],busy=false,authenticated=false;
 function notice(id,text,error=false){const node=$(id);node.textContent=text;node.classList.toggle("error",error)}
 function profile(){return {owner_instructions:$("instructions").value,model:$("model").value.trim(),temperature:Number($("temperature").value),max_tokens:Number($("maxTokens").value)}}
 function apply(p){const d={...defaults(),...p};$("instructions").value=String(d.owner_instructions??d.instructions??"").slice(0,4000);$("model").value=String(d.model||"").slice(0,160);$("temperature").value=String(Math.min(1,Math.max(0,Number(d.temperature)||0)));$("temperatureValue").textContent=$("temperature").value;$("maxTokens").value=[512,1400,2048,4096].includes(Number(d.max_tokens))?String(d.max_tokens):"1400"}
-function render(role,text){const box=$("messages");box.querySelector(".empty")?.remove();const node=document.createElement("article");node.className="message "+role;const who=document.createElement("b");who.textContent=role==="user"?"أنت":"STAR AI";const content=document.createElement("div");content.textContent=text;node.append(who,content);box.append(node);box.scrollTop=box.scrollHeight}
+function render(role,text){const box=$("messages");box.querySelector(".empty")?.remove();const node=document.createElement("article");node.className="message "+role;const who=document.createElement("b");who.textContent=role==="user"?"أنت":"STAR AI";const content=document.createElement("div");content.textContent=text;node.append(who,content);box.append(node);box.scrollTop=box.scrollHeight;if(window.STAR_VAULT)window.STAR_VAULT.capture(role,text,"SOVEREIGN")}
 async function check(){
   try{const [auth,health]=await Promise.all([fetch("/api/auth/session",{credentials:"same-origin",cache:"no-store"}),fetch("/api/health",{cache:"no-store"})]);authenticated=auth.ok;$("ownerStatus").textContent=authenticated?"✓ جلسة المالك فعالة":"يتطلب تفعيل المالك عبر STAR CORE";
     if(health.ok){const h=await health.json();$("gatewayStatus").textContent=h.ai_gateway?"✓ مزود مهيأ · "+(h.ai_model||""):"المزود غير مهيأ";}else $("gatewayStatus").textContent="تعذر فحص المزود";
-    if(authenticated)await loadServer(true);
+    if(authenticated){await loadServer(true);await loadVaultSettings()}
   }catch{$("ownerStatus").textContent="تعذر فحص تسجيل الدخول";$("gatewayStatus").textContent="تعذر فحص المزود"}
 }
 function buildPrompt(current){
@@ -58,12 +58,12 @@ serverButtons(false);
 $("temperature").addEventListener("input",()=>{$("temperatureValue").textContent=$("temperature").value});
 $("saveProfile").addEventListener("click",()=>{try{localStorage.setItem(PROFILE_KEY,JSON.stringify(profile()));notice("settingsNotice","حُفظت الإعدادات محليًا على هذا الجهاز فقط.")}catch{notice("settingsNotice","تعذر التخزين المحلي.",true)}});
 $("resetProfile").addEventListener("click",()=>{apply(defaults());try{localStorage.removeItem(PROFILE_KEY)}catch{}notice("settingsNotice","استُعيدت الإعدادات الافتراضية وحُذف الملف المحلي.")});
-$("clearChat").addEventListener("click",()=>{history=[];$("messages").replaceChildren();const empty=document.createElement("div");empty.className="empty";empty.textContent="لا توجد رسائل بعد";$("messages").append(empty);notice("chatNotice","مُسحت رسائل الجلسة.")});
+$("clearChat").addEventListener("click",()=>{history=[];if(window.STAR_VAULT)window.STAR_VAULT.newThread();$("messages").replaceChildren();const empty=document.createElement("div");empty.className="empty";empty.textContent="لا توجد رسائل بعد";$("messages").append(empty);notice("chatNotice","مُسحت رسائل الجلسة.")});
 $("chatForm").addEventListener("submit",async e=>{
  e.preventDefault();if(busy)return;
  if(!authenticated){notice("chatNotice","فعّل جلسة المالك أولًا من STAR CORE ثم ارجع إلى هذه الصفحة.",true);return}
  const current=$("prompt").value.trim();if(!current)return;
- const config=profile();const prompt=buildPrompt(current);
+ const config=profile();const prompt=window.STAR_VAULT?.context(current)||buildPrompt(current);
  if(config.owner_instructions.length>4000||prompt.length>6000){notice("chatNotice","تجاوز طول المدخلات الحدود المسموحة.",true);return}
  busy=true;$("send").disabled=true;notice("chatNotice","جارٍ إرسال طلب الاستدلال إلى المزود…");
  try{
@@ -79,5 +79,27 @@ $("chatForm").addEventListener("submit",async e=>{
  finally{busy=false;$("send").disabled=false}
 });
 try{const raw=JSON.parse(localStorage.getItem(PROFILE_KEY)||"null");if(raw&&typeof raw==="object"&&!Array.isArray(raw))apply(raw)}catch{notice("settingsNotice","تعذر قراءة الملف المحفوظ.",true)}
+let autoSaveTimer=null;
+async function loadVaultSettings(){
+ try{
+  const r=await fetch("/api/vault?id=sovereign-settings",{credentials:"same-origin",cache:"no-store"});
+  if(!r.ok)return;
+  const item=(await r.json()).item;
+  if(item?.kind==="settings"&&item.payload)apply(item.payload);
+ }catch{}
+}
+async function saveVaultSettings(){
+ const p=profile();try{localStorage.setItem(PROFILE_KEY,JSON.stringify(p))}catch{}
+ if(!authenticated)return;
+ try{await fetch("/api/vault",{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:"sovereign-settings",kind:"settings",payload:p})})}catch{}
+}
+function queueOwnerSettings(){
+ if(autoSaveTimer)clearTimeout(autoSaveTimer);
+ autoSaveTimer=setTimeout(saveVaultSettings,700);
+}
+for(const id of ["instructions","model","temperature","maxTokens"]){
+ $(id).addEventListener("input",queueOwnerSettings);
+ $(id).addEventListener("change",queueOwnerSettings);
+}
 check();
 })();

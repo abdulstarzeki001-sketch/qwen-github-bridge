@@ -34,6 +34,7 @@ async function browse(path){
   activeFile={path:d.path,content:String(d.content||"")};
   e("p2RepoPreview").textContent=activeFile.content.slice(0,15000)||"ملف فارغ";
   note("p2RepoStatus","✓ "+d.path+" · "+d.size+" بايت · قراءة فقط");
+  if(window.STAR_VAULT)window.STAR_VAULT.saveResearch("GitHub: "+d.path,activeFile.content);
  }else{
   if(path){const up=document.createElement("button");up.type="button";up.className="p2-file";up.textContent="↗ العودة للمجلد السابق";up.addEventListener("click",()=>browse(path.split("/").slice(0,-1).join("/")));list.append(up);}
   for(const f of (Array.isArray(d.entries)?d.entries:[]).slice(0,100)){
@@ -42,6 +43,7 @@ async function browse(path){
    b.append(label,icon);b.addEventListener("click",()=>browse(f.path));list.append(b);
   }
   note("p2RepoStatus","✓ المجلد "+(path||"/")+" · "+(d.entries?.length||0)+" عنصر");
+  if(window.STAR_VAULT)window.STAR_VAULT.saveResearch("GitHub folder "+(path||"/"),JSON.stringify((d.entries||[]).slice(0,100)));
  }
  }catch(err){note("p2RepoStatus",err.message,true)}finally{control(false)}
 }

@@ -1,0 +1,25 @@
+.vault-panel{border:1px solid #376d7f;border-radius:18px;background:linear-gradient(145deg,#0d2035,#09182b);padding:14px;margin:10px 0 18px;box-shadow:inset 0 1px #8efae919}
+.vault-title{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#a2fdeb;font-size:12px;margin:5px 0 10px}
+.vault-title button,.vault-memory-input button{border:1px solid #7aefdb;background:#123b47;color:#c7fff3;padding:10px 12px;border-radius:11px;font-size:12px;font-weight:700;cursor:pointer}
+.vault-notice{color:#acc5d7;font-size:11px;line-height:1.8;margin:5px 0 12px;white-space:pre-wrap}
+.vault-notice[data-type=warning]{color:#ffd18b}
+.vault-threads{display:flex;flex-wrap:nowrap;gap:7px;overflow:auto;padding:3px 0 15px;scrollbar-width:thin}
+.vault-item{display:flex;align-items:stretch;flex-shrink:0;background:#0c1c34;border:1px solid #284c67;border-radius:11px;max-width:200px}
+.vault-item>button:first-child{color:#d4ecff;border:0;background:transparent;padding:10px 11px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;max-width:170px;cursor:pointer}
+.vault-item>button.active{color:#75f5d9;font-weight:800}
+.vault-item .vault-delete{background:transparent;border:0;border-inline-start:1px solid #27425c;color:#d69da8;font-size:19px;padding:3px 8px;cursor:pointer}
+.vault-memory-list{display:grid;gap:5px;max-height:130px;overflow:auto}
+.vault-memory-row{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#ccdef0;font-size:12px;border:1px solid #263b59;border-radius:8px;padding:6px 9px}
+.vault-memory-row span{overflow-wrap:anywhere}
+.vault-memory-row button{color:#ffaab3;background:none;border:0;font-size:20px;cursor:pointer}
+.vault-memory-input{display:flex;gap:8px;margin:10px 0}
+.vault-memory-input input{flex:1;min-width:0;background:#071327;border:1px solid #31516a;color:white;border-radius:11px;padding:10px}
+@media(max-width:530px){.vault-panel{padding:11px}.vault-item{max-width:170px}}
+
+.vault-research-list{display:grid;gap:6px;max-height:170px;overflow:auto}
+.vault-research-item{border:1px solid #294660;border-radius:8px;padding:7px 9px;color:#c8edff;font-size:12px}
+.vault-research-item summary{cursor:pointer}
+.vault-research-item pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#a9cadb;font-size:11px;max-height:160px;overflow:auto}
+
+.vault-search{width:100%;background:#09172b;border:1px solid #31506e;color:#d7f5ff;border-radius:12px;padding:11px;margin:0 0 10px;font:inherit;font-size:13px}
+.vault-search:focus{outline:2px solid #75f5d9;outline-offset:2px}

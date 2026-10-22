@@ -3,6 +3,7 @@ import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_session.js";
 import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
+import { handleVault, vaultReady } from "../_vault.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -193,6 +194,20 @@ export async function onRequest({request,env}){
     const response=json({authenticated:false});
     response.headers.set("Set-Cookie",clearOwnerCookie());
     return response;
+  }
+  if(path==="/api/vault"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({error:"Owner authentication required"},401);
+    if(!["GET","PUT","DELETE"].includes(request.method))return json({error:"Method not allowed"},405);
+    if(request.method!=="GET"){
+      if(!trustedBrowserRequest(request))return json({error:"Same-origin browser request required"},403);
+      if(owner.method==="cookie"){
+        const origin=request.headers.get("origin");
+        if(!origin||origin!==new URL(request.url).origin)
+          return json({error:"Owner cookie writes require same-origin Origin"},403);
+      }
+    }
+    return handleVault(request,env);
   }
   if(path==="/api/owner/settings"){
     const owner=await hasOwnerAccess(request,env);
