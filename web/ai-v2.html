@@ -68,10 +68,10 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-missionhead{font:800 10px/1.6 ui-monospace,monospace;color:#76ecd9;letter-spacing:2px;direction:ltr;text-align:left;margin:0 0 8px}
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
-</style></head>
+</style><link rel="stylesheet" href="/star-core-v2-phase2.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><a class="nav" href="/">↗ لوحة التحكم</a></header>
-<main><div class="hero"><div class="orb" aria-hidden="true"><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
+<main><div class="hero"><div class="orb" aria-hidden="true"><canvas class="p2-core3d" id="p2Core3d" aria-hidden="true"></canvas><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
 <div class="v2-telemetry"><div class="telemetry-item"><small>CLOUD CORE</small><strong id="v2Cloud">جارٍ الفحص</strong></div><div class="telemetry-item"><small>ACTIVE ROUTE</small><strong id="v2Mode">—</strong></div><div class="telemetry-item"><small>OWNER ACCESS</small><strong id="v2Auth">غير مؤكد</strong></div></div><div class="v2-sectiontitle">⌘ مركز العمليات <span>QUICK MISSIONS</span></div><div class="examples"><button data-icon="⌘" data-p="راجع مشروع GitHub واقترح تحسينات محددة دون الادعاء بقراءة ملفات لم تُفتح.">هندسة GitHub<small>REPO INTELLIGENCE</small></button><button data-icon="☁" data-p="اقترح خطة محسنة لنشر Cloudflare Workers وAI Gateway لمشروعي مع اختبارات واضحة.">نواة السحابة<small>CLOUD NEXUS</small></button><button data-icon="⬡" data-p="أجرِ مراجعة أمنية دفاعية لتطبيق ويب تشمل المصادقة والأسرار والمدخلات، مع خطوات إصلاح محددة.">الدفاع السيبراني<small>CYBER DEFENSE</small></button><button data-icon="✧" data-p="صمم لي تجربة واجهة خيال علمي مستقبلية قابلة للتنفيذ على iPhone.">استوديو المستقبل<small>FUTURE STUDIO</small></button></div>
 <div class="modepanel" aria-label="وضع الذكاء">
   <div class="modebar">
@@ -87,7 +87,33 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
   </div>
   <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
 </div>
-<div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><div><button type="button" id="v2NewMission">＋ جديد</button><button type="button" id="ownerOpen">♙ دخول المالك</button></div></div><section class="v2-missionpanel"><div class="v2-missionhead">MISSION MEMORY // SESSION ONLY</div><div id="v2MissionLog"></div><button type="button" id="v2Export" class="nav" style="margin-top:8px;display:inline-block">↓ تصدير المحادثة</button></section><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
+
+<details id="p2Deck" class="p2-deck">
+ <summary class="p2-heading" style="cursor:pointer;list-style:none"><span>✦ المرحلة الثانية · مركز القيادة المتقدم</span><small>REPO + MEMORY · OPEN</small></summary>
+ <div class="p2-tabs" role="group" aria-label="لوحات التحكم">
+  <button type="button" aria-pressed="true" data-p2-tab="repo">⌘ GitHub Intelligence</button>
+  <button type="button" aria-pressed="false" data-p2-tab="memory">◷ ذاكرة الجهاز</button>
+ </div>
+ <section class="p2-pane" data-p2-pane="repo" aria-label="استعراض GitHub للمالك">
+  <p class="p2-helper">استعراض مباشر للقراءة فقط من مستودع qwen-github-bridge عبر GitHub App. لا يجري تعديل الملفات أو إرسالها إلى نموذج الذكاء إلا بضغطك على إرسال.</p>
+  <label class="p2-label" for="p2AdminToken">STAR_GITHUB_ADMIN_TOKEN — مختلف عن رمز محادثة STAR</label>
+  <div class="p2-formrow"><input class="p2-input" id="p2AdminToken" type="password" autocomplete="off" spellcheck="false" placeholder="رمز إدارة GitHub (32 حرفاً أو أكثر)"><button class="p2-btn" type="button" id="p2AdminClear">مسح</button></div>
+  <div class="p2-actions"><button class="p2-btn" type="button" id="p2RepoConnect">◉ فحص GitHub App</button></div>
+  <label class="p2-label" for="p2RepoPath">مسار الملف أو المجلد داخل المستودع</label>
+  <div class="p2-formrow"><input class="p2-input" id="p2RepoPath" dir="ltr" spellcheck="false" placeholder="مثال: functions أو web/ai-v2.html"><button class="p2-btn primary" type="button" id="p2RepoBrowse">استعراض</button></div>
+  <p class="p2-state" id="p2RepoStatus" role="status">لم يبدأ فحص GitHub بعد.</p>
+  <div class="p2-list" id="p2RepoEntries" aria-label="ملفات المستودع"></div>
+  <pre class="p2-code" id="p2RepoPreview" aria-label="معاينة الملف"></pre>
+  <button class="p2-btn primary" type="button" id="p2PrepareReview" disabled>⌘ جهّز تحليل الملف في المحادثة</button>
+ </section>
+ <section class="p2-pane" data-p2-pane="memory" aria-label="الذاكرة المحلية" hidden>
+  <p class="p2-helper">حفظ اختياري على هذا المتصفح فقط؛ لا تُرفع النسخ إلى Cloudflare ولا تتزامن بين الأجهزة. لا تحفظ أسراراً أو بيانات حساسة هنا، فبيانات التخزين المحلي ليست مشفّرة من التطبيق.</p>
+  <div class="p2-actions"><button class="p2-btn primary" type="button" id="p2Save">＋ حفظ هذه المحادثة</button><button class="p2-btn warn" type="button" id="p2DeleteAll">حذف جميع المحفوظات</button></div>
+  <label class="p2-check"><input type="checkbox" id="p2IncludeContext"><span>ضمّن آخر رسائل المحادثة عند إرسال الطلب الجديد. في POWER سيتم إرسال هذا السياق إلى مزود النموذج السحابي. هذا الخيار متوقف افتراضياً.</span></label>
+  <div class="p2-tally"><strong style="font-size:12px">الأرشيف المحلي</strong><small id="p2ArchiveCount">0 محفوظة</small></div>
+  <div class="p2-memo" id="p2SavedList"></div><p class="p2-state" id="p2MemoryStatus" role="status">يمكنك الحفظ والاستعادة والحذف يدوياً.</p>
+ </section>
+</details><div id="p2ConsoleAnchor"></div><div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><div><button type="button" id="v2NewMission">＋ جديد</button><button type="button" id="ownerOpen">♙ دخول المالك</button></div></div><section class="v2-missionpanel"><div class="v2-missionhead">MISSION MEMORY // SESSION ONLY</div><div id="v2MissionLog"></div><button type="button" id="v2Export" class="nav" style="margin-top:8px;display:inline-block">↓ تصدير المحادثة</button></section><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
 </main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ وصول المالك</h2><p>أدخل رمز STAR_API_TOKEN الخاص بك. سيُحفَظ في جلسة التبويب فقط ولن يُكتب في GitHub.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">حفظ الرمز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
@@ -199,7 +225,7 @@ async function askLocal(prompt){
       model,
       messages:[
         {role:"system",content:"You are STAR CYBER AI X. Respond in the user's language. Be precise about software engineering and defensive cybersecurity. Never invent evidence or claim actions you did not execute."},
-        {role:"user",content:prompt}
+        {role:"user",content:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(prompt):prompt}
       ],
       stream:false
     })
@@ -216,7 +242,7 @@ async function askPower(prompt){
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
-    body:JSON.stringify({prompt})
+    body:JSON.stringify({prompt:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(prompt):prompt})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
   if(!content)throw Error("الخادم السحابي أعاد استجابة فارغة");
@@ -314,4 +340,4 @@ $("v2Export").addEventListener("click",()=>{
 });
 v2AuthStatus();v2RenderTasks();
 
-</script></body></html>
+</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script></body></html>
