@@ -209,9 +209,10 @@ async function addMemory(){
  await store({id:makeId("memory"),kind:"memory",payload:{text:value},updated_at:now()});
  field.value="";note("تم تذكر المعلومة ويمكنك حذفها لاحقاً.");
 }
-function context(prompt){
+function context(prompt,destination="auto"){
  if(!state.onlineOwner)return prompt;
- const privateMode=localStorage.getItem("starAiMode")==="private"||localStorage.getItem("starAiMode")==="auto";
+ // Explicit cloud requests exclude all locally private conversation context.
+ const privateMode=destination==="local"||(destination!=="cloud"&&(localStorage.getItem("starAiMode")==="private"||localStorage.getItem("starAiMode")==="auto"));
  const terms=[...new Set((prompt.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]))].slice(0,14);
  const scored=[];
  if(terms.length)for(const item of state.items.values()){
