@@ -107,11 +107,24 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           import vm from "node:vm";
-          for (const file of ["web/index.html", "web/ai.html"]) {
+          for (const file of ["web/index.html", "web/ai.html", "web/ai-v2.html"]) {
             const html = fs.readFileSync(file, "utf8");
             const scripts = html.split("<script>").slice(1).map(s => s.split("</script>")[0]);
             if (!scripts.length) throw new Error("No inline script found in " + file);
             for (const script of scripts) new vm.Script(script, {filename:file});
           }
+          for (const file of ["web/star-core-v2-scene.js","web/star-core-v2-phase2.js"]) {
+            const code = fs.readFileSync(file, "utf8");
+            new vm.Script(code, {filename:file});
+          }
+          const html = fs.readFileSync("web/ai-v2.html", "utf8");
+          const ids = ["p2Core3d","p2RepoConnect","p2RepoBrowse","p2AdminToken","p2RepoEntries","p2RepoPreview","p2PrepareReview","p2Save","p2SavedList","p2IncludeContext","p2MemoryStatus"];
+          for (const id of ids) if (!html.includes('id="'+id+'"')) throw new Error("Missing phase-2 element "+id);
+          for (const asset of ["star-core-v2-phase2.css","star-core-v2-scene.js","star-core-v2-phase2.js"]) {
+            if (!html.includes(asset) || !fs.existsSync("web/"+asset)) throw new Error("Missing V2 asset: "+asset);
+          }
+          const scripts = ["web/star-core-v2-phase2.js","web/ai-v2.html"].map(f=>fs.readFileSync(f,"utf8"));
+          if (!scripts[0].includes("textContent") || !scripts[0].includes("STAR_V2_CONTEXT_PROMPT")) throw new Error("Missing safe text rendering or explicit context opt-in");
+          console.log("STAR CORE V2 phase-two assets and JavaScript syntax verified");
           console.log("Dashboard and STAR AI inline JavaScript syntax valid");
           NODE
