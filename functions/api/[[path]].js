@@ -66,6 +66,8 @@ function ownerChatOptions(body,env,policy){
   const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(Boolean);
   if(selected&&!allowed.includes(selected))
     return {error:"Requested model is not on the server allowlist"};
+  if(selected&&env.STAR_AI_PROVIDER==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct")
+    return {error:"Cloudflare AI binding uses a fixed model in this release"};
   const instructions=typeof extra==="string"?extra.trim():"";
   const system=policy.identity+". "+policy.instructions+
     (instructions?"\nAdditional owner-defined instructions:\n"+redactPrompt(instructions):"");
