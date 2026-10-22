@@ -38,10 +38,16 @@ jobs:
           const html = fs.readFileSync('web/ai-v2.html','utf8');
           const inline = html.split('<script>').slice(1).map(v=>v.split('</script>')[0]);
           for(const code of inline) new vm.Script(code);
-          for(const file of ['star-core-v2-phase2.js','star-core-v2-scene.js']){
+          for(const file of ['star-core-v2-phase2.js','star-core-v2-scene.js','star-core-v2-phase3.js']){
             const source=fs.readFileSync('web/'+file,'utf8');
             new vm.Script(source);
             if(!html.includes(file)) throw new Error('Missing asset reference: '+file);
+          }
+          for(const file of ['star-core-v2-phase2.css','star-core-v2-phase3.css']){
+            if(!fs.existsSync('web/'+file) || !html.includes(file)) throw new Error('Missing stylesheet: '+file);
+          }
+          for(const id of ['p3Objective','p3LocalPlan','p3AiPlan','p3Steps','p3Voice','p3Scan']){
+            if(!html.includes('id="'+id+'"')) throw new Error('Missing Commander element: '+id);
           }
           NODE
 
