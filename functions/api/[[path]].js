@@ -318,7 +318,7 @@ export async function onRequest({request,env}){
       body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:[
         {role:"system",content:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute."},
         {role:"user",content:safePrompt}
-      ]}),signal:AbortSignal.timeout(25000)
+      ]}),signal:AbortSignal.timeout(selfHosted?90000:25000)
     });
     if(!upstream.ok){console.error("AI upstream status",upstream.status);return json({error:"AI provider unavailable"},502)}
     const result=await upstream.json();
