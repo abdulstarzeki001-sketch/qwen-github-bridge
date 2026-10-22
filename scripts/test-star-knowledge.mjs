@@ -36,6 +36,9 @@ const ui=readFileSync(new URL("../web/star-knowledge.js",import.meta.url),"utf8"
 for(const name of ["knowledgeImport","knowledgeInclude","knowledgeList","knowledgePreview","knowledgeStatus","getDocument"])
  assert.ok(ui.includes(name),"Missing knowledge UI element "+name);
 assert.ok(ui.includes("cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/"),"Pin the PDF parser");
+assert.ok(ui.includes("panel.hidden=true"),"Private document library must start hidden");
+assert.ok(ui.includes('fetch("/api/auth/session"'),"Owner authorization must gate library controls");
+assert.ok(html.includes("window.STAR_KNOWLEDGE.authorize()"),"Owner activation must unlock library");
 const vault=readFileSync(new URL("../web/star-vault.js",import.meta.url),"utf8");
 for(const name of ["saveKnowledgeDocument","knowledgeItems","deleteKnowledgeDocument","knowledgeDocuments"])
  assert.ok(vault.includes(name),"Missing vault document API "+name);
