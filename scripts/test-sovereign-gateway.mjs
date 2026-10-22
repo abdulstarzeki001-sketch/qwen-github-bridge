@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createGateway,validateConfig } from "../sovereign-gateway/server.mjs";
-const env={SOVEREIGN_GATEWAY_TOKEN:"g".repeat(64),SOVEREIGN_ALLOWED_MODELS:"qwen3:8b,qwen2.5-coder:7b",SOVEREIGN_MAX_CONCURRENT:"2"};
+const env={SOVEREIGN_GATEWAY_TOKEN:"g".repeat(64),SOVEREIGN_ALLOWED_MODELS:"llama3.2:3b,mistral:7b",SOVEREIGN_MAX_CONCURRENT:"2"};
 assert.throws(()=>validateConfig({...env,SOVEREIGN_GATEWAY_TOKEN:"short"}),/32/);
 assert.throws(()=>validateConfig({...env,SOVEREIGN_OLLAMA_URL:"https://evil.example/v1/chat/completions"}),/loopback/);
 let upstreamCalls=[];
@@ -20,7 +20,7 @@ try{
  res=await request("/health");
  assert.equal(res.status,200);
  assert.equal((await res.json()).engine,"ollama");
- const valid={model:"qwen3:8b",messages:[{role:"user",content:"Hello from STAR"}],temperature:0.5,max_tokens:1000};
+ const valid={model:"llama3.2:3b",messages:[{role:"user",content:"Hello from STAR"}],temperature:0.5,max_tokens:1000};
  res=await request("/v1/chat/completions","POST",{...valid,model:"unlisted"});
  assert.equal(res.status,400);
  res=await request("/v1/chat/completions","POST",{...valid,messages:[{role:"tool",content:"bad"}]});
@@ -32,7 +32,7 @@ try{
  assert.equal(result.choices[0].message.content,"Local answer");
  assert.equal(upstreamCalls[0].url,"http://127.0.0.1:11434/v1/chat/completions");
  assert.equal(upstreamCalls[0].body.stream,false);
- assert.equal(upstreamCalls[0].body.model,"qwen3:8b");
+ assert.equal(upstreamCalls[0].body.model,"llama3.2:3b");
  res=await request("/v1/chat/completions","POST",valid,"untrusted");
  assert.equal(res.status,401);
  assert.equal(upstreamCalls.length,1);
