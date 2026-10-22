@@ -105,6 +105,9 @@ jobs:
       - name: Test Commander III privacy and mission flow
         run: node scripts/test-commander.mjs
 
+      - name: Test persistent owner session security
+        run: node scripts/test-owner-session.mjs
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
