@@ -68,7 +68,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
 
-</style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"><link rel="stylesheet" href="/star-vault.css"><link rel="stylesheet" href="/star-knowledge.css"></head>
+</style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"><link rel="stylesheet" href="/star-vault.css"><link rel="stylesheet" href="/star-knowledge.css"><link rel="stylesheet" href="/star-supabase-sync.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="nav" href="/sovereign.html">⚙ تحكم المالك</a><a class="nav" href="/">↗ لوحة التحكم</a></nav></header>
 <main><div class="hero"><div class="orb" aria-hidden="true"><canvas class="p2-core3d" id="p2Core3d" aria-hidden="true"></canvas><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
@@ -239,6 +239,7 @@ async function v2RememberOwner(token=""){
   v2AuthStatus();
   if(window.STAR_VAULT)window.STAR_VAULT.boot();
   if(window.STAR_KNOWLEDGE)window.STAR_KNOWLEDGE.authorize();
+  if(window.STAR_SUPABASE_SYNC)window.STAR_SUPABASE_SYNC.authorize();
   return true;
 }
 async function v2InitializeOwner(){
@@ -285,7 +286,7 @@ $("ownerLogout").addEventListener("click",async()=>{
   const r=await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"}});
   if(!r.ok)throw Error("HTTP "+r.status);
   sessionStorage.removeItem("starToken");
-  v2TokenVerified=false;v2AuthStatus();if(window.STAR_VAULT)window.STAR_VAULT.lock();if(window.STAR_KNOWLEDGE)window.STAR_KNOWLEDGE.lock();$("meta").textContent="تم إلغاء ثقة هذا الجهاز.";
+  v2TokenVerified=false;v2AuthStatus();if(window.STAR_VAULT)window.STAR_VAULT.lock();if(window.STAR_KNOWLEDGE)window.STAR_KNOWLEDGE.lock();if(window.STAR_SUPABASE_SYNC)window.STAR_SUPABASE_SYNC.lock();$("meta").textContent="تم إلغاء ثقة هذا الجهاز.";
  }catch(err){$("meta").textContent="تعذر تسجيل الخروج: "+err.message;}
 });
 $("ownerCancel").addEventListener("click",()=>$("ownerDialog").close());
@@ -314,4 +315,4 @@ $("v2Export").addEventListener("click",()=>{
 });
 v2AuthStatus();v2RenderTasks();v2InitializeOwner();
 
-</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script><script src="/star-core-v2-phase3.js" defer></script><script src="/star-vault.js" defer></script><script src="/star-knowledge-core.js" defer></script><script src="/star-knowledge.js" defer></script></body></html>
+</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script><script src="/star-core-v2-phase3.js" defer></script><script src="/star-vault.js" defer></script><script src="/star-knowledge-core.js" defer></script><script src="/star-knowledge.js" defer></script><script src="/star-supabase-config.js" defer></script><script src="/star-supabase-sync.js" defer></script></body></html>
