@@ -117,6 +117,9 @@ jobs:
       - name: Test STAR cloud-only implementation and owner authentication
         run: node scripts/test-star-cloud-only.mjs && node --check web/star-vault.js
 
+      - name: Test private knowledge library and cited retrieval
+        run: node scripts/test-star-knowledge.mjs && node --check web/star-knowledge.js && node --check web/star-knowledge-core.js
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'

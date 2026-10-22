@@ -148,6 +148,7 @@ function renderList(){
   wrap.append(b,del);list.append(wrap);
  }
  renderMemories();renderResearch();
+ if(window.STAR_KNOWLEDGE?.refresh)window.STAR_KNOWLEDGE.refresh();
 }
 async function removeThread(id){
  if(!confirm("حذف هذه المحادثة من STAR ومن السحابة؟"))return;
@@ -194,7 +195,7 @@ function renderMemories(){
 function renderResearch(){
  const box=$("vaultResearch");if(!box)return;
  box.replaceChildren();
- for(const item of [...state.items.values()].filter(x=>x.kind==="research").sort((a,b)=>(b.updated_at||"").localeCompare(a.updated_at||"")).slice(0,30)){
+ for(const item of [...state.items.values()].filter(x=>x.kind==="research"&&x.payload?.source_type!=="knowledge").sort((a,b)=>(b.updated_at||"").localeCompare(a.updated_at||"")).slice(0,30)){
   const query=($("vaultSearch")?.value||"").trim().toLowerCase();
   if(query&&!(item.payload.title||"").toLowerCase().includes(query)&&!(item.payload.body||"").toLowerCase().includes(query))continue;
   const details=document.createElement("details");details.className="vault-research-item";
@@ -226,7 +227,7 @@ function context(prompt,destination="auto"){
     if(score>=2)scored.push({score,text:m.content});
    }
   }
-  if(item.kind==="research"){
+  if(item.kind==="research"&&item.payload?.source_type!=="knowledge"){
    const txt=(item.payload.title||"")+" "+(item.payload.body||"");
    const score=terms.reduce((n,t)=>n+(txt.toLowerCase().includes(t)?1:0),0);
    if(score>=2)scored.push({score,text:txt});
@@ -248,6 +249,49 @@ async function saveResearch(label,result){
  await store({id,kind:"research",payload:{title:title(label),body:text},updated_at:now()});
  note("تم أرشفة نتيجة البحث أو المهمة تلقائيًا.");
 }
+// Knowledge records use the existing encrypted-in-transit, owner-only vault.
+// Parts are stored separately to obey the per-item Supabase payload bound.
+// This does not imply that Supabase sync is configured.
+function knowledgeItems(){
+ if(!state.onlineOwner)return [];
+ return [...state.items.values()].filter(x=>x.kind==="research"&&x.payload?.source_type==="knowledge"&&!x.payload?.deleted);
+}
+function knowledgeDocuments(){
+ const grouped=new Map();
+ for(const item of knowledgeItems()){
+  const p=item.payload,id=p.document_id;
+  if(typeof id!=="string")continue;
+  let entry=grouped.get(id);
+  if(!entry){entry={id,title:p.title||"ملف",format:p.format||"text",date:p.added_at||item.updated_at,parts:[],bytes:0};grouped.set(id,entry)}
+  entry.parts.push({part:p.part||0,body:p.body||""});entry.bytes+=(p.body||"").length;
+ }
+ return [...grouped.values()].map(row=>({...row,parts:row.parts.sort((a,b)=>a.part-b.part)})).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+}
+async function saveKnowledgeDocument(name,text,format="text"){
+ if(!state.onlineOwner)throw Error("فعّل حساب المالك لحفظ المعرفة.");
+ if(typeof text!=="string"||!text.trim()||text.length>180000)throw Error("حجم المعرفة غير صالح (الحد 180 ألف حرف).");
+ const safeName=String(name||"ملف").slice(0,120);
+ const id=makeId("document");
+ const added_at=now();
+ const parts=text.match(/[\s\S]{1,60000}/g)||[];
+ if(parts.length>3)throw Error("الملف كبير، قسّمه إلى أجزاء أصغر.");
+ for(let i=0;i<parts.length;i++){
+  await store({id:"knowledge-"+id+"-"+i,kind:"research",payload:{
+   source_type:"knowledge",document_id:id,title:safeName,body:parts[i],
+   format:String(format).slice(0,40),part:i,part_count:parts.length,added_at
+  },updated_at:added_at});
+ }
+ return id;
+}
+async function deleteKnowledgeDocument(docId){
+ if(!state.onlineOwner)throw Error("حساب المالك غير مفعل.");
+ const rows=knowledgeItems().filter(x=>x.payload.document_id===docId);
+ if(!rows.length)return false;
+ // Fail closed when known cloud sync is active: don't silently leave a copy.
+ if(state.cloud)for(const item of rows)await remote("DELETE",item.id);
+ for(const item of rows){state.items.delete(item.id);await removeLocal(item.id)}
+ renderList();return true;
+}
 async function saveSettings(){
  if(!state.onlineOwner)return;
  const payload={
@@ -264,6 +308,15 @@ function renderPanel(){
  $("vaultNew").addEventListener("click",()=>createThread());
  $("vaultSearch").addEventListener("input",renderList);
  $("vaultRemember").addEventListener("click",addMemory);
+}
+function lock(){
+ // Immediately clear decrypted owner data from memory on explicit logout,
+ // but preserve encrypted transport/server records and IndexedDB on disk.
+ state.onlineOwner=false;state.cloud=false;state.items.clear();state.current=null;
+ const msg=$("messages");if(msg)msg.replaceChildren();
+ for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=true;
+ $("vaultThreads")?.replaceChildren();$("vaultMemoryList")?.replaceChildren();$("vaultResearch")?.replaceChildren();
+ note("تم إغلاق ذاكرة المالك. سجّل الدخول لاستعادة ملفاتك.","warning");
 }
 async function boot(){
  if(!$("vaultPanel"))renderPanel();
@@ -307,8 +360,9 @@ async function boot(){
  state.current=(preferred&&state.items.get(preferred)?.kind==="thread")?preferred:(threads[0]?.id||null);
  if(!state.current)await createThread();
  renderCurrent();renderList();note("محفوظ على الجهاز · فحص المزامنة...");
+ if(window.STAR_KNOWLEDGE?.refresh)window.STAR_KNOWLEDGE.refresh();
  await sync();
 }
-window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,boot};
+window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,knowledgeItems,knowledgeDocuments,saveKnowledgeDocument,deleteKnowledgeDocument,lock,boot};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
