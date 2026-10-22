@@ -30,7 +30,7 @@ const fetch=async(url,opts={})=>{
 };
 const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
 const source=fs.readFileSync("web/star-sovereign.js","utf8");
-const context={document,fetch,Response,localStorage,AbortController,setTimeout,clearTimeout,console,confirm:()=>true};
+const context={window:{},document,fetch,Response,localStorage,AbortController,setTimeout,clearTimeout,console,confirm:()=>true};
 vm.runInNewContext(source,context,{filename:"star-sovereign.js"});
 await new Promise(resolve=>setTimeout(resolve,30));
 assert.match(element("ownerStatus").textContent,/جلسة المالك فعالة/);
