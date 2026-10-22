@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id),PROFILE_KEY="star-sovereign-owner-profile-v1";
-const defaults=()=>({instructions:"",model:"",temperature:0.15,max_tokens:1400});
+const defaults=()=>({owner_instructions:"",model:"",temperature:0.15,max_tokens:1400});
 let history=[],busy=false,authenticated=false;
 function notice(id,text,error=false){const node=$(id);node.textContent=text;node.classList.toggle("error",error)}
 function profile(){return {owner_instructions:$("instructions").value,model:$("model").value.trim(),temperature:Number($("temperature").value),max_tokens:Number($("maxTokens").value)}}
@@ -64,7 +64,7 @@ $("chatForm").addEventListener("submit",async e=>{
  if(!authenticated){notice("chatNotice","فعّل جلسة المالك أولًا من STAR CORE ثم ارجع إلى هذه الصفحة.",true);return}
  const current=$("prompt").value.trim();if(!current)return;
  const config=profile();const prompt=buildPrompt(current);
- if(config.instructions.length>4000||prompt.length>6000){notice("chatNotice","تجاوز طول المدخلات الحدود المسموحة.",true);return}
+ if(config.owner_instructions.length>4000||prompt.length>6000){notice("chatNotice","تجاوز طول المدخلات الحدود المسموحة.",true);return}
  busy=true;$("send").disabled=true;notice("chatNotice","جارٍ إرسال طلب الاستدلال إلى المزود…");
  try{
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),65000);
