@@ -47,14 +47,19 @@ async function removeLocal(id){
   const d=await db();await new Promise((resolve,reject)=>{const tx=d.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
  }catch{try{localStorage.setItem(LS,JSON.stringify([...state.items.values()]))}catch{}}
 }
-async function remote(method,id,kind,item){
+async function remote(method,id,kind,item,page={}){
+ // Prefer user-authenticated Supabase RLS REST sync, if explicitly connected.
+ const direct=window.STAR_SUPABASE_SYNC;
+ if(direct?.ready?.())return direct.remote(method,id,kind,item,page);
  let target="/api/vault",query=[];
  if(id)query.push("id="+encodeURIComponent(id));
  if(kind)query.push("kind="+encodeURIComponent(kind));
+ if(method==="LIST"){query.push("limit="+Math.min(100,Math.max(1,page.limit||100)));query.push("offset="+Math.max(0,page.offset||0));}
  if(query.length)target+="?"+query.join("&");
  const headers={"Content-Type":"application/json"};
- const response=await fetch(target,{method,headers,credentials:"same-origin",cache:"no-store",...(method==="PUT"?{body:JSON.stringify(item)}:{})});
- if(!response.ok)throw Error("Vault HTTP "+response.status);
+ const verb=method==="LIST"?"GET":method;
+ const response=await fetch(target,{method:verb,headers,credentials:"same-origin",cache:"no-store",...(method==="PUT"?{body:JSON.stringify(item)}:{})});
+ if(!response.ok)throw Object.assign(Error("Vault HTTP "+response.status),{status:response.status});
  return response.json();
 }
 function note(text,type=""){
@@ -82,10 +87,14 @@ async function sync(){
  try{
   const remoteRows=[];
   for(let offset=0;offset<10000;offset+=100){
-   const resp=await fetch("/api/vault?limit=100&offset="+offset,{credentials:"same-origin",cache:"no-store"});
-   if(resp.status===503){state.cloud=false;note("الحفظ المحلي فعّال · مزامنة Supabase تحتاج تفعيل سر الخادم");return}
-   if(!resp.ok){note("الحفظ المحلي فعّال، المزامنة غير متاحة","warning");return}
-   const body=await resp.json();const rows=body.items||[];
+   let body;
+   try{body=await remote("LIST",null,null,null,{limit:100,offset})}
+   catch(error){
+    state.cloud=false;
+    note(error.status===503?"الحفظ المحلي فعّال · اربط حساب Supabase للمزامنة":"الحفظ المحلي فعّال، المزامنة غير متاحة","warning");
+    return;
+   }
+   const rows=body.items||[];
    remoteRows.push(...rows);
    if(rows.length<100)break;
   }
@@ -363,6 +372,6 @@ async function boot(){
  if(window.STAR_KNOWLEDGE?.refresh)window.STAR_KNOWLEDGE.refresh();
  await sync();
 }
-window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,knowledgeItems,knowledgeDocuments,saveKnowledgeDocument,deleteKnowledgeDocument,lock,boot};
+window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,knowledgeItems,knowledgeDocuments,saveKnowledgeDocument,deleteKnowledgeDocument,lock,sync,boot};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
