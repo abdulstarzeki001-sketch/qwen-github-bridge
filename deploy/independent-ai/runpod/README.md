@@ -2,7 +2,21 @@
 
 This deployment mode is for **RunPod Pods** (containers), unlike the sibling GPU VM `compose.yaml`. It uses a single Docker image bundling Ollama + an authenticated Node inference gateway. It does not require a Docker daemon inside the running RunPod Pod.
 
-## Build a container image
+## Use the prebuilt STAR image (recommended)
+
+The STAR GitHub Actions workflow builds and publishes an image at:
+
+```text
+ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest
+```
+
+[STAR RunPod build workflow](https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/publish-star-runpod-image.yml).
+
+**Important:** GitHub Container Registry packages may start out private. Open the package settings in the repository owner's GitHub account and set its **package visibility to Public**, or configure supported RunPod private-registry credentials securely. A public *container image* contains only public source and no personal API keys; all model/server credentials are supplied by RunPod environment secrets at runtime.
+
+If the GitHub Actions image has not completed a successful build yet, follow the manual build below.
+
+## Build a container image yourself (fallback)
 
 On a computer with Docker, clone the STAR repository and run:
 
@@ -19,7 +33,7 @@ You must log in to your container registry before pushing, and the image must be
 
 1. Open [RunPod](https://www.runpod.io/) and create a GPU Pod (this **incurs charges**).
 2. Choose **RTX A5000 24 GB** or other Nvidia GPU with at least 24 GB VRAM (availability/performance vary).
-3. Select the custom image `YOUR_DOCKERHUB_USER/star-independent-ai:1`.
+3. Select the published `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` (if its package is public), or your own `YOUR_DOCKERHUB_USER/star-independent-ai:1` image.
 4. Expose **8080 HTTP** in the RunPod Pod networking settings (`8080/http`). **Do NOT expose port 11434**, which is Ollama's unauthenticated local API.
 5. Set `STAR_BACKEND_TOKEN` to a long random value (generate on your own device using `openssl rand -hex 32`), and optionally `STAR_MODEL=gpt-oss:20b`. These go in the Pod's **private environment settings**, not in source code.
 6. Create a persistent Pod volume mounted at `/workspace` with at least 40 GB capacity (>=60 GB recommended). It stores model weights so they aren't redownloaded on restart; review provider storage guarantees.
