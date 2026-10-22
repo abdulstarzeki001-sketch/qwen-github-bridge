@@ -14,7 +14,8 @@ mkdir -p "${OLLAMA_MODELS}"
 /bin/ollama serve &
 ollama_pid=$!
 cleanup(){
-  kill "${gateway_pid:-0}" "${ollama_pid}" 2>/dev/null || true
+  if [[ -n "${gateway_pid:-}" ]]; then kill "$gateway_pid" 2>/dev/null || true; fi
+  kill "$ollama_pid" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
