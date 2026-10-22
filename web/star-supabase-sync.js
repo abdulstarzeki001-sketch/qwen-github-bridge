@@ -4,7 +4,7 @@
  */
 (()=>{"use strict";
 const cfg=window.STAR_SUPABASE_PUBLIC;
-const KEY="star-supabase-sync-session-v1",PREF="star-supabase-sync-remember-v1";
+const KEY="star-supabase-sync-session-v1",PREF="star-supabase-sync-remember-v1",USER_BINDING="star-supabase-vault-user-v1";
 const $=id=>document.getElementById(id);
 let session=null,ownerOk=false,loading=false,connected=false,initial=false;
 const now=()=>Math.floor(Date.now()/1000);
@@ -53,7 +53,15 @@ async function validSession(retried=false){
  if(session.expires_at<=now()+90&&!(await refreshToken()))return false;
  try{
   const user=await api("/auth/v1/user",{headers:{Authorization:"Bearer "+session.access_token}});
-  return Boolean(user?.id);
+  if(typeof user?.id!=="string"||!user.id)return false;
+  // A device-local archive may contain private owner documents from another
+  // login. Never silently upload that archive into another Supabase account.
+  try{
+   const bound=localStorage.getItem(USER_BINDING);
+   if(bound&&bound!==user.id){status("هذه ذاكرة جهاز مرتبطة بحساب Supabase آخر. لن تتم مزامنتها لحماية البيانات.",true);return false}
+   if(!bound)localStorage.setItem(USER_BINDING,user.id);
+  }catch{return false}
+  return true;
  }catch(error){
   if((error.status===401||error.status===403)&&!retried){if(!(await refreshToken()))return false;return validSession(true)}
   return false;
