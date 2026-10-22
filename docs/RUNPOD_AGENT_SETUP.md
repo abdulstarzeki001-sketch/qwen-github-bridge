@@ -2,7 +2,7 @@
 
 **Official setup entrypoint:** https://agents.runpod.io/
 **Official instructions:** https://docs.runpod.io/agent-setup.md
-**RunPod hosted MCP:** https://mcp.getrunpod.io/
+**RunPod hosted MCP:** https://mcp.runpod.io/
 **Skills repository:** https://github.com/runpod/runpod-plugins-official
 
 This repository now builds and publishes STAR's independent inference container to GitHub Container Registry (GHCR), without requiring RunPod credentials or a paid GPU. It also has an authenticated GPU gateway and instructions at [RunPod Pod setup](../deploy/independent-ai/runpod/README.md). The linked account and paid Pod must be created in **your own RunPod session**. No AI coding assistant can authorize OAuth or consent to new GPU charges on your behalf.
@@ -23,8 +23,11 @@ claude plugin list
 
 ### Codex
 
+Requires Node.js 22.20 or newer for the Skills installer. Check `node --version` first, then:
+
 ```sh
 codex plugin marketplace add https://github.com/runpod/runpod-plugins-official.git
+codex plugin add runpod@runpod
 ```
 
 **User-only action:** in Codex run `/plugins`, install the **Runpod** plugin from its marketplace tab, then reload. If the Runpod MCP tools are not visible:
@@ -37,23 +40,25 @@ Finish OAuth sign-in when prompted.
 
 ### Cursor / Copilot / Windsurf / Cline / other coding agents
 
+The Skills installer requires Node.js 22.20 or newer. Confirm with `node --version` first.
+
 Install skills non-interactively:
 
 ```sh
-npx -y skills add runpod/runpod-plugins-official --skill '*' --yes --global
+npx -y skills add runpod/runpod-plugins-official --skill '*' --agent codex --yes --global
 ```
 
 Then run the guided MCP installer on **your personal machine**:
 
 ```sh
-npx @runpod/mcp-server@latest add
+npx @runpod/mcp-server@latest add --client cursor
 ```
 
-The installer may prompt you to choose an agent and open the RunPod OAuth authorization page. You must finish that login yourself.
+Use `--client cursor` for Cursor, `--client vscode` for GitHub Copilot in VS Code, or `--client opencode` for opencode. This registers the hosted MCP server without prompting. You must finish OAuth login yourself.
 
 **Verification:** once authenticated, ask the agent **“List my Runpod Pods.”** A successful empty list means the connection works. If OAuth has not been completed, the RunPod MCP is **not** connected regardless of skill-install success.
 
-**ChatGPT limitation:** RunPod is not currently a connected RunPod app in this ChatGPT workspace; installing scripts in an isolated terminal or GitHub CI cannot register an OAuth connection in the ChatGPT app. Use a supported coding-agent client or an available RunPod integration when connected. Do not paste API keys or passwords in conversations.
+**ChatGPT limitation:** Runpod is not currently a connected Runpod app in this ChatGPT workspace; installing scripts in an isolated terminal or GitHub CI cannot register an OAuth connection in the ChatGPT app. Agent installation commands must be run on your personal Mac or a Codex/Claude terminal, not in this ChatGPT cloud session. Use a supported coding-agent client or an available RunPod integration when connected. Do not paste API keys or passwords in conversations.
 
 ## 2. Container image (automatic, no Pod/billing yet)
 
