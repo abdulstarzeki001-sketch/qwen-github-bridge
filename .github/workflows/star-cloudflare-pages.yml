@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Generate iPhone and PWA neural-orb icons
+        run: node scripts/generate-star-icons.mjs
+
       - name: Validate STAR V2 static assets
         run: |
           node --input-type=module <<'NODE'
@@ -45,6 +48,14 @@ jobs:
           }
           for(const file of ['star-core-v2-phase2.css','star-core-v2-phase3.css']){
             if(!fs.existsSync('web/'+file) || !html.includes(file)) throw new Error('Missing stylesheet: '+file);
+          }
+          for(const file of ['manifest.webmanifest','apple-touch-icon.png','icon-192.png','icon-512.png']){
+            if(!fs.existsSync('web/'+file)) throw new Error('Missing iOS/PWA asset: '+file);
+          }
+          for(const page of ['index.html','ai.html','ai-v2.html']){
+            const text=fs.readFileSync('web/'+page,'utf8');
+            if(!text.includes('rel="apple-touch-icon"') || !text.includes('manifest.webmanifest'))
+              throw new Error('Missing iPhone icon metadata in '+page);
           }
           for(const id of ['p3Objective','p3LocalPlan','p3AiPlan','p3Steps','p3Voice','p3Scan']){
             if(!html.includes('id="'+id+'"')) throw new Error('Missing Commander element: '+id);
