@@ -75,7 +75,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-missionhead{font:800 10px/1.6 ui-monospace,monospace;color:#76ecd9;letter-spacing:2px;direction:ltr;text-align:left;margin:0 0 8px}
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
-</style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"></head>
+</style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"><link rel="stylesheet" href="/star-vault.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="nav" href="/sovereign.html">⚙ تحكم المالك</a><a class="nav" href="/">↗ لوحة التحكم</a></nav></header>
 <main><div class="hero"><div class="orb" aria-hidden="true"><canvas class="p2-core3d" id="p2Core3d" aria-hidden="true"></canvas><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
@@ -262,6 +262,7 @@ async function askLocal(prompt){
     if(!probe.ok)throw probe.error;
     model=$("localModel").value||probe.names?.[0]||"qwen2.5-coder-7b-instruct-q4_k_m";
   }
+  const memoryPrompt=window.STAR_VAULT?.context(prompt)||prompt;
   const d=await requestJson(base+"/api/chat",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -269,7 +270,7 @@ async function askLocal(prompt){
       model,
       messages:[
         {role:"system",content:"You are STAR CYBER AI X. Respond in the user's language. Be precise about software engineering and defensive cybersecurity. Never invent evidence or claim actions you did not execute."},
-        {role:"user",content:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(prompt):prompt}
+        {role:"user",content:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(memoryPrompt):memoryPrompt}
       ],
       stream:false
     })
@@ -283,10 +284,11 @@ async function askPower(prompt){
   const savedToken=sessionStorage.getItem("starToken")||"";
   const headers={"Content-Type":"application/json"};
   if(savedToken)headers.Authorization="Bearer "+savedToken;
+  const memoryPrompt=window.STAR_VAULT?.context(prompt)||prompt;
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
-    body:JSON.stringify({prompt:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(prompt):prompt})
+    body:JSON.stringify({prompt:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(memoryPrompt):memoryPrompt})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
   if(!content)throw Error("الخادم السحابي أعاد استجابة فارغة");
@@ -311,12 +313,12 @@ $("probeLocal").addEventListener("click",()=>probeLocal(true));
 $("localBaseUrl").addEventListener("change",()=>{localStorage.setItem("starLocalBase",$("localBaseUrl").value.trim());probeLocal(true)});
 $("localModel").addEventListener("change",()=>localStorage.setItem("starLocalModel",$("localModel").value));
 document.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>{$("prompt").value=b.dataset.p;$("prompt").focus()}));
-$("clear").addEventListener("click",()=>{messages.replaceChildren();$("meta").textContent="تم مسح المحادثة من هذه الصفحة"});
+$("clear").addEventListener("click",()=>{if(window.STAR_VAULT)window.STAR_VAULT.newThread();else messages.replaceChildren();$("meta").textContent="بدأت محادثة جديدة، والمحادثات السابقة محفوظة في STAR VAULT"});
 $("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("form").requestSubmit()}});
 
 $("form").addEventListener("submit",async e=>{
   e.preventDefault();const prompt=$("prompt").value.trim();if(!prompt||busy)return;
-  busy=true;$("send").disabled=true;$("prompt").value="";add("user",prompt);const output=add("assistant","يفكر…");
+  busy=true;$("send").disabled=true;$("prompt").value="";add("user",prompt);if(window.STAR_VAULT)await window.STAR_VAULT.capture("user",prompt,mode);const output=add("assistant","يفكر…");
   v2StartTask(prompt);
   try{
     let result;
@@ -329,11 +331,13 @@ $("form").addEventListener("submit",async e=>{
       }
     }
     output.textContent=result.content;
+    if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",result.content,result.route);
     $("meta").textContent=result.route+" · Model: "+result.model;
     if(result.route==="POWER"){v2TokenVerified=true;v2AuthStatus();}
     v2FinishTask(true);
   }catch(err){
     output.textContent="تعذر الاتصال: "+err.message;
+    if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",output.textContent,"error");
     v2FinishTask(false);
     if(/Owner sign-in required|HTTP 401|Unauthorized/i.test(err.message)){v2TokenVerified=false;v2AuthStatus();$("meta").textContent="انتهت جلسة المالك. فعّل هذا الجهاز مرة واحدة إذا لم يكن قد فُعّل."; }
   }finally{busy=false;$("send").disabled=false;$("prompt").focus()}
@@ -426,7 +430,7 @@ $("ownerForm").addEventListener("submit",async event=>{
 $("ownerToken").addEventListener("input",()=>$("ownerToken").setCustomValidity(""));
 $("v2NewMission").addEventListener("click",()=>{
  if(busy)return;
- messages.replaceChildren();$("meta").textContent="مهمة جديدة. اختر أمراً من مركز العمليات أو اكتب طلبك.";$("prompt").focus();
+ if(window.STAR_VAULT)window.STAR_VAULT.newThread();else messages.replaceChildren();$("meta").textContent="مهمة جديدة. اختر أمراً من مركز العمليات أو اكتب طلبك.";$("prompt").focus();
 });
 $("v2Export").addEventListener("click",()=>{
  const entries=[...messages.querySelectorAll(".message")].map(node=>node.innerText).join("\n\n---\n\n");
@@ -436,4 +440,4 @@ $("v2Export").addEventListener("click",()=>{
 });
 v2AuthStatus();v2RenderTasks();v2InitializeOwner();
 
-</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script><script src="/star-core-v2-phase3.js" defer></script></body></html>
+</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script><script src="/star-core-v2-phase3.js" defer></script><script src="/star-vault.js" defer></script></body></html>
