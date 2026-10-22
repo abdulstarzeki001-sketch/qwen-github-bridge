@@ -9,12 +9,13 @@ document.querySelectorAll("[data-p2-tab]").forEach(b=>b.addEventListener("click"
 let activeFile=null;
 async function github(url){
  const key=e("p2AdminToken").value.trim();
- if(key.length<32)throw Error("أدخل STAR_GITHUB_ADMIN_TOKEN الخاص بمستودع GitHub، وليس STAR_API_TOKEN.");
+ // A verified owner cookie grants read-only GitHub access; a dedicated admin token remains optional.
+ const headers=key.length>=32?{Authorization:"Bearer "+key}:{};
  const c=new AbortController(),timer=setTimeout(()=>c.abort(),18000);
  try{
- const r=await fetch(url,{headers:{Authorization:"Bearer "+key},cache:"no-store",signal:c.signal});
+ const r=await fetch(url,{headers,credentials:"same-origin",cache:"no-store",signal:c.signal});
  const d=await r.json().catch(()=>({}));
- if(!r.ok)throw Error(r.status===401?"رمز GitHub غير صحيح":r.status===502?"GitHub App غير متصل بالخادم":r.status===403?"قراءة GitHub معطّلة في سياسة المالك":d.error||"HTTP "+r.status);
+ if(!r.ok)throw Error(r.status===401?"يجب تفعيل هذا الجهاز كمالك، أو إدخال رمز إدارة GitHub الاختياري":r.status===502?"GitHub App غير متصل بالخادم":r.status===403?"قراءة GitHub معطّلة في سياسة المالك":d.error||"HTTP "+r.status);
  return d;
  }catch(err){if(err.name==="AbortError")throw Error("انتهت مهلة GitHub");throw err;}finally{clearTimeout(timer);}
 }
