@@ -196,7 +196,7 @@ async function disconnect(){
 }
 function lock(){
  // Disconnecting STAR owner access must clear in-memory credentials.
- ownerOk=false;connected=false;session=null;
+ ownerOk=false;connected=false;store(null);
  const panel=$("supabaseSyncPanel");if(panel)panel.hidden=true;
  updateUI();
 }
