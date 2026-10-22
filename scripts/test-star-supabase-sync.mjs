@@ -47,6 +47,8 @@ rest=calls.at(-1);
 assert.equal(rest.method,"DELETE");
 assert.ok(rest.url.includes("id=eq.chat-one"));
 sync.lock();assert.equal(sync.ready(),false);
+assert.equal(sessionStorage.getItem(storageKey),null,"STAR logout clears the Supabase access token");
+assert.equal(localStorage.getItem(storageKey),null,"STAR logout clears remembered Supabase refresh tokens");
 await assert.rejects(async()=>sync.remote("LIST"),/not connected/);
 assert.ok(vault.includes('direct?.ready?.()')&&vault.includes('direct.remote(method,id,kind,item,page)'),"Existing Vault must use connected Supabase RLS");
 assert.ok(ui.includes('star-supabase-config.js')&&ui.includes('star-supabase-sync.js')&&ui.includes('star-supabase-sync.css'));
