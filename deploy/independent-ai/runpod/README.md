@@ -10,7 +10,7 @@ The STAR GitHub Actions workflow builds and publishes an image at:
 ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest
 ```
 
-[STAR RunPod build workflow](https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/runpod-image.yml).
+[STAR RunPod build workflow](https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/publish-star-runpod-image.yml).
 
 **Important:** GitHub Container Registry packages may start out private. Open the package settings in the repository owner's GitHub account and set its **package visibility to Public**, or configure supported RunPod private-registry credentials securely. A public *container image* contains only public source and no personal API keys; all model/server credentials are supplied by RunPod environment secrets at runtime.
 
