@@ -118,6 +118,7 @@ function getThread(){
 async function createThread(){
  const item={id:makeId("chat"),kind:"thread",payload:{title:"محادثة جديدة",messages:[]},updated_at:now()};
  state.current=item.id;
+ try{localStorage.setItem("star-vault-current",item.id)}catch{}
  await store(item);
  renderCurrent();renderList();return item
 }
@@ -133,7 +134,7 @@ function renderCurrent(){
 }
 async function openThread(id){
  if(!state.items.has(id)||state.items.get(id).kind!=="thread")return;
- state.current=id;renderCurrent();renderList();note("تم استرجاع المحادثة. أكمل من آخر رسالة.");
+ state.current=id;try{localStorage.setItem("star-vault-current",id)}catch{}renderCurrent();renderList();note("تم استرجاع المحادثة. أكمل من آخر رسالة.");
 }
 function renderList(){
  const list=$("vaultThreads");if(!list)return;
@@ -168,7 +169,7 @@ async function capture(role,content,route=""){
  if(row.payload.messages.length>340||JSON.stringify(row.payload).length>130000){
   row.payload.messages.pop();await store(row);row=await createThread();row.payload.title=title(content);row.payload.messages.push(msg)
  }
- await store(row);
+ await store(row);renderCurrent();
 }
 function memories(){return [...state.items.values()].filter(x=>x.kind==="memory").sort((a,b)=>(b.updated_at||"").localeCompare(a.updated_at||""))}
 function renderMemories(){
@@ -246,7 +247,9 @@ async function boot(){
    state.items.set(id,row);await putLocal(row);
   }
  }catch{}
- const threads=threadRows();state.current=threads[0]?.id||null;
+ const threads=threadRows();
+ let preferred=null;try{preferred=localStorage.getItem("star-vault-current")}catch{}
+ state.current=(preferred&&state.items.get(preferred)?.kind==="thread")?preferred:(threads[0]?.id||null);
  if(!state.current)await createThread();
  renderCurrent();renderList();note("محفوظ على الجهاز · فحص المزامنة...");
  try{
