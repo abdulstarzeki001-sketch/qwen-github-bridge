@@ -108,6 +108,9 @@ jobs:
       - name: Test persistent owner session security
         run: node scripts/test-owner-session.mjs
 
+      - name: Test SOVEREIGN owner inference controls
+        run: node scripts/test-sovereign.mjs && node --check web/star-sovereign.js
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
