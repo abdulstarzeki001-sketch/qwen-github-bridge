@@ -17,14 +17,14 @@ class Settings:
         "http://host.docker.internal:8000/v1",
     )
     llm_api_key: str = os.getenv("LLM_API_KEY", "local")
-    llm_model: str = os.getenv("LLM_MODEL", "Qwen3-Coder")
+    llm_model: str = os.getenv("LLM_MODEL", "gpt-4.1-mini")
     llm_timeout: int = int(os.getenv("LLM_TIMEOUT", "120"))
 
     cloudflare_account_id: str = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
     cloudflare_api_token: str = os.getenv("CLOUDFLARE_API_TOKEN", "")
     cloudflare_ai_model: str = os.getenv(
         "CLOUDFLARE_AI_MODEL",
-        "@cf/qwen/qwen3.8-27b",
+        "@cf/meta/llama-3.1-8b-instruct",
     )
 
     github_token: str = os.getenv("GITHUB_TOKEN", "")
