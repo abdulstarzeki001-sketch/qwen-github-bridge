@@ -48,6 +48,30 @@ async function secretMatches(expected,received){
   return diff===0;
 }
 
+
+function ownerChatOptions(body,env,policy){
+  const extra=body?.owner_instructions;
+  if(extra!==undefined&&(typeof extra!=="string"||extra.length>4000))
+    return {error:"Owner instructions must be text (max 4000 characters)"};
+  const temperature=body?.temperature===undefined?0.15:Number(body.temperature);
+  if(!Number.isFinite(temperature)||temperature<0||temperature>1)
+    return {error:"Temperature must be between 0 and 1"};
+  const maxTokens=body?.max_tokens===undefined?1400:Number(body.max_tokens);
+  if(!Number.isInteger(maxTokens)||maxTokens<128||maxTokens>4096)
+    return {error:"max_tokens must be an integer from 128 to 4096"};
+  const requested=body?.model===undefined?"":body.model;
+  if(typeof requested!=="string"||requested.length>160)
+    return {error:"Invalid model identifier"};
+  const selected=requested.trim();
+  const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(Boolean);
+  if(selected&&!allowed.includes(selected))
+    return {error:"Requested model is not on the server allowlist"};
+  const instructions=typeof extra==="string"?extra.trim():"";
+  const system=policy.identity+". "+policy.instructions+
+    (instructions?"\nAdditional owner-defined instructions:\n"+redactPrompt(instructions):"");
+  return {system,temperature,maxTokens,modelOverride:selected};
+}
+
 function proxyCredential(request){
   const key=(request.headers.get("x-api-key")||"").trim();
   if(key)return key;
@@ -186,17 +210,19 @@ export async function onRequest({request,env}){
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
+  const options=ownerChatOptions(body,env,policy);
+  if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
   try{
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
-      const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:safePrompt}],max_tokens:1024});
+      const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(1024,options.maxTokens)});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
     }
     if(useAnthropic){
-      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
+      const model=options.modelOverride||env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
       const upstream=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{
@@ -206,8 +232,9 @@ export async function onRequest({request,env}){
         },
         body:JSON.stringify({
           model,
-          max_tokens:1400,
-          system:policy.identity+". "+policy.instructions+" Answer in the user's language. Never claim to have executed actions you did not execute.",
+          max_tokens:options.maxTokens,
+          temperature:options.temperature,
+          system:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute.",
           messages:[{role:"user",content:safePrompt}]
         }),
         signal:AbortSignal.timeout(25000)
@@ -218,13 +245,13 @@ export async function onRequest({request,env}){
       if(!content)return json({error:"Anthropic returned no content"},502);
       return json({ok:true,model:result.model||model,content});
     }
-    const model=selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
+    const model=options.modelOverride||(selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"));
     let endpoint=selfHosted?env.STAR_SELFHOSTED_URL:useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
     if(selfHosted){const url=new URL(endpoint);if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||!url.pathname.endsWith("/chat/completions"))return json({error:"Invalid self-hosted endpoint"},503);endpoint=url.toString()}
     const upstream=await fetch(endpoint,{
       method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
-      body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
-        {role:"system",content:policy.identity+". "+policy.instructions+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
+      body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:[
+        {role:"system",content:options.system+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
         {role:"user",content:safePrompt}
       ]}),signal:AbortSignal.timeout(25000)
     });
