@@ -20,7 +20,7 @@ Install Ollama following the official instructions: https://ollama.com/download
 Download a small starter model:
 
 ```bash
-ollama pull qwen3:8b
+ollama pull llama3.2:3b
 ollama list
 ```
 
@@ -32,7 +32,7 @@ From this repository:
 
 ```bash
 export SOVEREIGN_GATEWAY_TOKEN="<your long random token, at least 32 characters>"
-export SOVEREIGN_ALLOWED_MODELS="qwen3:8b"
+export SOVEREIGN_ALLOWED_MODELS="llama3.2:3b"
 export SOVEREIGN_GATEWAY_PORT="7088"
 node sovereign-gateway/server.mjs
 ```
@@ -74,8 +74,8 @@ In the **Cloudflare Pages project runtime secrets/environment** (not in GitHub s
 STAR_AI_PROVIDER=selfhosted
 STAR_SELFHOSTED_URL=https://brain.your-domain.example/v1/chat/completions
 STAR_SELFHOSTED_TOKEN=<exact same SOVEREIGN_GATEWAY_TOKEN>
-STAR_SELFHOSTED_MODEL=qwen3:8b
-STAR_ALLOWED_MODELS=qwen3:8b
+STAR_SELFHOSTED_MODEL=llama3.2:3b
+STAR_ALLOWED_MODELS=llama3.2:3b
 ```
 
 In Cloudflare Pages, deploy the site with these env vars. The current server validates that the self-hosted endpoint uses HTTPS and ends in `/chat/completions`. The gateway enforces the per-request allowlist regardless of what the browser asks.
@@ -83,7 +83,7 @@ In Cloudflare Pages, deploy the site with these env vars. The current server val
 ## 5. Validate end-to-end
 
 1. Sign in as the STAR owner via `/ai-v2.html`.
-2. Visit `/sovereign.html`, keep the model field empty to use `STAR_SELFHOSTED_MODEL` or enter `qwen3:8b`.
+2. Visit `/sovereign.html`, keep the model field empty to use `STAR_SELFHOSTED_MODEL` or enter `llama3.2:3b`.
 3. Send a harmless test question.
 4. Check response correctness and latency; `/api/health` reports only whether configuration is present.
 5. Verify that turning off your gateway causes a clean error, not a fallback that secretly sends private prompts to a cloud model.
