@@ -155,7 +155,7 @@ export async function onRequest({request,env}){
     return json({
       ok:true,version:"0.7.0",runtime:"cloudflare",
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
       claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",
       full_backend:false
@@ -309,39 +309,21 @@ export async function onRequest({request,env}){
       if(!content)return json({error:"Anthropic returned no content"},502);
       return json({ok:true,model:result.model||model,content});
     }
-    const fallbackModel=options.modelOverride||(selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"));
-    const hybridCloud=body?.hybrid_cloud===true&&!selfHosted&&!useOpenAI;
-    // Only the server selects the Qwen fallback model. The browser cannot
-    // override the provider or choose an arbitrary model outside this route.
-    const configuredQwen=String(env.STAR_HYBRID_QWEN_MODEL||"qwen/qwen3-8b:free").trim();
-    const qwenModel=hybridCloud&&/^[A-Za-z0-9][A-Za-z0-9._:/-]{1,159}$/.test(configuredQwen)?configuredQwen:"";
-    let model=qwenModel||fallbackModel;
+    const model=options.modelOverride||(selfHosted?(env.STAR_SELFHOSTED_MODEL||"local-model"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"));
     let endpoint=selfHosted?env.STAR_SELFHOSTED_URL:useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
     if(selfHosted){const url=new URL(endpoint);if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||!url.pathname.endsWith("/chat/completions"))return json({error:"Invalid self-hosted endpoint"},503);endpoint=url.toString()}
-    const headers={"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"};
-    const messages=[
-      {role:"system",content:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute."},
-      {role:"user",content:safePrompt}
-    ];
-    const attempt=selected=>fetch(endpoint,{
-      method:"POST",headers,
-      body:JSON.stringify({model:selected,max_tokens:options.maxTokens,temperature:options.temperature,messages}),
-      signal:AbortSignal.timeout(22000)
+    const upstream=await fetch(endpoint,{
+      method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
+      body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:[
+        {role:"system",content:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute."},
+        {role:"user",content:safePrompt}
+      ]}),signal:AbortSignal.timeout(25000)
     });
-    let upstream=await attempt(model),usedBackup=false;
-    // A temporarily rate-limited or unavailable Qwen endpoint must not make
-    // the whole hybrid session unusable: retain the configured cloud model.
-    if(!upstream.ok&&qwenModel&&qwenModel!==fallbackModel&&
-      (upstream.status===404||upstream.status===429||upstream.status>=500)){
-      console.warn("STAR Hybrid Qwen unavailable; trying configured cloud backup",upstream.status);
-      model=fallbackModel;usedBackup=true;
-      upstream=await attempt(model);
-    }
     if(!upstream.ok){console.error("AI upstream status",upstream.status);return json({error:"AI provider unavailable"},502)}
     const result=await upstream.json();
     const raw=result?.choices?.[0]?.message?.content;
     const content=typeof raw==="string"?raw:Array.isArray(raw)?raw.map(x=>x?.text||"").join("\n"):"";
     if(!content)return json({error:"AI provider returned no content"},502);
-    return json({ok:true,model:result.model||model,content,hybrid_cloud:hybridCloud,cloud_backup_used:usedBackup});
+    return json({ok:true,model:result.model||model,content});
   }catch(error){console.error("AI request error",error.message);return json({error:"AI request failed"},502)}
 }
