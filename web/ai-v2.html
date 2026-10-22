@@ -75,6 +75,12 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-missionhead{font:800 10px/1.6 ui-monospace,monospace;color:#76ecd9;letter-spacing:2px;direction:ltr;text-align:left;margin:0 0 8px}
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
+
+.hybrid-consent{margin-top:12px;border:1px solid #336775;border-radius:14px;padding:12px;background:#0b2733b8;font-size:12px;color:#daf7ef}
+.hybrid-consent label{display:flex;align-items:center;gap:9px;cursor:pointer;line-height:1.7}
+.hybrid-consent input{width:19px;height:19px;accent-color:#76f9da;flex-shrink:0}
+.hybrid-consent p{color:#a8c5d5;font-size:11px;line-height:1.9;margin:8px 0 0}
+.hybrid-consent #hybridStatus{color:#8ff6e4;font-weight:700}
 </style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"><link rel="stylesheet" href="/star-vault.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="nav" href="/sovereign.html">⚙ تحكم المالك</a><a class="nav" href="/">↗ لوحة التحكم</a></nav></header>
@@ -84,7 +90,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
   <div class="modebar">
     <button type="button" data-mode="private">PRIVATE · Qwen</button>
     <button type="button" data-mode="power">POWER · Cloud</button>
-    <button type="button" data-mode="auto">AUTO · Local-first</button>
+    <button type="button" data-mode="auto">HYBRID · Qwen + Cloud</button>
   </div>
   <div id="modeHelp" class="modehelp"></div>
   <div id="localSettings" class="localsettings">
@@ -93,6 +99,11 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
     <button id="probeLocal" type="button">فحص InferrLM</button>
   </div>
   <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
+  <div id="hybridSettings" class="hybrid-consent" hidden>
+    <label for="hybridCloudConsent"><input type="checkbox" id="hybridCloudConsent"> <strong>أوافق على التحويل التلقائي للسحابة عندما يتوقف Qwen المحلي</strong></label>
+    <p>إذا فعّلت الخيار، تُرسل الرسالة الجديدة إلى نموذج STAR السحابي عند فشل الاتصال بالآيفون. إذا تركته مغلقًا، سيطلب STAR موافقتك لكل طلب قبل أي إرسال سحابي. لا تُرفع محادثات PRIVATE السابقة تلقائيًا.</p>
+    <p id="hybridStatus" role="status" aria-live="polite">سيستخدم HYBRID نموذج Qwen المحلي أولًا.</p>
+  </div>
 </div>
 
 
@@ -161,6 +172,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
 </main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ تفعيل الجهاز مرة واحدة</h2><p>أدخل رمز STAR_API_TOKEN لمرة واحدة. سيحفظ الخادم جلسة المالك في ملف تعريف ارتباط محمي HttpOnly على هذا الجهاز، دون حفظ الرمز في التخزين الدائم. ستبقى جلسة المالك محفوظة على جهازك لمدة تصل إلى سنة، وتتجدد تلقائيًا خلال الاستخدام. عند استخدام Cloudflare Access يتم اعتماد الجهاز تلقائيًا بعد التحقق من هويتك.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">الثقة بهذا الجهاز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
+<script src="/star-hybrid.js"></script>
 <script>
 const $=id=>document.getElementById(id), messages=$("messages");
 let busy=false;
@@ -171,7 +183,7 @@ let v2Tasks=[];
 const modeCopy={
   private:"PRIVATE: يرسل الطلب مباشرة من المتصفح إلى InferrLM على جهازك. لا يمر نص الطلب عبر STAR Cloud.",
   power:"POWER: يستخدم خادم STAR السحابي للمهمات الثقيلة. مزود النموذج يعتمد على إعداد الخادم.",
-  auto:"AUTO: يحاول Qwen المحلي أولاً. إذا تعذر المحلي يتوقف ويطلب منك التحويل إلى POWER؛ لا يوجد رفع سحابي صامت."
+  auto:"HYBRID: يستخدم Qwen الموجود في الآيفون أولًا. إن توقف، يتحول للنموذج السحابي فقط بعد موافقتك أو إذا فعّلت الموافقة التلقائية."
 };
 
 function add(role,text){
@@ -187,6 +199,7 @@ function setMode(next){
   document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
   $("modeHelp").textContent=modeCopy[mode];
   $("localSettings").hidden=mode==="power";
+  $("hybridSettings").hidden=mode!=="auto";
   $("localState").hidden=mode==="power";
   $("v2Mode").textContent=mode.toUpperCase();
   $("localState").textContent=mode==="power"
@@ -285,11 +298,12 @@ async function askPower(prompt){
   const savedToken=sessionStorage.getItem("starToken")||"";
   const headers={"Content-Type":"application/json"};
   if(savedToken)headers.Authorization="Bearer "+savedToken;
-  const memoryPrompt=window.STAR_VAULT?.context(prompt)||prompt;
+  // Server requests must NEVER silently inherit private, on-device history.
+  const memoryPrompt=window.STAR_VAULT?.context(prompt,"cloud")||prompt;
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
-    body:JSON.stringify({prompt:window.STAR_V2_CONTEXT_PROMPT?window.STAR_V2_CONTEXT_PROMPT(memoryPrompt):memoryPrompt})
+    body:JSON.stringify({prompt:memoryPrompt})
   },60000);
   const content=d?.content||d?.choices?.[0]?.message?.content||"";
   if(!content)throw Error("الخادم السحابي أعاد استجابة فارغة");
@@ -309,6 +323,14 @@ async function health(){
   $("statusText").textContent=(local.ok?"Local: ready":"Local: offline")+" · "+cloud;
 }
 
+$("hybridCloudConsent").checked=window.STAR_HYBRID.loadConsent(localStorage);
+$("hybridCloudConsent").addEventListener("change",e=>{
+  const enabled=e.target.checked;
+  window.STAR_HYBRID.saveConsent(localStorage,enabled);
+  $("hybridStatus").textContent=enabled
+   ?"✓ وافقت على استخدام السحابة تلقائيًا إذا لم يعمل النموذج المحلي، ويمكنك سحب الموافقة في أي وقت."
+   :"لن يتم التحويل إلى السحابة دون استئذانك عند تعذر الاتصال المحلي.";
+});
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{setMode(b.dataset.mode);health()}));
 $("probeLocal").addEventListener("click",()=>probeLocal(true));
 $("localBaseUrl").addEventListener("change",()=>{localStorage.setItem("starLocalBase",$("localBaseUrl").value.trim());if(window.STAR_VAULT)window.STAR_VAULT.saveSettings();probeLocal(true)});
@@ -322,22 +344,28 @@ $("form").addEventListener("submit",async e=>{
   busy=true;$("send").disabled=true;$("prompt").value="";add("user",prompt);if(window.STAR_VAULT)await window.STAR_VAULT.capture("user",prompt,mode);const output=add("assistant","يفكر…");
   v2StartTask(prompt);
   try{
-    let result;
-    if(mode==="private")result=await askLocal(prompt);
-    else if(mode==="power")result=await askPower(prompt);
-    else{
-      try{result=await askLocal(prompt)}
-      catch(localErr){
-        throw Error("AUTO أوقف الطلب لحماية الخصوصية لأن Qwen المحلي غير متصل. شغّل InferrLM أو اختر POWER يدوياً. السبب: "+localErr.message);
+    const result=await window.STAR_HYBRID.run({
+      mode,prompt,local:askLocal,cloud:askPower,
+      approveFallback:async localError=>{
+        $("hybridStatus").textContent="Qwen المحلي غير متاح: "+localError.message;
+        if(window.STAR_HYBRID.loadConsent(localStorage)){
+          $("hybridStatus").textContent="☁ تم تفعيل الموافقة المحفوظة · جارٍ التبديل إلى سحابة STAR…";
+          return true;
+        }
+        const approved=confirm("تعذر الوصول إلى Qwen المحلي على الآيفون.\n\nالسبب: "+localError.message+"\n\nهل توافق على إرسال رسالتك الحالية إلى نموذج STAR السحابي؟ لن تُرسل محادثات PRIVATE السابقة. يمكنك تفعيل الموافقة التلقائية من خيار HYBRID.");
+        $("hybridStatus").textContent=approved?"☁ وافقت على إرسال هذه الرسالة إلى السحابة فقط.":"لم تُرسل الرسالة إلى السحابة؛ ما زالت محفوظة محليًا.";
+        return approved;
       }
-    }
+    });
     output.textContent=result.content;
     if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",result.content,result.route);
     $("meta").textContent=result.route+" · Model: "+result.model;
-    if(result.route==="POWER"){v2TokenVerified=true;v2AuthStatus();}
+    if(mode==="auto")$("hybridStatus").textContent=result.route==="HYBRID_CLOUD"?"☁ تمت الإجابة عبر النموذج السحابي: "+result.model:"✓ Qwen المحلي أجاب من جهاز الآيفون: "+result.model;
+    if(result.route==="POWER"||result.route==="HYBRID_CLOUD"){v2TokenVerified=true;v2AuthStatus();}
     v2FinishTask(true);
   }catch(err){
     output.textContent="تعذر الاتصال: "+err.message;
+    if(mode==="auto")$("hybridStatus").textContent=err.message;
     if(window.STAR_VAULT)await window.STAR_VAULT.capture("assistant",output.textContent,"error");
     v2FinishTask(false);
     if(/Owner sign-in required|HTTP 401|Unauthorized/i.test(err.message)){v2TokenVerified=false;v2AuthStatus();$("meta").textContent="انتهت جلسة المالك. فعّل هذا الجهاز مرة واحدة إذا لم يكن قد فُعّل."; }
