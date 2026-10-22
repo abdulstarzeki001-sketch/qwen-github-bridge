@@ -109,7 +109,7 @@ jobs:
         run: node scripts/test-owner-session.mjs
 
       - name: Test SOVEREIGN owner inference controls
-        run: node scripts/test-sovereign.mjs && node --check web/star-sovereign.js
+        run: node scripts/test-sovereign.mjs && node scripts/test-sovereign-settings.mjs && node --check web/star-sovereign.js
 
       - name: Check dashboard inline JavaScript
         run: |
