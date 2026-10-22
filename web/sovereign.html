@@ -36,8 +36,9 @@
         <div><label for="temperature">المرونة / Temperature <output id="temperatureValue">0.15</output></label><input id="temperature" type="range" min="0" max="1" step="0.05" value="0.15"></div>
         <div><label for="maxTokens">الحد الأقصى للرد</label><select id="maxTokens"><option value="512">512 tokens</option><option value="1400" selected>1,400 tokens</option><option value="2048">2,048 tokens</option><option value="4096">4,096 tokens</option></select></div>
       </div>
-      <div class="actions"><button id="saveProfile" type="button">حفظ إعداداتي على هذا الجهاز</button><button id="resetProfile" type="button" class="secondary">استعادة الافتراضي</button></div>
-      <p class="hint">الحفظ اختياري وفي متصفح هذا الجهاز فقط، دون تشفير تطبيقي أو مزامنة. لا تحفظ بيانات حساسة.</p>
+      <div class="actions"><button id="saveProfile" type="button">حفظ على هذا الجهاز</button><button id="saveServerProfile" type="button">حفظ على خادم STAR</button><button id="loadServerProfile" type="button" class="secondary">تحميل من الخادم</button><button id="deleteServerProfile" type="button" class="secondary">حذف إعدادات الخادم</button><button id="resetProfile" type="button" class="secondary">استعادة الافتراضي</button></div>
+      <p id="serverNotice" class="notice" role="status" aria-live="polite">يحتاج الحفظ عبر الأجهزة إلى تفعيل Cloudflare KV.</p>
+      <p class="hint">يمكن الحفظ محليًا، أو على Cloudflare KV بعد إضافة STAR_OWNER_SETTINGS. لا تحفظ بيانات حساسة أو مفاتيح API في الإعدادات.</p>
       <p id="settingsNotice" class="notice" role="status" aria-live="polite"></p>
     </section>
     <section class="panel chat" aria-labelledby="chatTitle">
