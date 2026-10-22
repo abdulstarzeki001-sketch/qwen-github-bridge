@@ -15,3 +15,8 @@
 .vault-memory-input{display:flex;gap:8px;margin:10px 0}
 .vault-memory-input input{flex:1;min-width:0;background:#071327;border:1px solid #31516a;color:white;border-radius:11px;padding:10px}
 @media(max-width:530px){.vault-panel{padding:11px}.vault-item{max-width:170px}}
+
+.vault-research-list{display:grid;gap:6px;max-height:170px;overflow:auto}
+.vault-research-item{border:1px solid #294660;border-radius:8px;padding:7px 9px;color:#c8edff;font-size:12px}
+.vault-research-item summary{cursor:pointer}
+.vault-research-item pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#a9cadb;font-size:11px;max-height:160px;overflow:auto}
