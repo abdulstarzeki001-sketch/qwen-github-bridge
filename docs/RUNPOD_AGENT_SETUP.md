@@ -30,10 +30,10 @@ codex plugin marketplace add https://github.com/runpod/runpod-plugins-official.g
 codex plugin add runpod@runpod
 ```
 
-**User-only action:** in Codex run `/plugins`, install the **Runpod** plugin from its marketplace tab, then reload. If the Runpod MCP tools are not visible:
+**User-only action:** restart Codex Desktop if required, then complete the Runpod OAuth sign-in when a Runpod MCP tool first runs. If the Runpod MCP tools are not visible after plugin installation:
 
 ```sh
-codex mcp add runpod --transport http https://mcp.getrunpod.io/
+codex mcp add runpod --url https://mcp.runpod.io/
 ```
 
 Finish OAuth sign-in when prompted.
@@ -42,10 +42,10 @@ Finish OAuth sign-in when prompted.
 
 The Skills installer requires Node.js 22.20 or newer. Confirm with `node --version` first.
 
-Install skills non-interactively:
+Install skills non-interactively (example: Cursor). **Replace both** `--agent cursor` and `--client cursor` with the matching values for your own agent; don't install across every agent:
 
 ```sh
-npx -y skills add runpod/runpod-plugins-official --skill '*' --agent codex --yes --global
+npx -y skills add runpod/runpod-plugins-official --skill '*' --agent cursor --yes --global
 ```
 
 Then run the guided MCP installer on **your personal machine**:
