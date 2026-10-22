@@ -160,7 +160,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 </details><div id="p2ConsoleAnchor"></div><div class="v2-actionbar"><strong>◉ NEURAL CONSOLE</strong><div><button type="button" id="v2NewMission">＋ جديد</button><button type="button" id="ownerOpen" hidden>♙ تفعيل هذا الجهاز</button><button type="button" id="ownerLogout" hidden>↩ إلغاء الثقة</button></div></div><section class="v2-missionpanel"><div class="v2-missionhead">MISSION MEMORY // SESSION ONLY</div><div id="v2MissionLog"></div><button type="button" id="v2Export" class="nav" style="margin-top:8px;display:inline-block">↓ تصدير المحادثة</button></section><section id="messages" aria-live="polite" aria-label="المحادثة"></section>
 <form id="form" class="composer"><textarea id="prompt" dir="auto" rows="2" maxlength="6000" placeholder="تحدث مع STAR AI…"></textarea><button id="send" type="submit" aria-label="إرسال">↑</button></form>
 <div class="bottom"><span id="meta">مفاتيح الخدمة محفوظة على الخادم ولا تعرض هنا</span><button id="clear" type="button">مسح المحادثة</button></div>
-</main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ تفعيل الجهاز مرة واحدة</h2><p>أدخل رمز STAR_API_TOKEN لمرة واحدة. سيحفظ الخادم جلسة المالك في ملف تعريف ارتباط محمي HttpOnly على هذا الجهاز، دون حفظ الرمز في التخزين الدائم. ستظل الجلسة متجددة ما دمت تستخدم الموقع، وتنتهي بعد 90 يوماً من عدم الاستخدام.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">الثقة بهذا الجهاز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
+</main></div><dialog id="ownerDialog" class="owner-dialog"><form id="ownerForm" method="dialog"><h2>♙ تفعيل الجهاز مرة واحدة</h2><p>أدخل رمز STAR_API_TOKEN لمرة واحدة. سيحفظ الخادم جلسة المالك في ملف تعريف ارتباط محمي HttpOnly على هذا الجهاز، دون حفظ الرمز في التخزين الدائم. ستبقى جلسة المالك محفوظة على جهازك لمدة تصل إلى سنة، وتتجدد تلقائيًا خلال الاستخدام. عند استخدام Cloudflare Access يتم اعتماد الجهاز تلقائيًا بعد التحقق من هويتك.</p><input id="ownerToken" type="password" autocomplete="off" spellcheck="false" placeholder="STAR API Token" minlength="32" required><div class="owner-actions"><button type="button" id="ownerCancel">إلغاء</button><button type="submit">الثقة بهذا الجهاز</button></div><p>في حال تفعيل Cloudflare Access يمكن استخدام جلسة تسجيل الدخول عوضاً عن الرمز.</p></form></dialog>
 <script>
 const $=id=>document.getElementById(id), messages=$("messages");
 let busy=false;
@@ -371,9 +371,6 @@ async function v2InitializeOwner(){
       if(data.authenticated===true){
         v2TokenVerified=true;
         v2AuthStatus();
-        if(data.method==="access"&&sessionStorage.getItem("starToken")==null){
-          try{await v2RememberOwner()}catch{/* Access login still active; do not claim persistent cookie. */}
-        }
         $("meta").textContent="🔒 تم التعرف على جهاز المالك تلقائياً.";
         return;
       }
@@ -384,7 +381,7 @@ async function v2InitializeOwner(){
       catch{/* Keep token for manual retry. */}
     }
     v2TokenVerified=false;v2AuthStatus();
-    $("meta").textContent="هذا الجهاز غير مفعّل بعد. اضغط «تفعيل هذا الجهاز» لمرة واحدة.";
+    $("meta").textContent="تعذر التعرف على جهاز مالك موثوق. يلزم إثبات ملكية الجهاز مرة واحدة فقط؛ بعدها يبقى الدخول تلقائيًا.";
   }catch{
     v2TokenVerified=false;v2AuthStatus();
     $("meta").textContent="تعذر فحص جلسة المالك. تحقق من الاتصال ثم أعد فتح الصفحة.";
