@@ -66,7 +66,7 @@ async function store(item,sync=true){
  item.updated_at=now();state.items.set(item.id,item);
  await putLocal(item);
  renderList();
- if(sync)enqueue(item);
+ if(sync&&!item.payload.local_only)enqueue(item);
 }
 function enqueue(item){
  if(!state.cloud)return;
@@ -98,6 +98,7 @@ async function sync(){
    }
   }
   for(const row of state.items.values()){
+   if(row.payload.local_only)continue;
    const remoteItem=remoteRows.find(x=>x.id===row.id);
    if(!remoteItem||(row.updated_at||"")>(remoteItem.updated_at||""))enqueue(row)
   }
@@ -155,6 +156,10 @@ async function removeThread(id){
 async function capture(role,content,route=""){
  if(!["user","assistant"].includes(role)||typeof content!=="string")return;
  let row=getThread();if(!row)row=await createThread();
+ // PRIVATE/AUTO conversations are local-only and not sent to Supabase.
+ const isPrivate=["private","auto","PRIVATE","AUTO"].includes(route);
+ if(role==="user"&&row.payload.messages.length&&Boolean(row.payload.local_only)!==isPrivate)row=await createThread();
+ if(role==="user")row.payload.local_only=isPrivate;
  // Don't turn failed provider responses into remembered model answers.
  const msg={role,content:content.slice(0,14000),at:now(),route};
  row.payload.messages.push(msg);
@@ -231,6 +236,16 @@ function renderPanel(){
 async function boot(){
  renderPanel();
  for(const item of await readLocal()){if(isValid(item))state.items.set(item.id,item)}
+ // Import older manual STAR CORE V2 archives without deleting their originals.
+ try{
+  const legacy=JSON.parse(localStorage.getItem("star-core-v2-sessions-v1")||"[]");
+  if(Array.isArray(legacy))for(const item of legacy.slice(0,12)){
+   const id="legacy-"+String(item.id||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,95);
+   if(id==="legacy-"||state.items.has(id)||!Array.isArray(item.messages))continue;
+   const row={id,kind:"thread",payload:{title:title(item.title),messages:item.messages.slice(-36).filter(m=>["user","assistant"].includes(m.role)).map(m=>({role:m.role,content:String(m.text||"").slice(0,5300),at:item.date||now(),route:"legacy"}))},updated_at:item.date||now()};
+   state.items.set(id,row);await putLocal(row);
+  }
+ }catch{}
  const threads=threadRows();state.current=threads[0]?.id||null;
  if(!state.current)await createThread();
  renderCurrent();renderList();note("محفوظ على الجهاز · فحص المزامنة...");
