@@ -22,12 +22,24 @@ assert.match(x.cookie,/__Host-star_owner=/);
 assert.match(x.cookie,/HttpOnly/);
 assert.match(x.cookie,/Secure/);
 assert.match(x.cookie,/SameSite=Strict/);
-assert.match(x.cookie,/Max-Age=7776000/);
+assert.match(x.cookie,/Max-Age=31536000/);
 assert.doesNotMatch(x.cookie,new RegExp(token),"Cookie must not reveal API token");
 const cookie=x.cookie.split(";")[0];
 x=await json(await call("/api/auth/session",{headers:{"Cookie":cookie,"Sec-Fetch-Site":"same-origin"}}));
 assert.equal(x.status,200,"Cookie should authenticate after browser restart");
 assert.equal(x.data.method,"cookie");
+assert.equal(x.cookie,"","Active new session should not unnecessarily rotate its cookie");
+const NativeDate=globalThis.Date;
+const mintedAt=NativeDate.now();
+class SimulatedDate extends NativeDate { static now(){return mintedAt+31*24*60*60*1000;} }
+try{
+  globalThis.Date=SimulatedDate;
+  const rotated=await json(await call("/api/auth/session",{headers:{"Cookie":cookie,"Sec-Fetch-Site":"same-origin"}}));
+  assert.equal(rotated.status,200,"A trusted device stays signed in after 31 days");
+  assert.match(rotated.cookie,/__Host-star_owner=/,"Cookie silently renews after 30 days");
+  assert.match(rotated.cookie,/Max-Age=31536000/);
+}finally{globalThis.Date=NativeDate}
+
 const tampered=cookie.replace(/.$/,"x");
 x=await json(await call("/api/auth/session",{headers:{"Cookie":tampered}}));
 assert.equal(x.status,401,"Tampering invalidates signature");
@@ -42,4 +54,4 @@ assert.equal(x.status,403,"Origin mismatch is forbidden");
 x=await json(await call("/api/auth/logout",{method:"POST",headers:{"Cookie":cookie,"Origin":root}}));
 assert.equal(x.status,200,"Owner may forget trusted device");
 assert.match(x.cookie,/Max-Age=0/);
-console.log("Owner persistent-session tests passed (signed cookie, no plaintext token, expiry, tampering, origin, rotation, logout)");
+console.log("Owner persistent-session tests passed (signed cookie, no plaintext token, 365-day rolling expiry, automatic renewal, tampering, origin, secret rotation, logout)");
