@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050816"><title>V2 · STAR AI · 2126</title>
+<meta name="theme-color" content="#050816"><title>STAR CORE V2 · COMMANDER III</title>
 <style>
 :root{color-scheme:dark;--bg:#050816;--line:#233957;--light:#e9f7ff;--muted:#91a7c7;--mint:#72ffe0;--violet:#a98dff}
 *{box-sizing:border-box}body{margin:0;min-height:100svh;color:var(--light);font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(ellipse at 80% 5%,#33316e80,transparent 42%),radial-gradient(ellipse at 10% 80%,#006b6a55,transparent 40%),var(--bg);overflow-x:hidden}
@@ -68,7 +68,7 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
 .v2-missionhead{font:800 10px/1.6 ui-monospace,monospace;color:#76ecd9;letter-spacing:2px;direction:ltr;text-align:left;margin:0 0 8px}
 .v2-mission{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:11px;padding:6px 0;border-bottom:1px solid #32516d66}
 .v2-mission:last-child{border-bottom:0}.v2-mission span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.v2-mission small{color:#96c1d4;white-space:nowrap}.v2-empty{font-size:11px;color:#849fbc}
-</style><link rel="stylesheet" href="/star-core-v2-phase2.css"></head>
+</style><link rel="stylesheet" href="/star-core-v2-phase2.css"><link rel="stylesheet" href="/star-core-v2-phase3.css"></head>
 <body><div class="shell">
 <header><div><div class="eyebrow">STAR OS / SCI-FI COMMAND · 2026</div><div class="logo">STAR <span>AI</span> ∞</div></div><a class="nav" href="/">↗ لوحة التحكم</a></header>
 <main><div class="hero"><div class="orb" aria-hidden="true"><canvas class="p2-core3d" id="p2Core3d" aria-hidden="true"></canvas><b>✦</b></div><h1>STAR CORE · الجيل القادم</h1><p class="subtitle">منصة قيادة مستقبلية · ذكاء سحابي ومحلي · برمجة وهندسة وأمن سيبراني</p><div id="status" class="status"><span class="dot"></span><span id="statusText">جاري فحص الاتصال…</span></div></div>
@@ -88,6 +88,43 @@ h1{font-size:clamp(28px,5vw,50px);letter-spacing:.4px}.subtitle{max-width:600px;
   <div id="localState" class="localstate">PRIVATE لا يرسل نص المحادثة إلى خادم STAR السحابي.</div>
 </div>
 
+
+<section id="p3Commander" class="p3-panel" aria-labelledby="p3Title">
+ <div class="p3-head"><strong id="p3Title">✦ STAR COMMANDER — المرحلة الثالثة</strong><span class="p3-chip">MISSION CONTROL / V3</span></div>
+ <p class="p3-sub">مركز التخطيط وإدارة المهمات: يحوّل هدفك إلى خطوات قابلة للمراجعة، مع أدوات صوت وتشخيص حي. لا يعدّل مستودعات GitHub ولا ينشر إلى Cloudflare تلقائياً.</p>
+ <div class="p3-telemetry" aria-label="قياسات النظام">
+  <div class="p3-meter"><small>CORE API</small><b id="p3Api">لم يُفحص</b></div>
+  <div class="p3-meter"><small>GITHUB APP</small><b id="p3Github">لم يُفحص</b></div>
+  <div class="p3-meter"><small>API LATENCY</small><b id="p3Delay">—</b></div>
+ </div>
+ <div class="p3-toolrow"><button class="p3-button" id="p3Scan" type="button">◉ فحص الاتصال المباشر</button><span class="p3-pmeta" style="align-items:center"><span id="p3Model">MODEL: —</span></span></div>
+ <div class="p3-divider"></div>
+ <label class="p3-label" for="p3Objective">مهمة القائد — ماذا تريد أن يُنجز النظام؟</label>
+ <textarea class="p3-field" id="p3Objective" rows="3" maxlength="2000" placeholder="مثال: فحص أخطاء STAR AI على GitHub ووضع خطة إصلاح واختبار ونشر مدروسة…"></textarea>
+ <div class="p3-controls">
+  <button class="p3-button" id="p3LocalPlan" type="button">⌘ إنشاء خطة محلية (بدون إرسال)</button>
+  <button class="p3-button primary" id="p3AiPlan" type="button">✦ خطة AI عبر POWER · Cloud</button>
+ </div>
+ <div class="p3-message" id="p3Notice" role="status">اكتب مهمتك لإنشاء خطة متعددة الخطوات.</div>
+ <div id="p3PlanArea" hidden>
+  <div class="p3-divider"></div>
+  <div class="p3-heading"><strong style="font-size:12px">MISSION BLUEPRINT</strong></div>
+  <p id="p3PlanSummary" class="p3-sub"></p>
+  <div class="p3-progress" aria-hidden="true"><i id="p3ProgressFill"></i></div>
+  <div class="p3-pmeta"><span id="p3ProgressLabel">0 مراجعة</span><span>المراجعة اليدوية ≠ التنفيذ</span></div>
+  <div class="p3-plan" id="p3Steps"></div>
+  <button id="p3Export" class="p3-button" type="button">↓ تنزيل خطة المهمة</button>
+ </div>
+ <div class="p3-divider"></div>
+ <div class="p3-head"><strong>◉ VOICE INTERFACE</strong><span class="p3-chip">OPTIONAL / iOS</span></div>
+ <div class="p3-voice">
+  <button class="p3-button" type="button" id="p3Voice">🎙 إملاء</button>
+  <button class="p3-button" type="button" id="p3Speak">◖ قراءة الرد</button>
+  <button class="p3-button" type="button" id="p3StopAudio">■ إيقاف الصوت</button>
+ </div>
+ <div class="p3-message" id="p3VoiceNote" role="status">الإملاء والنطق اختياريان حسب دعم المتصفح.</div>
+ <p class="p3-foot">الخطط المقترحة لا تنفذ خطوات بنفسها. عند اختيار تخطيط AI يُرسل وصف المهمة إلى النموذج السحابي؛ أما الإملاء فقد يعتمد على خدمة التعرف الصوتي في النظام أو المتصفح.</p>
+</section>
 <details id="p2Deck" class="p2-deck">
  <summary class="p2-heading" style="cursor:pointer;list-style:none"><span>✦ المرحلة الثانية · مركز القيادة المتقدم</span><small>REPO + MEMORY · OPEN</small></summary>
  <div class="p2-tabs" role="group" aria-label="لوحات التحكم">
@@ -340,4 +377,4 @@ $("v2Export").addEventListener("click",()=>{
 });
 v2AuthStatus();v2RenderTasks();
 
-</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script></body></html>
+</script><script src="/star-core-v2-scene.js" defer></script><script src="/star-core-v2-phase2.js" defer></script><script src="/star-core-v2-phase3.js" defer></script></body></html>
