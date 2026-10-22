@@ -56,6 +56,33 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify Cloudflare account and Pages project
+        if: steps.access.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          const candidates=[...new Set([process.env.CLOUDFLARE_ACCOUNT_ID,'d45cb55f3d7654fc0eee90ca0e844378'].filter(Boolean))];
+          for(const id of candidates){
+            try{
+              const response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+id+'/pages/projects/star-cyber-ai-x',{
+                headers:{Authorization:'Bearer '+token,Accept:'application/json'},
+                signal:AbortSignal.timeout(15000)
+              });
+              const payload=await response.json().catch(()=>null);
+              if(response.ok && payload?.success && payload.result?.name==='star-cyber-ai-x'){
+                fs.appendFileSync(process.env.GITHUB_ENV,'CLOUDFLARE_ACCOUNT_ID='+id+'\n');
+                console.log('Verified Cloudflare Pages project star-cyber-ai-x in account '+id);
+                process.exit(0);
+              }
+              console.log('Pages project not accessible in account '+id+' (HTTP '+response.status+', code '+(payload?.errors?.[0]?.code??'unknown')+')');
+            }catch(e){console.log('Cloudflare project lookup failed for account '+id+': '+e.message);}
+          }
+          console.error('No authorized Cloudflare account exposes the existing star-cyber-ai-x project. Create a Pages Edit token scoped to the account owning this project, then update CLOUDFLARE_PAGES_TOKEN.');
+          process.exit(1);
+          NODE
+
       - name: Deploy to star-cyber-ai-x Pages
         if: steps.access.outputs.enabled == 'true'
         run: npx --yes wrangler@4 pages deploy web --project-name=star-cyber-ai-x --branch=main
