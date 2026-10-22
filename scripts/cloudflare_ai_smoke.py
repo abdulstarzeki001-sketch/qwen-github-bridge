@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 
 account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
 api_token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
-model = os.environ.get("CLOUDFLARE_AI_MODEL", "@cf/qwen/qwen3.8-27b").strip()
+model = os.environ.get("CLOUDFLARE_AI_MODEL", "@cf/meta/llama-3.1-8b-instruct").strip()
 
 if not account_id:
     print("ERROR: CLOUDFLARE_ACCOUNT_ID is missing.", file=sys.stderr)

@@ -105,7 +105,7 @@ async function sync(){
   renderList();renderCurrent();
   const settings=state.items.get("star-v2-settings")?.payload;
   if(settings&&document.querySelector("[data-mode]")){
-   if(["private","power","auto"].includes(settings.mode))document.querySelector("[data-mode=\""+settings.mode+"\"]")?.click();
+   // The cloud-only interface ignores settings from retired modes.
   }
   note("✓ الذاكرة محفوظة وتتزامن بين أجهزتك");
  }catch{note("الحفظ على الجهاز نشط · تعذر التزامن مؤقتاً","warning")}
@@ -251,9 +251,7 @@ async function saveResearch(label,result){
 async function saveSettings(){
  if(!state.onlineOwner)return;
  const payload={
-  mode:localStorage.getItem("starAiMode")||"power",
-  localBase:localStorage.getItem("starLocalBase")||"",
-  localModel:localStorage.getItem("starLocalModel")||""
+  mode:"power"
  };
  await store({id:"star-v2-settings",kind:"settings",payload,updated_at:now()});
 }

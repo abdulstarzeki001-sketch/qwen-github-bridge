@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 #
 # Claude-through-Cloudflare:
 #   Secret: ANTHROPIC_API_KEY
-#   Secret: STAR_CLAUDE_PROXY_TOKEN (32+ chars; this goes in InferrLM's API Key field)
+#   Secret: STAR_CLAUDE_PROXY_TOKEN (32+ chars; for authorized HTTPS API clients only)
 #   Variable: STAR_ANTHROPIC_MODEL (default: claude-sonnet-5-5)
 #   Variable: STAR_AI_PROVIDER=anthropic to make STAR POWER mode use Claude
 #

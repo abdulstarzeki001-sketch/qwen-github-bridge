@@ -114,8 +114,8 @@ jobs:
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 
-      - name: Test iPhone Qwen Hybrid consent, cloud fallback, and provider isolation
-        run: node scripts/test-star-hybrid.mjs && node --check web/star-hybrid.js && node --check web/star-vault.js
+      - name: Test STAR cloud-only implementation and owner authentication
+        run: node scripts/test-star-cloud-only.mjs && node --check web/star-vault.js
 
       - name: Check dashboard inline JavaScript
         run: |
@@ -125,7 +125,10 @@ jobs:
           for (const file of ["web/index.html", "web/ai.html", "web/ai-v2.html"]) {
             const html = fs.readFileSync(file, "utf8");
             const scripts = html.split("<script>").slice(1).map(s => s.split("</script>")[0]);
-            if (!scripts.length) throw new Error("No inline script found in " + file);
+            if (!scripts.length) {
+              if (file === "web/ai.html" && html.includes('url=/ai-v2.html')) continue;
+              throw new Error("No inline script found in " + file);
+            }
             for (const script of scripts) new vm.Script(script, {filename:file});
           }
           for (const file of ["web/star-core-v2-scene.js","web/star-core-v2-phase2.js","web/star-core-v2-phase3.js"]) {
