@@ -15,6 +15,8 @@ Trusted iPhone / Desktop
 
 Nothing in this directory publishes a TCP inference port on the GPU host; Ollama is only reachable from the Docker bridge. Do NOT route your tunnel directly to Ollama: its local API does not have authentication. The gateway authenticates requests before proxying.
 
+**RunPod GPU Pod option:** use the [dedicated single-container RunPod instructions](runpod/README.md) instead. This avoids needing Docker Compose within the Pod and uses RunPod HTTPS proxy for the endpoint. No Cloudflare Tunnel or custom domain is required for that variant.
+
 ## Minimum dedicated GPU
 
 - A full GPU Linux VM you control with **one NVIDIA GPU with 24 GB VRAM**, Ubuntu 22.04/24.04 or equivalent, Docker Engine + Compose plugin + NVIDIA Container Toolkit already working.
