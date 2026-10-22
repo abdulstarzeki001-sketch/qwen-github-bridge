@@ -51,6 +51,12 @@ async function secretMatches(expected,received){
 }
 
 
+function resolvedAiProvider(env){
+  // When no paid or external provider is configured, prefer the already-bound Workers AI.
+  // A deliberately selected STAR_AI_PROVIDER always wins, including selfhosted.
+  return env.STAR_AI_PROVIDER || (env.AI ? "cloudflare" : "openrouter");
+}
+
 function ownerChatOptions(body,env,policy){
   const extra=body?.owner_instructions;
   if(extra!==undefined&&(typeof extra!=="string"||extra.length>4000))
@@ -68,7 +74,7 @@ function ownerChatOptions(body,env,policy){
   const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(Boolean);
   if(selected&&!allowed.includes(selected))
     return {error:"Requested model is not on the server allowlist"};
-  if(selected&&env.STAR_AI_PROVIDER==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct")
+  if(selected&&resolvedAiProvider(env)==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct")
     return {error:"Cloudflare AI binding uses a fixed model in this release"};
   const instructions=typeof extra==="string"?extra.trim():"";
   const system=policy.identity+". "+policy.instructions+
@@ -152,7 +158,7 @@ export async function onRequest({request,env}){
   const policy=ownerPolicy(env);
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
   if(path==="/api/health" && request.method==="GET"){
-    const provider=env.STAR_AI_PROVIDER||"openrouter";
+    const provider=resolvedAiProvider(env);
     return json({
       ok:true,version:"0.7.0",runtime:"cloudflare",
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
@@ -252,11 +258,12 @@ export async function onRequest({request,env}){
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
   const owner=await hasOwnerAccess(request,env);
   if(!owner.ok)return json({error:"Owner sign-in required"},401);
-  const useCloudflare=env.STAR_AI_PROVIDER==="cloudflare";
-  const useOpenAI=env.STAR_AI_PROVIDER==="openai";
-  const useAnthropic=env.STAR_AI_PROVIDER==="anthropic";
+  const provider=resolvedAiProvider(env);
+  const useCloudflare=provider==="cloudflare";
+  const useOpenAI=provider==="openai";
+  const useAnthropic=provider==="anthropic";
   if(useCloudflare&&!env.AI)return json({error:"Cloudflare AI binding missing"},503);
-  const selfHosted=env.STAR_AI_PROVIDER==="selfhosted";
+  const selfHosted=provider==="selfhosted";
   if(selfHosted&&(!env.STAR_SELFHOSTED_URL||!env.STAR_SELFHOSTED_TOKEN))return json({error:"Self-hosted backend not configured"},503);
   if(useOpenAI&&!env.OPENAI_API_KEY)return json({error:"Set OPENAI_API_KEY for OpenAI mode"},503);
   if(useAnthropic&&!env.ANTHROPIC_API_KEY)return json({error:"Set ANTHROPIC_API_KEY for Anthropic mode"},503);
@@ -281,7 +288,7 @@ export async function onRequest({request,env}){
   try{
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
-      const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(1024,options.maxTokens)});
+      const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(512,options.maxTokens)});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
