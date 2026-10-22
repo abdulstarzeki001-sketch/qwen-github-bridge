@@ -1,0 +1,57 @@
+name: Publish STAR RunPod GPU Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/independent-ai/gateway.mjs"
+      - "deploy/independent-ai/runpod/**"
+      - ".github/workflows/publish-star-runpod-image.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: runpod-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    name: Build and publish secured STAR inference image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout STAR sources
+        uses: actions/checkout@v4
+
+      - name: Configure Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GPU-ready container
+        uses: docker/build-push-action@v6
+        with:
+          context: ./deploy/independent-ai
+          file: ./deploy/independent-ai/runpod/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/star-independent-ai:latest
+            ghcr.io/${{ github.repository_owner }}/star-independent-ai:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=STAR AI authenticated Ollama GPU Pod for owner-controlled inference
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Print image reference (never credentials)
+        run: |
+          echo "Container: ghcr.io/${{ github.repository_owner }}/star-independent-ai:sha-${{ github.sha }}"
+          echo "In RunPod, expose 8080/http ONLY, set STAR_BACKEND_TOKEN in Pod secrets, and use a persistent /workspace volume."
