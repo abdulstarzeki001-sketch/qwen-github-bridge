@@ -1,5 +1,8 @@
 # STAR AI ∞ — self-hosted open-weight model
 
+**Ready-to-deploy private GPU VM stack:** [`deploy/independent-ai/README.md`](deploy/independent-ai/README.md). It includes GPU Docker Compose, an authenticated inference gateway and Cloudflare Tunnel. This is an optional future backend; it does not switch the current STAR cloud model automatically.
+
+
 STAR supports an OpenAI-compatible **HTTPS** inference endpoint. This lets the owner use an appropriately licensed open-weight model on infrastructure they control.
 
 ## Cloudflare Pages secrets and variables
