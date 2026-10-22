@@ -253,6 +253,7 @@ async function probeLocal(show=true){
     const select=$("localModel"), current=select.value;
     select.replaceChildren(new Option("اكتشاف النموذج تلقائياً",""),...names.map(n=>new Option(n,n)));
     if(names.includes(current))select.value=current;
+    else if(names.find(n=>/qwen/i.test(n)))select.value=names.find(n=>/qwen/i.test(n));
     else if(names.length===1)select.value=names[0];
     $("localState").textContent=names.length
       ?("InferrLM متصل · "+names.length+" model(s) · "+base)
@@ -299,7 +300,7 @@ async function askPower(prompt,hybrid=false){
   const headers={"Content-Type":"application/json"};
   if(savedToken)headers.Authorization="Bearer "+savedToken;
   // Server requests must NEVER silently inherit private, on-device history.
-  const memoryPrompt=window.STAR_VAULT?.context(prompt,"cloud")||prompt;
+  const memoryPrompt=hybrid?prompt:(window.STAR_VAULT?.context(prompt,"cloud")||prompt);
   const d=await requestJson("/api/chat",{
     method:"POST",
     headers,
