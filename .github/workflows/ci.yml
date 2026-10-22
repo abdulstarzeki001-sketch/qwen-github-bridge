@@ -126,6 +126,9 @@ jobs:
       - name: Test private GPU owner-only gateway
         run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
 
+      - name: Check Runpod Codex setup and GPU Pod startup scripts
+        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
