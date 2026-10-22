@@ -309,6 +309,15 @@ function renderPanel(){
  $("vaultSearch").addEventListener("input",renderList);
  $("vaultRemember").addEventListener("click",addMemory);
 }
+function lock(){
+ // Immediately clear decrypted owner data from memory on explicit logout,
+ // but preserve encrypted transport/server records and IndexedDB on disk.
+ state.onlineOwner=false;state.cloud=false;state.items.clear();state.current=null;
+ const msg=$("messages");if(msg)msg.replaceChildren();
+ for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=true;
+ $("vaultThreads")?.replaceChildren();$("vaultMemoryList")?.replaceChildren();$("vaultResearch")?.replaceChildren();
+ note("تم إغلاق ذاكرة المالك. سجّل الدخول لاستعادة ملفاتك.","warning");
+}
 async function boot(){
  if(!$("vaultPanel"))renderPanel();
  try{
@@ -354,6 +363,6 @@ async function boot(){
  if(window.STAR_KNOWLEDGE?.refresh)window.STAR_KNOWLEDGE.refresh();
  await sync();
 }
-window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,knowledgeItems,knowledgeDocuments,saveKnowledgeDocument,deleteKnowledgeDocument,boot};
+window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,knowledgeItems,knowledgeDocuments,saveKnowledgeDocument,deleteKnowledgeDocument,lock,boot};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
