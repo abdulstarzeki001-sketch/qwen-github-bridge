@@ -39,7 +39,7 @@ function cleanRequest(body,model){
 export function createGateway({token,model="gpt-oss:20b",endpoint="http://ollama:11434/v1/chat/completions",upstreamFetch=globalThis.fetch}={}){
   if(typeof token!=="string"||token.length<32||token.length>256)throw Error("STAR_BACKEND_TOKEN must contain 32 to 256 random characters");
   if(!/^[A-Za-z0-9._:-]{3,120}$/.test(model))throw Error("Invalid STAR_MODEL");
-  if(!endpoint.startsWith("http://ollama:11434/"))throw Error("Upstream must remain the private Ollama service");
+  if(!["http://ollama:11434/v1/chat/completions","http://127.0.0.1:11434/v1/chat/completions"].includes(endpoint))throw Error("Upstream must remain the private Ollama service");
   return http.createServer(async(req,res)=>{
     const header=req.headers.authorization||"";
     const supplied=header.startsWith("Bearer ")?header.slice(7).trim():"";

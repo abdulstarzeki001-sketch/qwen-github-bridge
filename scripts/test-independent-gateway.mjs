@@ -26,6 +26,16 @@ try{
   r=await request({body:{model:"other",messages:[{role:"user",content:"Hello"}]}});assert.equal(r.status,400);
   r=await request({body:{model:"gpt-oss:20b",messages:[{role:"user",content:"Hello"}],stream:true}});assert.equal(r.status,200);assert.equal(called,1);
   assert.equal(last.url,"http://ollama:11434/v1/chat/completions");
+  const pod=createGateway({token,model:"gpt-oss:20b",endpoint:"http://127.0.0.1:11434/v1/chat/completions",upstreamFetch:async()=>Response.json({model:"gpt-oss:20b",choices:[{message:{content:"pod"}}]})});
+  await new Promise(resolve=>pod.listen(0,"127.0.0.1",resolve));
+  try {assert.equal(pod.listening,true)} finally {await new Promise(resolve=>pod.close(resolve))}
+  const fs=await import("node:fs");
+  const docker=fs.readFileSync(new URL("../deploy/independent-ai/runpod/Dockerfile",import.meta.url),"utf8");
+  const start=fs.readFileSync(new URL("../deploy/independent-ai/runpod/start-runpod.sh",import.meta.url),"utf8");
+  assert.match(docker,/EXPOSE 8080/);assert.ok(!docker.includes("EXPOSE 11434"));
+  assert.match(start,/OLLAMA_HOST=127\.0\.0\.1:11434/);
+  assert.ok(!start.includes('gateway_pid:-0'));
+
   assert.equal(last.body.stream,false,"Never allow streaming to circumvent bounded responses");
   assert.equal((await r.json()).choices[0].message.content,"Test response");
   r=await request({body:{model:"gpt-oss:20b",messages:[{role:"user",content:"x".repeat(16001)}]}});assert.equal(r.status,400);
