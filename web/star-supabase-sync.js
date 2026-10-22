@@ -48,14 +48,14 @@ async function refreshToken(){
   store(toSession(result));return true;
  }catch{store(null);return false}
 }
-async function validSession(){
+async function validSession(retried=false){
  if(!ownerOk||!session)return false;
  if(session.expires_at<=now()+90&&!(await refreshToken()))return false;
  try{
   const user=await api("/auth/v1/user",{headers:{Authorization:"Bearer "+session.access_token}});
   return Boolean(user?.id);
  }catch(error){
-  if(error.status===401||error.status===403){if(!(await refreshToken()))return false;return validSession()}
+  if((error.status===401||error.status===403)&&!retried){if(!(await refreshToken()))return false;return validSession(true)}
   return false;
  }
 }
@@ -136,7 +136,7 @@ async function authorize(){
   if(await acceptLink())return;
   if(session&&await validSession()){
    connected=true;status("✓ Supabase متصل بحسابك الموثوق.");updateUI();
-   if(initial)await window.STAR_VAULT?.sync?.();
+   await window.STAR_VAULT?.sync?.();
   }else{connected=false;status("فعّل المزامنة عبر بريد Supabase. ملفاتك الحالية محفوظة على هذا الجهاز.");updateUI()}
  }catch{connected=false;status("تعذر التحقق من Supabase. حاول مجددًا.",true);updateUI()}
  initial=true;
