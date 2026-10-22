@@ -114,6 +114,9 @@ jobs:
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 
+      - name: Test iPhone Qwen Hybrid consent, cloud fallback, and provider isolation
+        run: node scripts/test-star-hybrid.mjs && node --check web/star-hybrid.js && node --check web/star-vault.js
+
       - name: Check dashboard inline JavaScript
         run: |
           node --input-type=module <<'NODE'
