@@ -109,9 +109,19 @@ async function importSelected(file){
  }catch(err){status("تعذر الاستيراد: "+err.message,true)}
  finally{busy=false;$("knowledgeImport").disabled=false}
 }
+async function authorize(){
+ const panel=$("knowledgePanel");if(!panel)return;
+ panel.hidden=true;
+ try{const response=await fetch("/api/auth/session",{credentials:"same-origin",cache:"no-store"});
+   panel.hidden=!response.ok;
+   if(response.ok)refresh();
+ }catch{panel.hidden=true}
+}
+function lock(){const panel=$("knowledgePanel");if(panel)panel.hidden=true}
 function mount(){
  if($("knowledgePanel")||!$("form"))return;
  const panel=document.createElement("section");panel.className="knowledge-panel";panel.id="knowledgePanel";
+ panel.hidden=true;
  panel.innerHTML='<div class="knowledge-head"><strong>▣ STAR KNOWLEDGE · مكتبة المعرفة</strong><span id="knowledgeCount">0 ملف</span></div>'+
  '<p class="knowledge-help">أضف مراجعك الخاصة: PDF النصي أو TXT أو JSON أو ملفات كود. البحث في الملفات محلي، ويُرسل فقط المقطع المرتبط بالسؤال إلى مزود الذكاء عند تفعيل الخيار أدناه.</p>'+
  '<div class="knowledge-import"><input type="file" id="knowledgeFile" accept=".pdf,.txt,.md,.json,.js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.c,.cpp,.h,.sh,.yaml,.yml,.xml,.html,.css,.csv,.log,.sql,.ini,.toml,.env" aria-label="اختيار ملف معرفة"><button type="button" id="knowledgeImport">إضافة الملف</button></div>'+
@@ -126,8 +136,8 @@ function mount(){
  $("knowledgeInclude").addEventListener("change",e=>{try{localStorage.setItem("starKnowledgeInclude",e.target.checked?"yes":"no")}catch{};status(e.target.checked?"تفعيل إرفاق مراجع مكتبتك مع الأسئلة المرتبطة.":"تم إيقاف إرسال مقاطع المعرفة إلى النموذج.")});
  $("knowledgeImport").addEventListener("click",()=>{const f=$("knowledgeFile").files?.[0];if(!f)return status("اختر ملفًا أولًا.",true);importSelected(f)});
  $("knowledgeClose").addEventListener("click",()=>{const m=$("knowledgePreview");if(typeof m.close==="function")m.close();else m.hidden=true});
- refresh();
+ refresh();authorize();
 }
-window.STAR_KNOWLEDGE={augment,refresh,sources:()=>lastSources.slice(),parsePdf};
+window.STAR_KNOWLEDGE={augment,refresh,authorize,lock,sources:()=>lastSources.slice(),parsePdf};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();
 })();
