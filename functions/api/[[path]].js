@@ -2,6 +2,7 @@ import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_session.js";
+import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -46,6 +47,32 @@ async function secretMatches(expected,received){
   const aa=new Uint8Array(a),bb=new Uint8Array(b);let diff=0;
   for(let i=0;i<aa.length;i++)diff|=aa[i]^bb[i];
   return diff===0;
+}
+
+
+function ownerChatOptions(body,env,policy){
+  const extra=body?.owner_instructions;
+  if(extra!==undefined&&(typeof extra!=="string"||extra.length>4000))
+    return {error:"Owner instructions must be text (max 4000 characters)"};
+  const temperature=body?.temperature===undefined?0.15:Number(body.temperature);
+  if(!Number.isFinite(temperature)||temperature<0||temperature>1)
+    return {error:"Temperature must be between 0 and 1"};
+  const maxTokens=body?.max_tokens===undefined?1400:Number(body.max_tokens);
+  if(!Number.isInteger(maxTokens)||maxTokens<128||maxTokens>4096)
+    return {error:"max_tokens must be an integer from 128 to 4096"};
+  const requested=body?.model===undefined?"":body.model;
+  if(typeof requested!=="string"||requested.length>160)
+    return {error:"Invalid model identifier"};
+  const selected=requested.trim();
+  const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(Boolean);
+  if(selected&&!allowed.includes(selected))
+    return {error:"Requested model is not on the server allowlist"};
+  if(selected&&env.STAR_AI_PROVIDER==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct")
+    return {error:"Cloudflare AI binding uses a fixed model in this release"};
+  const instructions=typeof extra==="string"?extra.trim():"";
+  const system=policy.identity+". "+policy.instructions+
+    (instructions?"\nAdditional owner-defined instructions:\n"+redactPrompt(instructions):"");
+  return {system,temperature,maxTokens,modelOverride:selected};
 }
 
 function proxyCredential(request){
@@ -159,6 +186,39 @@ export async function onRequest({request,env}){
     response.headers.set("Set-Cookie",clearOwnerCookie());
     return response;
   }
+  if(path==="/api/owner/settings"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({error:"Owner authentication required"},401);
+    const enabled=ownerStorageReady(env);
+    if(request.method==="GET"){
+      if(!enabled)return json({enabled:false,storage:"browser-only",profile:null});
+      try{
+        const saved=await readOwnerSettings(env);
+        return json({enabled:true,storage:"cloudflare-kv",profile:saved?.profile||null,updated_at:saved?.updated_at||null});
+      }catch{return json({error:"Cannot load owner settings"},503)}
+    }
+    if(!["PUT","DELETE"].includes(request.method))return json({error:"Method not allowed"},405);
+    if(!trustedBrowserRequest(request))return json({error:"Same-origin request required"},403);
+    if(owner.method==="cookie"){
+      const origin=request.headers.get("origin");
+      if(!origin||new URL(origin).origin!==new URL(request.url).origin)
+        return json({error:"Owner cookie writes require a same-origin Origin header"},403);
+    }
+    if(!enabled)return json({error:"STAR_OWNER_SETTINGS KV binding is not configured"},503);
+    if(request.method==="DELETE"){
+      try{await removeOwnerSettings(env);return json({ok:true,deleted:true})}
+      catch{return json({error:"Cannot delete owner settings"},503)}
+    }
+    const size=Number(request.headers.get("content-length"));
+    if(Number.isFinite(size)&&size>5500)return json({error:"Settings payload too large"},413);
+    let submitted;try{submitted=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+    const validated=validateOwnerProfile(submitted,env);
+    if(validated.error)return json({error:validated.error},400);
+    try{
+      const saved=await writeOwnerSettings(env,validated.profile);
+      return json({ok:true,enabled:true,storage:"cloudflare-kv",...saved});
+    }catch{return json({error:"Cannot save owner settings"},503)}
+  }
   if(path.startsWith("/api/claude/v1/"))return claudeProxy(request,env,path);
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET"){
     if(!policy.allowGithubRead)return json({error:"GitHub reading disabled by owner"},403);
@@ -186,17 +246,24 @@ export async function onRequest({request,env}){
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
+  let storedProfile={};
+  if(ownerStorageReady(env)){
+    try{const settings=await readOwnerSettings(env);if(settings)storedProfile=settings.profile}
+    catch{return json({error:"Cannot load owner settings"},503)}
+  }
+  const options=ownerChatOptions({...storedProfile,...body},env,policy);
+  if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
   try{
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
-      const result=await env.AI.run(model,{messages:[{role:"system",content:policy.identity+". "+policy.instructions},{role:"user",content:safePrompt}],max_tokens:1024});
+      const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(1024,options.maxTokens)});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
     }
     if(useAnthropic){
-      const model=env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
+      const model=options.modelOverride||env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5";
       const upstream=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{
@@ -206,8 +273,9 @@ export async function onRequest({request,env}){
         },
         body:JSON.stringify({
           model,
-          max_tokens:1400,
-          system:policy.identity+". "+policy.instructions+" Answer in the user's language. Never claim to have executed actions you did not execute.",
+          max_tokens:options.maxTokens,
+          temperature:options.temperature,
+          system:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute.",
           messages:[{role:"user",content:safePrompt}]
         }),
         signal:AbortSignal.timeout(25000)
@@ -218,13 +286,13 @@ export async function onRequest({request,env}){
       if(!content)return json({error:"Anthropic returned no content"},502);
       return json({ok:true,model:result.model||model,content});
     }
-    const model=selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
+    const model=options.modelOverride||(selfHosted?(env.STAR_SELFHOSTED_MODEL||"qwen2.5-coder:7b"):useOpenAI?(env.STAR_OPENAI_MODEL||"gpt-4.1"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"));
     let endpoint=selfHosted?env.STAR_SELFHOSTED_URL:useOpenAI?"https://api.openai.com/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
     if(selfHosted){const url=new URL(endpoint);if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||!url.pathname.endsWith("/chat/completions"))return json({error:"Invalid self-hosted endpoint"},503);endpoint=url.toString()}
     const upstream=await fetch(endpoint,{
       method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
-      body:JSON.stringify({model,max_tokens:1400,temperature:0.15,messages:[
-        {role:"system",content:policy.identity+". "+policy.instructions+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
+      body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:[
+        {role:"system",content:options.system+" Answer in the user\'s language. Never claim to have executed actions you did not execute."},
         {role:"user",content:safePrompt}
       ]}),signal:AbortSignal.timeout(25000)
     });
