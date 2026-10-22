@@ -121,7 +121,7 @@ async function finishLogin(result){
  if(ok){
   status("✓ ربط Supabase ناجح. جارٍ مزامنة محادثاتك وملفاتك الخاصة…");
   await window.STAR_VAULT?.sync?.();
-  status("✓ Supabase متصل؛ المزامنة بين أجهزتك مفعّلة.");
+  status("✓ تم توثيق Supabase وبدء المزامنة. راجع إشعارات STAR VAULT لتأكيد رفع الملفات.");
  }else{store(null);status("لم يتم تأكيد جلسة Supabase.",true)}
 }
 async function acceptLink(){
@@ -232,7 +232,7 @@ function mount(){
  $("supabaseCodeVerify").addEventListener("click",verifyCode);
  $("supabasePasswordLogin").addEventListener("click",loginPassword);
  $("supabaseSyncNow").addEventListener("click",async()=>{
-  status("جارٍ مزامنة الملفات والمحادثات…");try{await window.STAR_VAULT?.sync?.();status("✓ تمت محاولة المزامنة. راجع حالة STAR VAULT.")}catch(e){status(e.message,true)}
+  status("جارٍ مزامنة الملفات والمحادثات…");try{await window.STAR_VAULT?.sync?.();status("تم بدء المزامنة؛ راجع حالة STAR VAULT للتأكد من اكتمالها.")}catch(e){status(e.message,true)}
  });
  $("supabaseDisconnect").addEventListener("click",disconnect);
  authorize();
