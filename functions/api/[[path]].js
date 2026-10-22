@@ -2,6 +2,7 @@ import { ownerAccess } from "../_owner_access.js";
 import { ownerPolicy } from "../_owner_policy.js";
 import { makeGithubHandler } from "../_github.js";
 import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_session.js";
+import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -185,6 +186,39 @@ export async function onRequest({request,env}){
     response.headers.set("Set-Cookie",clearOwnerCookie());
     return response;
   }
+  if(path==="/api/owner/settings"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({error:"Owner authentication required"},401);
+    const enabled=ownerStorageReady(env);
+    if(request.method==="GET"){
+      if(!enabled)return json({enabled:false,storage:"browser-only",profile:null});
+      try{
+        const saved=await readOwnerSettings(env);
+        return json({enabled:true,storage:"cloudflare-kv",profile:saved?.profile||null,updated_at:saved?.updated_at||null});
+      }catch{return json({error:"Cannot load owner settings"},503)}
+    }
+    if(!["PUT","DELETE"].includes(request.method))return json({error:"Method not allowed"},405);
+    if(!trustedBrowserRequest(request))return json({error:"Same-origin request required"},403);
+    if(owner.method==="cookie"){
+      const origin=request.headers.get("origin");
+      if(!origin||new URL(origin).origin!==new URL(request.url).origin)
+        return json({error:"Owner cookie writes require a same-origin Origin header"},403);
+    }
+    if(!enabled)return json({error:"STAR_OWNER_SETTINGS KV binding is not configured"},503);
+    if(request.method==="DELETE"){
+      try{await removeOwnerSettings(env);return json({ok:true,deleted:true})}
+      catch{return json({error:"Cannot delete owner settings"},503)}
+    }
+    const size=Number(request.headers.get("content-length"));
+    if(Number.isFinite(size)&&size>5500)return json({error:"Settings payload too large"},413);
+    let submitted;try{submitted=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+    const validated=validateOwnerProfile(submitted,env);
+    if(validated.error)return json({error:validated.error},400);
+    try{
+      const saved=await writeOwnerSettings(env,validated.profile);
+      return json({ok:true,enabled:true,storage:"cloudflare-kv",...saved});
+    }catch{return json({error:"Cannot save owner settings"},503)}
+  }
   if(path.startsWith("/api/claude/v1/"))return claudeProxy(request,env,path);
   if((path==="/api/github/status"||path==="/api/github/browse")&&request.method==="GET"){
     if(!policy.allowGithubRead)return json({error:"GitHub reading disabled by owner"},403);
@@ -212,7 +246,12 @@ export async function onRequest({request,env}){
   let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
   const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
   if(!prompt||prompt.length>policy.maxPromptChars)return json({error:"Prompt exceeds configured length limit"},400);
-  const options=ownerChatOptions(body,env,policy);
+  let storedProfile={};
+  if(ownerStorageReady(env)){
+    try{const settings=await readOwnerSettings(env);if(settings)storedProfile=settings.profile}
+    catch{return json({error:"Cannot load owner settings"},503)}
+  }
+  const options=ownerChatOptions({...storedProfile,...body},env,policy);
   if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
   try{
