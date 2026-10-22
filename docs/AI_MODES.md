@@ -1,40 +1,23 @@
-# STAR AI modes
+# STAR AI — cloud-only configuration
 
-STAR AI exposes three explicit routing modes in `web/ai.html`.
+STAR AI provides one primary mode through `/ai-v2.html`: an authenticated, server-backed cloud assistant. The old on-device inference and automatic model-fallback modes are retired.
 
-## PRIVATE
+## Operating the AI
 
-The browser talks directly to an InferrLM server on a loopback or private-LAN address.
+1. Open `https://star-cyber-ai-x.pages.dev/ai-v2.html`.
+2. Use the existing trusted-owner session. Only the verified owner can send inference requests.
+3. Send a request; the browser calls `POST /api/chat` on the same origin.
+4. The Cloudflare server selects the provider and model from its server-only configuration. The current default OpenRouter provider uses `nvidia/nemotron-3-ultra-550b-a55b:free`.
+5. STAR Vault continues to save conversations, research and preferences locally, with optional Supabase sync only when configured.
 
-Expected InferrLM endpoints:
+## Privacy and safety
 
-- `GET /api/tags` — discover available models
-- `POST /api/chat` — non-streaming chat
+- No local HTTP model server, tunnel, browser-side model selector, or device-level inference dependency is required.
+- Provider API keys stay in Cloudflare encrypted secrets, never browser code.
+- Historical PRIVATE conversations remain stored locally where available and are excluded from automatically attached cloud context; removing an inference integration does **not** silently delete personal conversation records.
+- Browser-local keys used by the retired integrations are removed on loading the updated STAR page; any installed iPhone application must be uninstalled directly on the device.
+- Cloud availability depends on the configured provider and owner authentication. The application cannot guarantee external provider uptime.
 
-No provider API key is stored in the STAR web page.
+## Rollout
 
-Default same-device address:
-
-```text
-http://127.0.0.1:8889
-```
-
-The UI also accepts RFC1918 private-LAN hosts for an InferrLM server on another owned device.
-
-## POWER
-
-The browser calls STAR's existing `POST /api/chat` backend. Provider selection remains server-side and credentials stay in server environment/secrets. For the Cloudflare runtime, `STAR_AI_PROVIDER=anthropic` with `STAR_ANTHROPIC_MODEL=claude-sonnet-5-5` routes POWER through Claude while keeping the Anthropic API key server-side.
-
-## AUTO
-
-AUTO is deliberately local-first. It tries PRIVATE and, if local inference is unavailable, stops and asks the owner to switch to POWER manually. It never silently uploads the prompt to the cloud.
-
-## iPhone notes
-
-1. Start InferrLM's Server tab.
-2. Import/load the desired local model.
-3. In STAR AI, choose PRIVATE.
-4. Keep `http://127.0.0.1:8889` for same-device access or use the private LAN URL shown by InferrLM.
-5. Tap **فحص InferrLM** to populate the model selector.
-
-A browser may enforce mixed-content or local-network restrictions depending on iOS/WebKit and how STAR is opened. The UI surfaces connection errors rather than falling back to cloud.
+The same GitHub deployment process publishes the `main` branch to Cloudflare Pages. Old `/ai.html` links redirect to the primary cloud page.
