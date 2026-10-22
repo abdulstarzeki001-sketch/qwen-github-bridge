@@ -1,0 +1,61 @@
+name: Deploy STAR CORE V2 to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'functions/**'
+      - 'wrangler.toml'
+      - '.github/workflows/star-cloudflare-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: star-core-v2-cloudflare-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd2680f7c5ff39f8d9177a51dbf7fec75' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Validate STAR V2 static assets
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const html = fs.readFileSync('web/ai-v2.html','utf8');
+          const inline = html.split('<script>').slice(1).map(v=>v.split('</script>')[0]);
+          for(const code of inline) new vm.Script(code);
+          for(const file of ['star-core-v2-phase2.js','star-core-v2-scene.js']){
+            const source=fs.readFileSync('web/'+file,'utf8');
+            new vm.Script(source);
+            if(!html.includes(file)) throw new Error('Missing asset reference: '+file);
+          }
+          NODE
+
+      - name: Detect deploy credentials
+        id: access
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::No CLOUDFLARE_PAGES_TOKEN or CLOUDFLARE_API_TOKEN secret. Pages deployment skipped."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to star-cyber-ai-x Pages
+        if: steps.access.outputs.enabled == 'true'
+        run: npx --yes wrangler@4 pages deploy web --project-name=star-cyber-ai-x --branch=main
