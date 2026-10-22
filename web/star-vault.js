@@ -262,7 +262,22 @@ function renderPanel(){
  $("vaultRemember").addEventListener("click",addMemory);
 }
 async function boot(){
- renderPanel();
+ if(!$("vaultPanel"))renderPanel();
+ try{
+  const auth=await fetch("/api/auth/session",{cache:"no-store",credentials:"same-origin"});
+  state.onlineOwner=auth.ok;
+ }catch{state.onlineOwner=false}
+ if(!state.onlineOwner){
+  state.items.clear();state.current=null;
+  const box=$("messages");if(box)box.replaceChildren();
+  const panel=$("vaultPanel");if(panel){
+   for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=true;
+   $("vaultThreads")?.replaceChildren();$("vaultMemoryList")?.replaceChildren();$("vaultResearch")?.replaceChildren();
+  }
+  note("هذه المحفوظات خاصة بالمالك. افتح STAR CORE بجهاز موثوق أو فعّل الجهاز مرة واحدة.","warning");
+  return;
+ }
+ for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=false;
  for(const item of await readLocal()){if(isValid(item))state.items.set(item.id,item)}
  // Import older manual STAR CORE V2 archives without deleting their originals.
  try{
@@ -279,12 +294,7 @@ async function boot(){
  state.current=(preferred&&state.items.get(preferred)?.kind==="thread")?preferred:(threads[0]?.id||null);
  if(!state.current)await createThread();
  renderCurrent();renderList();note("محفوظ على الجهاز · فحص المزامنة...");
- try{
-  const r=await fetch("/api/auth/session",{cache:"no-store",credentials:"same-origin"});
-  state.onlineOwner=r.ok;
- }catch{}
- if(state.onlineOwner)await sync();
- else note("النسخة المحلية مستعادة · مزامنة السحابة تتطلب جلسة المالك","warning");
+ await sync();
 }
 window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,boot};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
