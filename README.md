@@ -2,7 +2,6 @@
 
 **Self-hosted AI security workspace** for authorized application-security testing, Burp Suite traffic analysis, repository security review, evidence management, remediation, retesting, and reporting.
 
-> The previous Qwen GitHub Bridge is preserved under `legacy/qwen-github-bridge/`.
 
 ## Architecture
 
@@ -74,7 +73,7 @@ The Docker/FastAPI runtime can use Cloudflare Workers AI. For the Netlify web ru
 AI_PROVIDER=cloudflare
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_AI_MODEL=@cf/qwen/qwen3.8-27b
+CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
 ```
 
 STAR calls Cloudflare through its OpenAI-compatible Chat Completions endpoint.
@@ -189,6 +188,6 @@ STAR_AI_PROVIDER=anthropic
 STAR_ANTHROPIC_MODEL=claude-sonnet-5-5
 ```
 
-Store `ANTHROPIC_API_KEY` and a separate 32+ character `STAR_CLAUDE_PROXY_TOKEN` as Cloudflare secrets. InferrLM receives only the proxy token. If Cloudflare Access protects the entire site, configure the dedicated `/api/claude/*` path so API clients can reach the function; the function still enforces the proxy token.
+Store `ANTHROPIC_API_KEY` and a separate 32+ character `STAR_CLAUDE_PROXY_TOKEN` as Cloudflare secrets. An authorized HTTPS client receives only the proxy token. If Cloudflare Access protects the entire site, configure the dedicated `/api/claude/*` path so API clients can reach the function; the function still enforces the proxy token.
 
 See `docs/CLOUDFLARE_CLAUDE.md`.
