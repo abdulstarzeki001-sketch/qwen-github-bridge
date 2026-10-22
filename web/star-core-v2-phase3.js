@@ -80,11 +80,10 @@ async function diagnostics(){
   state("p3Delay",Math.round(performance.now()-start)+"ms API");state("p3Model",d.ai_model||"غير محدد");
  }catch{state("p3Api","تعذر الاتصال","err");state("p3Delay","—");state("p3Model","—")}
  const admin=$("p2AdminToken")?.value.trim()||"";
- if(admin.length<32)state("p3Github","رمز GitHub غير مدخل");
- else{
+ { // Verified owner cookie permits read-only GitHub status with no additional token.
   const c=new AbortController(),t=setTimeout(()=>c.abort(),13000);
   try{
-   const r=await fetch("/api/github/status",{headers:{Authorization:"Bearer "+admin},cache:"no-store",signal:c.signal});const d=await r.json().catch(()=>({}));
+   const r=await fetch("/api/github/status",{headers:admin.length>=32?{Authorization:"Bearer "+admin}:{},credentials:"same-origin",cache:"no-store",signal:c.signal});const d=await r.json().catch(()=>({}));
    state("p3Github",r.ok&&d.installation_authenticated?"GitHub متصل":"الاتصال غير مؤكد",r.ok&&d.installation_authenticated?"ok":"err");
   }catch{state("p3Github","تعذر الاتصال","err")}finally{clearTimeout(t)}
  }
