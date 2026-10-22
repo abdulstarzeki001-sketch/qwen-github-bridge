@@ -102,6 +102,10 @@ async function sync(){
    if(!remoteItem||(row.updated_at||"")>(remoteItem.updated_at||""))enqueue(row)
   }
   renderList();renderCurrent();
+  const settings=state.items.get("star-v2-settings")?.payload;
+  if(settings&&document.querySelector("[data-mode]")){
+   if(["private","power","auto"].includes(settings.mode))document.querySelector("[data-mode=\""+settings.mode+"\"]")?.click();
+  }
   note("✓ الذاكرة محفوظة وتتزامن بين أجهزتك");
  }catch{note("الحفظ على الجهاز نشط · تعذر التزامن مؤقتاً","warning")}
 }
@@ -139,7 +143,7 @@ function renderList(){
   const del=document.createElement("button");del.type="button";del.className="vault-delete";del.textContent="×";del.title="حذف المحادثة";del.addEventListener("click",()=>removeThread(row.id));
   wrap.append(b,del);list.append(wrap);
  }
- renderMemories();
+ renderMemories();renderResearch();
 }
 async function removeThread(id){
  if(!confirm("حذف هذه المحادثة من STAR ومن السحابة؟"))return;
@@ -176,6 +180,16 @@ function renderMemories(){
   row.append(span,del);box.append(row);
  }
 }
+function renderResearch(){
+ const box=$("vaultResearch");if(!box)return;
+ box.replaceChildren();
+ for(const item of [...state.items.values()].filter(x=>x.kind==="research").sort((a,b)=>(b.updated_at||"").localeCompare(a.updated_at||"")).slice(0,30)){
+  const details=document.createElement("details");details.className="vault-research-item";
+  const summary=document.createElement("summary");summary.textContent=item.payload.title||"نتيجة سابقة";
+  const content=document.createElement("pre");content.textContent=(item.payload.body||"").slice(0,15000);
+  details.append(summary,content);box.append(details);
+ }
+}
 async function addMemory(){
  const field=$("vaultMemoryText"),value=field.value.trim();
  if(!value||value.length>3000)return;
@@ -208,7 +222,7 @@ async function saveSettings(){
 function renderPanel(){
  if(!$("form")||!$("messages"))return;
  const section=document.createElement("section");section.id="vaultPanel";section.className="vault-panel";
- section.innerHTML='<div class="vault-title"><strong>◈ STAR VAULT · الذاكرة الدائمة</strong><button type="button" id="vaultNew">＋ محادثة</button></div><p id="vaultNotice" class="vault-notice" role="status" aria-live="polite">جارٍ استرجاع محفوظاتك…</p><div id="vaultThreads" class="vault-threads"></div><div class="vault-title"><strong>◈ المعلومات التي أتذكرها</strong></div><div id="vaultMemoryList" class="vault-memory-list"></div><div class="vault-memory-input"><input id="vaultMemoryText" maxlength="3000" placeholder="معلومة تريد أن أتذكرها في نقاشاتنا القادمة"><button type="button" id="vaultRemember">تذكّر</button></div><p class="vault-notice">تُحفظ المحادثات والنتائج تلقائيًا. الذاكرة الدلالية الموجزة تستخدم الحقائق المحفوظة وآخر الرسائل؛ ويمكن الرجوع للأرشيف كاملًا.</p>';
+ section.innerHTML='<div class="vault-title"><strong>◈ STAR VAULT · الذاكرة الدائمة</strong><button type="button" id="vaultNew">＋ محادثة</button></div><p id="vaultNotice" class="vault-notice" role="status" aria-live="polite">جارٍ استرجاع محفوظاتك…</p><div id="vaultThreads" class="vault-threads"></div><div class="vault-title"><strong>◈ المعلومات التي أتذكرها</strong></div><div id="vaultMemoryList" class="vault-memory-list"></div><div class="vault-title"><strong>⌕ نتائج البحث والمهمات السابقة</strong></div><div id="vaultResearch" class="vault-research-list"></div><div class="vault-memory-input"><input id="vaultMemoryText" maxlength="3000" placeholder="معلومة تريد أن أتذكرها في نقاشاتنا القادمة"><button type="button" id="vaultRemember">تذكّر</button></div><p class="vault-notice">تُحفظ المحادثات والنتائج تلقائيًا. الذاكرة الدلالية الموجزة تستخدم الحقائق المحفوظة وآخر الرسائل؛ ويمكن الرجوع للأرشيف كاملًا.</p>';
  const target=document.querySelector(".v2-actionbar")||$("messages");
  target.parentNode.insertBefore(section,target);
  $("vaultNew").addEventListener("click",()=>createThread());
