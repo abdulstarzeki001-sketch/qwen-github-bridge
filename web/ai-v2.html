@@ -366,6 +366,7 @@ async function v2RememberOwner(token=""){
   v2TokenVerified=true;
   sessionStorage.removeItem("starToken");
   v2AuthStatus();
+  if(window.STAR_VAULT)window.STAR_VAULT.boot();
   return true;
 }
 async function v2InitializeOwner(){

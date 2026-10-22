@@ -116,6 +116,7 @@ function getThread(){
  return item?.kind==="thread"?item:null;
 }
 async function createThread(){
+ if(!state.onlineOwner)return null;
  const item={id:makeId("chat"),kind:"thread",payload:{title:"محادثة جديدة",messages:[]},updated_at:now()};
  state.current=item.id;
  try{localStorage.setItem("star-vault-current",item.id)}catch{}
@@ -156,6 +157,7 @@ async function removeThread(id){
  renderCurrent();renderList();
 }
 async function capture(role,content,route=""){
+ if(!state.onlineOwner)return;
  if(!["user","assistant"].includes(role)||typeof content!=="string")return;
  let row=getThread();if(!row)row=await createThread();
  // PRIVATE/AUTO conversations are local-only and not sent to Supabase.
@@ -208,6 +210,7 @@ async function addMemory(){
  field.value="";note("تم تذكر المعلومة ويمكنك حذفها لاحقاً.");
 }
 function context(prompt){
+ if(!state.onlineOwner)return prompt;
  const privateMode=localStorage.getItem("starAiMode")==="private"||localStorage.getItem("starAiMode")==="auto";
  const terms=[...new Set((prompt.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu)||[]))].slice(0,14);
  const scored=[];
@@ -237,6 +240,7 @@ function context(prompt){
  return (available<200?"":prefix.slice(0,available-1))+prompt;
 }
 async function saveResearch(label,result){
+ if(!state.onlineOwner)return;
  const text=String(result||"").slice(0,125000);
  if(!text)return;
  const id=makeId("research");
@@ -244,6 +248,7 @@ async function saveResearch(label,result){
  note("تم أرشفة نتيجة البحث أو المهمة تلقائيًا.");
 }
 async function saveSettings(){
+ if(!state.onlineOwner)return;
  const payload={
   mode:localStorage.getItem("starAiMode")||"power",
   localBase:localStorage.getItem("starLocalBase")||"",
@@ -262,7 +267,22 @@ function renderPanel(){
  $("vaultRemember").addEventListener("click",addMemory);
 }
 async function boot(){
- renderPanel();
+ if(!$("vaultPanel"))renderPanel();
+ try{
+  const auth=await fetch("/api/auth/session",{cache:"no-store",credentials:"same-origin"});
+  state.onlineOwner=auth.ok;
+ }catch{state.onlineOwner=false}
+ if(!state.onlineOwner){
+  state.items.clear();state.current=null;
+  const box=$("messages");if(box)box.replaceChildren();
+  const panel=$("vaultPanel");if(panel){
+   for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=true;
+   $("vaultThreads")?.replaceChildren();$("vaultMemoryList")?.replaceChildren();$("vaultResearch")?.replaceChildren();
+  }
+  note("هذه المحفوظات خاصة بالمالك. افتح STAR CORE بجهاز موثوق أو فعّل الجهاز مرة واحدة.","warning");
+  return;
+ }
+ for(const id of ["vaultSearch","vaultNew","vaultMemoryText","vaultRemember"])if($(id))$(id).disabled=false;
  for(const item of await readLocal()){if(isValid(item))state.items.set(item.id,item)}
  // Import older manual STAR CORE V2 archives without deleting their originals.
  try{
@@ -279,12 +299,7 @@ async function boot(){
  state.current=(preferred&&state.items.get(preferred)?.kind==="thread")?preferred:(threads[0]?.id||null);
  if(!state.current)await createThread();
  renderCurrent();renderList();note("محفوظ على الجهاز · فحص المزامنة...");
- try{
-  const r=await fetch("/api/auth/session",{cache:"no-store",credentials:"same-origin"});
-  state.onlineOwner=r.ok;
- }catch{}
- if(state.onlineOwner)await sync();
- else note("النسخة المحلية مستعادة · مزامنة السحابة تتطلب جلسة المالك","warning");
+ await sync();
 }
 window.STAR_VAULT={capture,context,newThread:createThread,saveResearch,saveSettings,boot};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
