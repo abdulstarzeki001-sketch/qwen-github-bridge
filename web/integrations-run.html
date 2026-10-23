@@ -14,7 +14,7 @@ bash integrations/wormgptv2/run-local.sh</pre><a href="https://github.com/abduls
 cp .env.example .env
 # أضف أسرارك المحلية إلى .env
 docker compose up -d
-bash pull-models.sh</pre><a href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/deploy/independent-ai/README.md" target="_blank" rel="noopener noreferrer">إعداد الخادم الخاص ↗</a></div><span class="phase wait">يتطلب GPU VM</span></section>
+bash pull-models.sh</pre><a href="/gpu-deploy.html">دليل نشر RunPod المستقل ↗</a></div><span class="phase wait">يتطلب GPU VM</span></section>
 <section class="panel run-row"><div><span class="overline">06 / ISOLATED CODING AGENT</span><h2>حاوية WormGPTv2 التفاعلية</h2><p>بناء Docker ناجح. يعمل الوكيل على خادمك في حاوية معزولة بجانب Ollama، ويمكنه التعامل مع ملفات مساحة عمل مخصصة له. لا يحصل على صلاحيات GitHub أو أسرار STAR تلقائياً.</p><pre>cd deploy/independent-ai
 docker compose --profile agent build agent
 docker compose --profile agent run --rm agent</pre><a href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/deploy/independent-ai/Dockerfile.agent" target="_blank" rel="noopener noreferrer">ملف بناء وكيل البرمجة ↗</a></div><span class="phase">DOCKER BUILD PASSED</span></section>
