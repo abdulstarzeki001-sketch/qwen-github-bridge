@@ -274,7 +274,7 @@ export async function onRequest({request,env,context}){
       provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):
       (env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
     const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(x=>/^[A-Za-z0-9@._:/+-]{1,160}$/.test(x));
-    const models=[...new Set([defaultModel,...allowed].filter(Boolean))].slice(0,12);
+    const models=provider==="cloudflare"?[defaultModel]:[...new Set([defaultModel,...allowed].filter(Boolean))].slice(0,12);
     if(path==="/api/nexus/models")return json({ok:true,provider,configured,default_model:defaultModel,models});
     // Probe only the private gateway the owner has explicitly configured. Do not
     // probe arbitrary hosts supplied by a browser or query string.
