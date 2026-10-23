@@ -259,6 +259,48 @@ export async function onRequest({request,env,context}){
     return makeGithubHandler(env,owner.ok)(request);
   }
   if(path==="/api/telegram/webhook")return handleTelegramWebhook(request,env,context);
+  if((path==="/api/nexus/models"||path==="/api/nexus/model-probe")&&request.method==="GET"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({error:"Owner sign-in required"},401);
+    const provider=resolvedAiProvider(env);
+    const configured=provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_TOKEN&&env.STAR_SELFHOSTED_URL):
+      provider==="cloudflare"?Boolean(env.AI):provider==="wormgpt"?wormgptConfigured(env):
+      provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):
+      Boolean(env.OPENROUTER_API_KEY);
+    const defaultModel=provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):
+      provider==="wormgpt"?(env.STAR_WORMGPT_MODEL||""):
+      provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":
+      provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):
+      provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):
+      (env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
+    const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(x=>/^[A-Za-z0-9@._:/+-]{1,160}$/.test(x));
+    const models=[...new Set([defaultModel,...allowed].filter(Boolean))].slice(0,12);
+    if(path==="/api/nexus/models")return json({ok:true,provider,configured,default_model:defaultModel,models});
+    // Probe only the private gateway the owner has explicitly configured. Do not
+    // probe arbitrary hosts supplied by a browser or query string.
+    if(provider!=="selfhosted"||!configured)return json({ok:true,checked:false,reason:"No configured self-hosted backend"});
+    try{
+      const endpoint=new URL(env.STAR_SELFHOSTED_URL);
+      if(endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.hash||endpoint.search||
+         !["/chat/completions","/v1/chat/completions"].includes(endpoint.pathname)||
+         !endpoint.hostname.includes(".")||/^(localhost|127\.|10\.|192\.168\.|169\.254\.)/.test(endpoint.hostname)||
+         /\.(local|internal|localhost)$/.test(endpoint.hostname))
+        return json({error:"Invalid private model gateway URL"},503);
+      endpoint.pathname="/health";
+      const upstream=await fetch(endpoint.toString(),{
+        headers:{Authorization:"Bearer "+env.STAR_SELFHOSTED_TOKEN},
+        signal:AbortSignal.timeout(5000)
+      });
+      if(!upstream.ok)return json({ok:true,checked:true,reachable:false,status:upstream.status});
+      const details=await upstream.json();
+      if(details?.ok!==true||details?.access!=="authenticated")
+        return json({ok:true,checked:true,reachable:false});
+      // Never return remote text other than validated model names.
+      return json({ok:true,checked:true,reachable:true,
+        model:typeof details.model==="string"&&/^[A-Za-z0-9._:/-]{1,120}$/.test(details.model)?details.model:defaultModel,
+        models:Array.isArray(details.models)?details.models.filter(m=>typeof m==="string"&&models.includes(m)).slice(0,12):[]});
+    }catch{return json({ok:true,checked:true,reachable:false})}
+  }
   if(path==="/api/nexus/status"&&request.method==="GET"){
     const owner=await hasOwnerAccess(request,env);
     if(!owner.ok)return json({error:"Owner sign-in required"},401);
