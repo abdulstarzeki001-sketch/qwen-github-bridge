@@ -29,3 +29,6 @@ node_modules/
 
 # Netlify local state
 .netlify/
+
+# Local third-party agent installations
+.integrations/
