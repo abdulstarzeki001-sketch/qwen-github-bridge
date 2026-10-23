@@ -46,6 +46,12 @@ const req=(path,headers={})=>onRequest({env,request:new Request(origin+path,{hea
 let res=await req("/api/nexus/models");assert.equal(res.status,401);
 res=await req("/api/nexus/models",{Authorization:"Bearer "+owner});
 assert.equal(res.status,200);assert.deepEqual((await res.json()).models,allowedModels);
+// Fixed Workers AI must not advertise Drana/Qwen as selectable when active.
+const cloudEnv={...env,STAR_AI_PROVIDER:"cloudflare",AI:{run:async()=>({response:"ok"})}};
+const cloudRequest=new Request(origin+"/api/nexus/models",{headers:{Authorization:"Bearer "+owner}});
+const cloudResult=await onRequest({env:cloudEnv,request:cloudRequest});
+assert.equal(cloudResult.status,200);
+assert.deepEqual((await cloudResult.json()).models,["@cf/meta/llama-3.1-8b-instruct"]);
 const origFetch=globalThis.fetch;
 globalThis.fetch=async(url,opts)=>{
  assert.equal(String(url),"https://model.example.org/health");
