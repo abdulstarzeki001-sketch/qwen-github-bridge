@@ -49,6 +49,16 @@ The independent GPU deployment at `deploy/independent-ai` can now run **Qwen2.5 
 
 [Full private GPU and coding-agent setup](deploy/independent-ai/README.md).
 
+## RunPod GPU image V6 deployment
+
+STAR's `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` image has an updated RunPod startup that preloads **all explicitly allowed** Ollama models before opening the authenticated inference gateway. Use `STAR_MODEL` and `STAR_ALLOWED_MODELS` in the Pod environment and mount persistent storage on `/workspace`.
+
+To test a live Pod from a checked-out STAR repository, set `STAR_RUNPOD_ENDPOINT` and `STAR_BACKEND_TOKEN` locally and run `node scripts/verify-runpod.mjs`. This verifies HTTP 401 without a token, authenticated model discovery and a short actual completion before using the Pod in Cloudflare Pages. No credentials should be committed to the repository.
+
+**A successful container image publish is not a running GPU Pod**: the owner must activate GPU compute, model storage and private credentials separately.
+
+[RunPod deployment documentation](deploy/independent-ai/runpod/README.md) · [iPhone deployment walkthrough](web/gpu-deploy.html)
+
 ## Architecture
 
 ```text

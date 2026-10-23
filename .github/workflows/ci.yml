@@ -153,6 +153,9 @@ jobs:
       - name: Test private GPU owner-only gateway
         run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
 
+      - name: Test RunPod V6 model preload and authenticated inference verifier
+        run: node scripts/test-runpod-v6.mjs && node --check scripts/verify-runpod.mjs && node --check web/runpod-setup.js && bash -n deploy/independent-ai/runpod/model-config.sh
+
       - name: Check Runpod Codex setup and GPU Pod startup scripts
         run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/pull-models.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
 

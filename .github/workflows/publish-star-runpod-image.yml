@@ -25,6 +25,9 @@ jobs:
       - name: Checkout STAR sources
         uses: actions/checkout@v4
 
+      - name: Validate RunPod release boot before registry publish
+        run: node scripts/test-runpod-v6.mjs && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/runpod/model-config.sh
+
       - name: Configure Docker Buildx
         uses: docker/setup-buildx-action@v3
 

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060c16"><title>RunPod GPU · STAR NEXUS</title>
+<meta name="description" content="دليل نشر خادم STAR AI المستقل وربطه مع Cloudflare">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/nexus.css"><link rel="stylesheet" href="/nexus-v4.css">
+<script src="/runpod-setup.js" defer></script>
+<style>
+.gpu-page{max-width:1150px;margin:auto;padding:25px 17px 65px}
+.gpu-head{padding:34px 30px;margin-top:21px;background:radial-gradient(circle at 80% 15%,#1a5757,#0b1d2b 50%,#0c1424);border:1px solid #2b5360;border-radius:20px}
+.gpu-head h1{font-size:clamp(28px,4vw,46px);margin:17px 0 9px;line-height:1.5}
+.gpu-head p,.gpu-page p{font-size:12.5px;line-height:2;color:#98b6c7}
+.gpu-steps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.gpu-steps h2{font-size:17px;margin:10px 0}
+.gpu-stepno{font:700 11px monospace;color:#8af5d5}
+.gpu-code{direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border:1px solid #31566a;background:#081523;border-radius:10px;color:#b9e5e3;font:11px/1.8 ui-monospace,monospace;user-select:all}
+.gpu-form{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.gpu-form input{flex:1;min-width:190px;max-width:350px;padding:13px;border-radius:11px;background:#081522;border:1px solid #376175;color:white;font:12px ui-monospace,monospace;direction:ltr;text-align:left}
+.gpu-status{font-size:12px;color:#8edecb;min-height:24px;margin-top:14px}
+.gpu-checks{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:17px}
+.gpu-warning{border:1px solid #80623d;background:#272017;color:#f0d09f;padding:16px;border-radius:12px;margin:20px 0;font-size:12px;line-height:2}
+@media(max-width:740px){.gpu-steps{grid-template-columns:1fr}.gpu-head{padding:22px 18px}.gpu-page{padding:12px 12px 40px}}
+</style></head>
+<body>
+<main class="gpu-page">
+<a href="/" class="secondary-btn">← العودة إلى STAR NEXUS</a>
+<header class="gpu-head"><span class="overline">INDEPENDENT GPU / STAR NEXUS V6</span>
+<h1>شغّل عقل STAR على <span style="color:#8defd4">خادم GPU مستقل</span></h1>
+<p>صورة Docker نُشرت عبر GitHub Actions. اتبع إعداد RunPod لتشغيل النموذج فعلياً، ثم اختبر الاتصال قبل تفعيل مسار STAR الجديد. هذه الصفحة لا تنشئ Pod ولا تخصم أي رسوم.</p>
+<div class="gpu-checks">
+<a class="primary-btn" href="https://console.runpod.io/deploy" target="_blank" rel="noopener noreferrer">فتح لوحة RunPod ↗</a>
+<a class="secondary-btn" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/tree/main/deploy/independent-ai/runpod" target="_blank" rel="noopener noreferrer">ملفات التشغيل ↗</a>
+</div></header>
+<div class="gpu-warning"><strong>قبل التشغيل:</strong> تحتاج حساب RunPod مموّلاً وخادم NVIDIA متاحاً وتخزيناً دائماً. نجاح نشر صورة Docker لا يعني بدء خادم GPU. تحقّق من إتاحة الصورة للقراءة من RunPod في GitHub Container Registry.</div>
+<section class="gpu-steps">
+<article class="panel"><span class="gpu-stepno">STEP / 01</span><h2>اختر صورة الحاوية</h2>
+<p>في إعداد Pod اختر Custom Image، واستعمل الصورة المنشورة، ثم افتح المنفذ <strong>8080/http</strong> فقط. لا تفتح منفذ Ollama رقم 11434.</p>
+<pre class="gpu-code">ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest</pre>
+<p>يفضّل استخدام وسم SHA الثابت من GitHub Actions للإنتاج. إن كانت الصورة خاصة، عدّل Visibility للحزمة أو أضف بيانات Registry آمنة في RunPod.</p></article>
+<article class="panel"><span class="gpu-stepno">STEP / 02</span><h2>اضبط أسرار ونماذج الخادم</h2>
+<p>أضف متغيرات Pod التالية ضمن إعداداته الخاصة. قيمة التوكن تختلف من مستخدم لآخر ويجب أن تطابق السر الموجود لاحقاً في Cloudflare.</p>
+<pre class="gpu-code">STAR_BACKEND_TOKEN = [RANDOM 64-CHAR HEX]
+STAR_MODEL = gpt-oss:20b
+STAR_ALLOWED_MODELS = gpt-oss:20b,qwen2.5-coder:7b,IHA089/drana-infinity-3b:3b</pre>
+<p>اختر تخزيناً دائماً مركّباً على <code>/workspace</code>. القائمة أعلاه تحمّل ثلاثة نماذج، لذا تأكد من سعة القرص. يمكنك البدء بنموذج واحد لتقليل التكلفة.</p></article>
+<article class="panel"><span class="gpu-stepno">STEP / 03</span><h2>جهّز عنوان الاتصال</h2>
+<p>بعد إنشاء Pod اكتب معرّفه فقط. سنكوّن رابط RunPod القياسي محلياً في جهازك دون إرسال المعرّف لأي خدمة.</p>
+<label for="podId" style="font-size:11px;color:#91afc0">Pod ID</label>
+<div class="gpu-form"><input id="podId" placeholder="pod-id" autocomplete="off" maxlength="70" spellcheck="false"><button class="primary-btn" type="button" id="makePodUrl">إنشاء الرابط</button></div>
+<pre id="podUrl" class="gpu-code" aria-live="polite">https://POD_ID-8080.proxy.runpod.net/chat/completions</pre>
+<button type="button" class="secondary-btn" id="copyPodUrl" disabled>نسخ الرابط</button>
+<p id="podNotice" class="gpu-status" role="status"></p></article>
+<article class="panel"><span class="gpu-stepno">STEP / 04</span><h2>افحص الاستدلال الحقيقي</h2>
+<p>من الكمبيوتر أو Terminal الخادم بعد تنزيل مشروع STAR، تحقق أن البوابة ترفض الوصول غير المصرح وأن النموذج يُجيب فعلياً. لا تضع التوكن في سجل أوامر مشترك.</p>
+<pre class="gpu-code">export STAR_RUNPOD_ENDPOINT="https://POD_ID-8080.proxy.runpod.net/chat/completions"
+read -rs STAR_BACKEND_TOKEN; echo
+export STAR_BACKEND_TOKEN
+node scripts/verify-runpod.mjs</pre>
+<p>ظهور <code>inference_checked: true</code> يعني أن طلباً حقيقياً نجح، وليس فقط أن صورة Docker موجودة.</p></article>
+<article class="panel"><span class="gpu-stepno">STEP / 05</span><h2>اربط STAR بـ Cloudflare Pages</h2>
+<p>بعد نجاح الاختبار، أضف هذه القيم في إعدادات مشروع Pages. احفظ التوكن كـ Secret وليس نصاً عاماً، ثم أعد النشر.</p>
+<pre class="gpu-code">STAR_AI_PROVIDER=selfhosted
+STAR_SELFHOSTED_URL=https://POD_ID-8080.proxy.runpod.net/chat/completions
+STAR_SELFHOSTED_MODEL=gpt-oss:20b
+STAR_ALLOWED_MODELS=gpt-oss:20b,qwen2.5-coder:7b,IHA089/drana-infinity-3b:3b
+STAR_SELFHOSTED_TOKEN=[SAME SERVER TOKEN]</pre>
+<p>ابقَ على مزود الذكاء الحالي حتى ينجح اختبارك. لتغيير Pod ID مستقبلاً، حدّث العنوان في Cloudflare.</p></article>
+<article class="panel"><span class="gpu-stepno">STEP / 06</span><h2>اختبر STAR من الآيفون والآيباد</h2>
+<p>بعد تسجيل الدخول للمالك جرّب فحص الاتصال من STAR. نجاح فحص البوابة يعني أنها متصلة، وبعدها جرّب محادثة حقيقية.</p>
+<button class="primary-btn" type="button" id="checkGateway">فحص بوابة STAR</button>
+<div class="gpu-status" id="gatewayStatus" role="status">حالة الاتصال غير مختبرة</div>
+<a class="secondary-btn" href="/#models">العودة لمختبر النماذج ↗</a></article>
+</section>
+</main>
+</body></html>
