@@ -15,7 +15,10 @@ const sources=[
 {id:"drana",name:"Drana-Infinity",repo:"IHA089/Drana-Infinity",type:"model",desc:"منظومة أمن سيبراني مع نماذج Ollama يمكن ربطها ببوابة الاستدلال الخاصة بـ STAR.",icon:"⬡",status:"adapter",tech:"Ollama · Python · Security"},
 {id:"prith",name:"worm-gpt Web",repo:"prithwishpal/worm-gpt",type:"web",desc:"واجهة Streamlit وتكامل Telegram معلن؛ مناسبة كمصدر تصميم ومقارنة أساليب التشغيل.",icon:"▣",status:"reference",tech:"Streamlit · Python"},
 {id:"father",name:"ChatGPT Telegram Bot",repo:"father-bot/chatgpt_telegram_bot",type:"telegram",desc:"مرجع لهندسة Telegram والتعامل مع الردود. STAR يستخدم Webhook مستقلاً لتوحيد النموذج.",icon:"➤",status:"adapter",tech:"Telegram · Python"},
-{id:"wechat",name:"Multi-Channel Bot",repo:"wangrongding/wechat-bot",type:"telegram",desc:"مرجع لبنية البوتات متعددة القنوات؛ لم يتم تشغيل خدماته أو تسجيل أي حساب خارجي.",icon:"⌘",status:"reference",tech:"Multi-Channel · Integration"}
+{id:"wechat",name:"Multi-Channel Bot",repo:"wangrongding/wechat-bot",type:"telegram",desc:"مرجع لبنية البوتات متعددة القنوات؛ لم يتم تشغيل خدماته أو تسجيل أي حساب خارجي.",icon:"⌘",status:"reference",tech:"Multi-Channel · Integration"},
+{id:"jura",name:"Worm-GPT EXE",repo:"JuraSecurity/Worm-GPT",type:"reference",desc:"نسخة تتضمن برنامج EXE غير مؤكد المصدر؛ أدرجت للمرجعية فقط ولم تُنقل ملفاتها التنفيذية.",icon:"▧",status:"reference",tech:"Windows EXE · Unverified"},
+{id:"zxn",name:"WormGPT archives",repo:"MrZXN777/WormGPT-",type:"reference",desc:"أرشيفات ZIP لأنظمة مختلفة من دون مصدر واضح يمكن البناء عليه؛ مرجع تنزيلات فقط.",icon:"⌁",status:"reference",tech:"ZIP · Unknown binaries"},
+{id:"wormgpt-ai",name:"WormGPT-AI",repo:"WormGPT-AI/WormGPT",type:"reference",desc:"مستودع ذو README فقط دون كود نموذج قابل للتشغيل وفق شجرة الملفات العامة.",icon:"≋",status:"reference",tech:"Readme only"}
 ];
 const modelCards=[
 {name:"Cloudflare Workers AI",tag:"CLOUDFLARE",id:"cloudflare",desc:"محرك الاستدلال الموجود في مشروع STAR. يعمل عند وجود AI Binding على حساب Cloudflare.",url:"https://developers.cloudflare.com/workers-ai/",symbol:"◉"},
