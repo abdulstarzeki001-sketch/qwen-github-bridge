@@ -12,6 +12,9 @@ RUN chmod 755 /opt/star/start-runpod.sh /opt/star/model-config.sh && mkdir -p /w
 ENV OLLAMA_HOST=127.0.0.1:11434 \
     OLLAMA_MODELS=/workspace/ollama \
     STAR_MODEL=gpt-oss:20b \
+    OLLAMA_NUM_PARALLEL=1 \
+    OLLAMA_MAX_LOADED_MODELS=1 \
+    OLLAMA_KEEP_ALIVE=10m \
     PORT=8080 \
     OLLAMA_ENDPOINT=http://127.0.0.1:11434/v1/chat/completions
 EXPOSE 8080
