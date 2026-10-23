@@ -1,0 +1,18 @@
+/* STAR NEXUS V4 — Repository studio */
+.studio-toolbar{display:flex;justify-content:space-between;align-items:center;gap:20px;border:1px solid #2e5263;border-radius:16px;background:linear-gradient(115deg,#103739,#111f31);padding:22px;margin-bottom:17px}
+.studio-toolbar h2{margin:9px 0;color:#f1fffd;overflow-wrap:anywhere;font-size:21px}
+.studio-branch{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.3px;color:#8aabbc}
+.studio-grid{display:grid;grid-template-columns:minmax(245px,.7fr) minmax(0,1.3fr);gap:17px;align-items:stretch;min-height:480px}
+.studio-tree,.studio-viewer{display:flex;flex-direction:column;min-height:440px}
+.studio-tree-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.studio-tree-head h2{overflow-wrap:anywhere}
+.studio-icon-btn{width:39px;height:39px;background:#193746;color:#b1ffeb;border:1px solid #396677;border-radius:11px;font-size:20px}
+.studio-path{font:600 11px ui-monospace,monospace;color:#9fdcd2;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;background:#091724;border:1px solid #294557;border-radius:8px;padding:12px;margin:1px 0 12px}
+.studio-list{flex:1;min-height:175px;max-height:540px;overflow:auto;display:grid;align-content:start;gap:7px}
+.studio-entry{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0;text-align:right;background:#132637;border:1px solid #254052;border-radius:10px;color:#ddeef8;padding:13px;min-height:44px}
+.studio-entry:hover{background:#193847;border-color:#5a958a}.studio-entry:focus-visible{outline:2px solid #8bead4}
+.studio-entry-name{font-size:11px;overflow-wrap:anywhere;min-width:0}.studio-entry-icon{font-size:18px;color:#79e7d5;flex:none}.studio-entry-meta{color:#7698a9;font-size:10px;flex:none}
+.studio-code{margin:0;flex:1;min-height:210px;max-height:500px;overflow:auto;background:#07121f;border:1px solid #244355;border-radius:11px;color:#cfebf6;font:12px/1.85 ui-monospace,Menlo,monospace;padding:18px;white-space:pre;direction:ltr;text-align:left;tab-size:2}
+.studio-actions{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}.studio-notice{min-height:22px;font-size:12px;color:#9dd9d1;margin-top:17px}
+@media(max-width:830px){.studio-grid{grid-template-columns:1fr}.studio-tree,.studio-viewer{min-height:250px}.studio-list{max-height:290px}.studio-code{max-height:450px}}
+@media(max-width:520px){.studio-toolbar{flex-direction:column;align-items:flex-start;padding:18px}.studio-toolbar .secondary-btn{width:100%}.studio-actions{flex-direction:column}.studio-actions button,.studio-actions a{width:100%}}
