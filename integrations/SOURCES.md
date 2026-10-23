@@ -30,6 +30,9 @@ The source list is displayed under the Agent Integrations tab. We **do not claim
 | https://github.com/prithwishpal/worm-gpt | Streamlit chat and Telegram-related project | reference only |
 | https://github.com/father-bot/chatgpt_telegram_bot | Telegram interface pattern | first-party webhook implemented |
 | https://github.com/wangrongding/wechat-bot | multi-channel bot architecture | reference for future adapters |
+| https://github.com/JuraSecurity/Worm-GPT | unknown Windows EXE distribution | source reference only |
+| https://github.com/MrZXN777/WormGPT- | ZIP archives with unverified binaries | source reference only |
+| https://github.com/WormGPT-AI/WormGPT | README-only informational repository | reference only |
 
 ## Why the old files still exist
 
