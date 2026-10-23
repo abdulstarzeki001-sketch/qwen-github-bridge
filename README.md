@@ -11,7 +11,7 @@ The default `/` route is now the new **STAR NEXUS** command center. The former F
 - Live provider status: `GET /api/health`.
 - Owner-only integration health: `GET /api/nexus/status` (configuration status, not proof of live reachability).
 - Telegram bot: `POST /api/telegram/webhook` after configuring bot secret, allowed private chat IDs, and setWebhook; supports the configured STAR inference provider without GitHub execution privileges.
-- NEXUS integrations catalog references 14 community repositories (not automatically installed or executed).
+- NEXUS integrations catalog references 17 community repositories (not automatically installed or executed).
 - Mobile PWA starts at `/` for iPhone/iPad Safari and works as a responsive desktop web app.
 
 [Telegram setup guide](/telegram-setup.html) · [Community sources](integrations/SOURCES.md) · [Existing integrations](docs/WORMGPT_INTEGRATION.md)
