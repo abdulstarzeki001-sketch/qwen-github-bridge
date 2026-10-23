@@ -6,6 +6,8 @@ on:
       - '.github/workflows/verify-upstreams.yml'
       - 'integrations/wormgptv2/**'
       - 'integrations/wormxgpt/**'
+      - 'integrations/telegram/**'
+      - 'integrations/drana/**'
   push:
     branches:
       - 'feature/run-upstreams-phase1'
@@ -13,6 +15,8 @@ on:
       - '.github/workflows/verify-upstreams.yml'
       - 'integrations/wormgptv2/**'
       - 'integrations/wormxgpt/**'
+      - 'integrations/telegram/**'
+      - 'integrations/drana/**'
   workflow_dispatch:
 
 permissions:
