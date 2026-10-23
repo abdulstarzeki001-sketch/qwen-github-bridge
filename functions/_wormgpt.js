@@ -41,7 +41,7 @@ export async function wormgptChat(env, options, safePrompt) {
       model,
       max_tokens: options.maxTokens,
       temperature: options.temperature,
-      messages: [
+      messages: Array.isArray(options.messages) ? options.messages : [
         {role: "system", content: options.system + " Answer in the user's language. Never claim to have executed actions you did not execute."},
         {role: "user", content: safePrompt}
       ]
