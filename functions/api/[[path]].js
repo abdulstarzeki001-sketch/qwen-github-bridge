@@ -299,9 +299,9 @@ export async function onRequest({request,env,context}){
   const options=ownerChatOptions({...storedProfile,...body},env,policy);
   if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
-  const context=conversationMessages(body,options.system+" Answer in the user\'s language. Never claim to have executed actions you did not execute.",safePrompt,redactPrompt);
-  if(context.error)return json({error:context.error},400);
-  const conversation=context.messages;
+  const chatContext=conversationMessages(body,options.system+" Answer in the user\'s language. Never claim to have executed actions you did not execute.",safePrompt,redactPrompt);
+  if(chatContext.error)return json({error:chatContext.error},400);
+  const conversation=chatContext.messages;
   try{
     if(useWormGPT)return json(await wormgptChat(env,{...options,messages:conversation},safePrompt));
     if(useCloudflare){
