@@ -4,6 +4,7 @@ import { makeGithubHandler } from "../_github.js";
 import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_session.js";
 import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 import { handleVault, vaultReady } from "../_vault.js";
+import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -160,9 +161,9 @@ export async function onRequest({request,env}){
   if(path==="/api/health" && request.method==="GET"){
     const provider=resolvedAiProvider(env);
     return json({
-      ok:true,version:"0.7.0",runtime:"cloudflare",
-      ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ok:true,version:"0.7.0",runtime:"cloudflare",ai_provider:provider,
+      ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="wormgpt"?wormgptConfigured(env):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):provider==="wormgpt"?(env.STAR_WORMGPT_MODEL||"not-configured"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
       claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",
       full_backend:false
@@ -262,12 +263,14 @@ export async function onRequest({request,env}){
   const useCloudflare=provider==="cloudflare";
   const useOpenAI=provider==="openai";
   const useAnthropic=provider==="anthropic";
+  const useWormGPT=provider==="wormgpt";
   if(useCloudflare&&!env.AI)return json({error:"Cloudflare AI binding missing"},503);
   const selfHosted=provider==="selfhosted";
   if(selfHosted&&(!env.STAR_SELFHOSTED_URL||!env.STAR_SELFHOSTED_TOKEN))return json({error:"Self-hosted backend not configured"},503);
   if(useOpenAI&&!env.OPENAI_API_KEY)return json({error:"Set OPENAI_API_KEY for OpenAI mode"},503);
   if(useAnthropic&&!env.ANTHROPIC_API_KEY)return json({error:"Set ANTHROPIC_API_KEY for Anthropic mode"},503);
-  if(!useCloudflare&&!selfHosted&&!useOpenAI&&!useAnthropic&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
+  if(useWormGPT&&!wormgptConfigured(env))return json({error:"WormGPT-compatible API is not configured; see docs/WORMGPT_INTEGRATION.md"},503);
+  if(!useCloudflare&&!selfHosted&&!useOpenAI&&!useAnthropic&&!useWormGPT&&!env.OPENROUTER_API_KEY)return json({error:"Set OPENROUTER_API_KEY for free mode"},503);
   const ip=request.headers.get("cf-connecting-ip")||"unknown";
   if(env.STAR_RATE_LIMIT){
     const id=new URL("https://rate.local/"+encodeURIComponent(ip));
@@ -286,6 +289,7 @@ export async function onRequest({request,env}){
   if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
   try{
+    if(useWormGPT)return json(await wormgptChat(env,options,safePrompt));
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
       const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(512,options.maxTokens)});
