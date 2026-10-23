@@ -5,6 +5,7 @@ import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_se
 import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 import { handleVault, vaultReady } from "../_vault.js";
 import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
+import { telegramConfigured, handleTelegramWebhook } from "../_nexus_telegram.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -154,7 +155,7 @@ async function claudeProxy(request,env,path){
     return json({type:"error",error:{type:"api_error",message:"Claude gateway request failed"}},502);
   }
 }
-export async function onRequest({request,env}){
+export async function onRequest({request,env,context}){
   const path=new URL(request.url).pathname;
   const policy=ownerPolicy(env);
   if(corsless(request))return json({error:"Cross-origin requests are not allowed"},403);
@@ -255,6 +256,15 @@ export async function onRequest({request,env}){
     if(!policy.allowGithubRead)return json({error:"GitHub reading disabled by owner"},403);
     const owner=await hasOwnerAccess(request,env);
     return makeGithubHandler(env,owner.ok)(request);
+  }
+  if(path==="/api/telegram/webhook")return handleTelegramWebhook(request,env,context);
+  if(path==="/api/nexus/status"&&request.method==="GET"){
+    const owner=await hasOwnerAccess(request,env);
+    if(!owner.ok)return json({error:"Owner sign-in required"},401);
+    const provider=resolvedAiProvider(env);
+    return json({ok:true,version:"3.0",provider,telegram:{configured:telegramConfigured(env)},
+      integrations:{catalog_count:14,external_code_executed:false},
+      capabilities:{web_chat:true,github_repository_intelligence:policy.allowGithubRead,telegram_webhook:true}});
   }
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
   const owner=await hasOwnerAccess(request,env);
