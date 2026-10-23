@@ -73,7 +73,11 @@ node scripts/runpod-control.mjs create --confirm-paid --gpu "NVIDIA GeForce RTX 
 
 The script uses `https://api.runpod.io/v2/pods` rather than deprecated REST v1, and excludes API tokens and environment secrets from printed output. It does not print logs from RunPod containing secrets. API-key permissions and GPU resource availability determine whether creation succeeds. Current v2 docs: https://docs.runpod.io/api-reference-v2/pods/create-a-pod .
 
-**Important:** If `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` is private, RunPod cannot pull it anonymously. Change GHCR package visibility through your GitHub account or add an approved private registry credential in RunPod before creating a billable Pod.
+**Important:** The GitHub Actions paid-create workflow checks anonymous GHCR image pull before creating a Pod. If `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` is private, RunPod cannot pull it anonymously. Change GHCR package visibility through your GitHub account or add an approved private registry credential in RunPod before creating a billable Pod.
+
+## No credits or no GPU available?
+
+Continue using the existing Cloudflare Workers AI path. With Workers AI `AI` Binding configured, set `STAR_AI_PROVIDER=cloudflare` in Cloudflare Pages and redeploy. This serves a Cloudflare-hosted model instead of a self-owned GPU model, and provider usage limits still apply. **It does not activate the WormGPTv2 CLI or train local weights.** Do not change `STAR_AI_PROVIDER` to `selfhosted` until `node scripts/verify-runpod.mjs` passes an actual completion.
 
 ## Create the RunPod Pod
 
