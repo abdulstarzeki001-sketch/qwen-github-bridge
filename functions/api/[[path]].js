@@ -6,6 +6,7 @@ import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerS
 import { handleVault, vaultReady } from "../_vault.js";
 import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
 import { telegramConfigured, handleTelegramWebhook } from "../_nexus_telegram.js";
+import { conversationMessages } from "../_nexus_context.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
 const json=(body,status=200)=>Response.json(body,{status,headers:API_HEADERS});
@@ -298,11 +299,14 @@ export async function onRequest({request,env,context}){
   const options=ownerChatOptions({...storedProfile,...body},env,policy);
   if(options.error)return json({error:options.error},400);
   const safePrompt=redactPrompt(prompt);
+  const context=conversationMessages(body,options.system+" Answer in the user\'s language. Never claim to have executed actions you did not execute.",safePrompt,redactPrompt);
+  if(context.error)return json({error:context.error},400);
+  const conversation=context.messages;
   try{
-    if(useWormGPT)return json(await wormgptChat(env,options,safePrompt));
+    if(useWormGPT)return json(await wormgptChat(env,{...options,messages:conversation},safePrompt));
     if(useCloudflare){
       const model="@cf/meta/llama-3.1-8b-instruct";
-      const result=await env.AI.run(model,{messages:[{role:"system",content:options.system},{role:"user",content:safePrompt}],max_tokens:Math.min(512,options.maxTokens)});
+      const result=await env.AI.run(model,{messages:conversation,max_tokens:Math.min(512,options.maxTokens)});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);
       return json({ok:true,model,content});
@@ -321,7 +325,7 @@ export async function onRequest({request,env,context}){
           max_tokens:options.maxTokens,
           temperature:options.temperature,
           system:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute.",
-          messages:[{role:"user",content:safePrompt}]
+          messages:conversation.filter(msg=>msg.role!=="system")
         }),
         signal:AbortSignal.timeout(25000)
       });
@@ -336,10 +340,7 @@ export async function onRequest({request,env,context}){
     if(selfHosted){const url=new URL(endpoint);if(url.protocol!=="https:"||url.username||url.password||url.search||url.hash||!url.pathname.endsWith("/chat/completions"))return json({error:"Invalid self-hosted endpoint"},503);endpoint=url.toString()}
     const upstream=await fetch(endpoint,{
       method:"POST",headers:{"Authorization":"Bearer "+(selfHosted?env.STAR_SELFHOSTED_TOKEN:useOpenAI?env.OPENAI_API_KEY:env.OPENROUTER_API_KEY),"Content-Type":"application/json"},
-      body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:[
-        {role:"system",content:options.system+" Answer in the user's language. Never claim to have executed actions you did not execute."},
-        {role:"user",content:safePrompt}
-      ]}),signal:AbortSignal.timeout(selfHosted?90000:25000)
+      body:JSON.stringify({model,max_tokens:options.maxTokens,temperature:options.temperature,messages:conversation}),signal:AbortSignal.timeout(selfHosted?90000:25000)
     });
     if(!upstream.ok){console.error("AI upstream status",upstream.status);return json({error:"AI provider unavailable"},502)}
     const result=await upstream.json();
