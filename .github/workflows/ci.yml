@@ -114,6 +114,9 @@ jobs:
       - name: Test optional WormGPT-compatible backend and owner authentication
         run: node scripts/test-wormgpt.mjs && node --check functions/_wormgpt.js
 
+      - name: Test STAR NEXUS V3 Telegram webhook, owner status, new UI
+        run: node scripts/test-nexus-v3.mjs && node --check web/nexus.js && node --check functions/_nexus_telegram.js
+
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 
