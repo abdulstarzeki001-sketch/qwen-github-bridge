@@ -22,7 +22,7 @@ const sources=[
 ];
 const modelCards=[
 {name:"Cloudflare Workers AI",tag:"CLOUDFLARE",id:"cloudflare",desc:"محرك الاستدلال الموجود في مشروع STAR. يعمل عند وجود AI Binding على حساب Cloudflare.",url:"https://developers.cloudflare.com/workers-ai/",symbol:"◉"},
-{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/SELF_HOSTED.md",symbol:"⬡"},
+{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/deploy/independent-ai/README.md",symbol:"⬡"},
 {name:"WormGPT-Compatible API",tag:"THIRD PARTY",id:"wormgpt",desc:"واجهة اختيارية في المشروع، تحتاج نموذجاً حقيقياً موثوقاً وAPI متوافقاً، ولا تتضمن WormGPT الأصلي.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/docs/WORMGPT_INTEGRATION.md",symbol:"⌘"},
 {name:"OpenAI",tag:"CLOUD API",id:"openai",desc:"مزوّد OpenAI المعتمد على مفتاح خادم خاص؛ لا تحفظ مفتاحك في Safari.",url:"https://platform.openai.com/docs",symbol:"✦"},
 {name:"Anthropic",tag:"CLOUD API",id:"anthropic",desc:"تكامل خادم منفصل للعمل مع Claude من خلال Cloudflare.",url:"/sovereign.html",symbol:"◈"},
@@ -45,6 +45,26 @@ async function refresh(){let hasApi=false;
  if(auth){try{status=await api("/api/nexus/status");statusLabel("stateTelegram",Boolean(status.telegram?.configured),"CONFIGURED","NOT CONFIGURED");setText("tgWebhook",status.telegram?.configured?"مهيأ · اختبر الرسائل":"غير مهيأ");}catch{status=null;statusLabel("stateTelegram",false,"CONFIGURED","NOT CONFIGURED");setText("tgWebhook","تعذر الفحص");}}
  else{status=null;statusLabel("stateTelegram",false,"CONFIGURED","مالك فقط");setText("tgWebhook","تسجيل المالك مطلوب");}
  renderModels();
+ if(auth)await loadModelChoices();
+ else {const menu=$("chatModelSelect");menu.replaceChildren(new Option("سجّل دخول المالك",""));menu.disabled=true;}
+}
+async function loadModelChoices(){
+ const menu=$("chatModelSelect");
+ const previous=menu.value;
+ try{
+   const data=await api("/api/nexus/models");
+   menu.replaceChildren(new Option("الافتراضي: "+(data.default_model||"—"),""));
+   for(const name of data.models||[]){
+      if(name===data.default_model)continue;
+      menu.add(new Option(name,name));
+   }
+   menu.disabled=!data.configured;
+   if([...menu.options].some(option=>option.value===previous))menu.value=previous;
+   setText("composeMode",data.configured?"MODEL SELECT READY":"PROVIDER NOT CONFIGURED");
+ }catch{
+   menu.disabled=true;
+   menu.replaceChildren(new Option("تعذر تحميل النماذج",""));
+ }
 }
 function makeEl(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
 function renderModels(){const out=$("modelGrid");out.replaceChildren();for(const m of modelCards){const ready=(health?.ai_provider||"")===m.id&&health?.ai_gateway;const card=makeEl("article","model-card");const top=makeEl("div","model-card-top");top.append(makeEl("span","model-symbol",m.symbol),makeEl("span","status-chip"+(ready?" ready":""),ready?"مزود مهيأ":"اختياري"));card.append(top,makeEl("h3","",m.name),makeEl("div","card-meta",m.tag),makeEl("p","",m.desc));const link=makeEl("a","","الوثائق والإعداد ↗");link.href=m.url;if(/^https:/.test(m.url)){link.target="_blank";link.rel="noopener noreferrer"}card.append(link);out.append(card)}}
@@ -58,7 +78,7 @@ function displayBubble(role,text){const thread=$("chatThread");thread.querySelec
 function promptValue(){return $("chatInput").value.trim();}
 async function chat(ev){ev?.preventDefault();const prompt=promptValue();if(!prompt||busy)return;if(!auth){setText("chatNotice","يجب تفعيل جلسة المالك قبل إرسال الطلب.");openAuth();return;}
  busy=true;$("chatSend").disabled=true;displayBubble("user",prompt);$("chatInput").value="";setText("chatNotice","جاري الاستدلال…");history.push({role:"user",content:prompt});try{
- const data=await api("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Origin":location.origin},body:JSON.stringify({prompt,history:history.slice(0,-1).slice(-8).map(m=>({role:m.role,content:m.content.slice(-700)})),owner_instructions:prefs.owner_instructions,temperature:prefs.temperature,max_tokens:prefs.max_tokens})});displayBubble("ai",data.content||"رد فارغ");history.push({role:"assistant",content:data.content||""});history=history.slice(-10);setText("chatNotice","تم · "+(data.model||"STAR MODEL")+" · سياق المحادثة مفعّل");}
+ const data=await api("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Origin":location.origin},body:JSON.stringify({prompt,history:history.slice(0,-1).slice(-8).map(m=>({role:m.role,content:m.content.slice(-700)})),model:$("chatModelSelect").value||undefined,owner_instructions:prefs.owner_instructions,temperature:prefs.temperature,max_tokens:prefs.max_tokens})});displayBubble("ai",data.content||"رد فارغ");history.push({role:"assistant",content:data.content||""});history=history.slice(-10);setText("chatNotice","تم · "+(data.model||"STAR MODEL")+" · سياق المحادثة مفعّل");}
  catch(e){displayBubble("ai","تعذر الحصول على رد: "+e.message);setText("chatNotice","فشل الاتصال بالنموذج");}finally{busy=false;$("chatSend").disabled=false;$("chatInput").focus();}}
 $("chatForm").addEventListener("submit",chat);
 $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("chatForm").requestSubmit();}});
@@ -72,6 +92,14 @@ $("authForm").addEventListener("submit",async ev=>{ev.preventDefault();const tok
 });
 $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST",headers:{"Content-Type":"application/json","Origin":location.origin},body:"{}"});auth=false;await refresh();}catch(e){setText("settingsSession","فشل تسجيل الخروج: "+e.message);}});
 $("refreshModels").addEventListener("click",refresh);
+$("probeModels").addEventListener("click",async()=>{
+  const btn=$("probeModels");btn.disabled=true;setText("modelStatusText","أفحص اتصال خادم الاستدلال...");
+  try{
+    const data=await api("/api/nexus/model-probe");
+    setText("modelStatusText",data.checked?(data.reachable?"بوابة GPU متصلة · "+(data.model||"Model"):"تعذر الاتصال ببوابة GPU"):"لا يوجد خادم Ollama مستقل مهيأ");
+  }catch(e){setText("modelStatusText","تعذر الفحص: "+e.message)}
+  finally{btn.disabled=false;}
+});
 function loadPrefs(){try{const raw=JSON.parse(localStorage.getItem("star-nexus-prefs-v1")||"null");if(raw&&typeof raw==="object"){prefs.owner_instructions=String(raw.owner_instructions||"").slice(0,2000);const t=Number(raw.temperature);prefs.temperature=Number.isFinite(t)?Math.max(0,Math.min(1,t)):0.2;prefs.max_tokens=[512,1400,2048,4096].includes(Number(raw.max_tokens))?Number(raw.max_tokens):1400;}}catch{}$("ownerInstructions").value=prefs.owner_instructions;$("temperature").value=prefs.temperature;$("maxTokens").value=String(prefs.max_tokens);}
 $("savePrefs").addEventListener("click",()=>{prefs={owner_instructions:$("ownerInstructions").value.slice(0,2000),temperature:Number($("temperature").value),max_tokens:Number($("maxTokens").value)};try{localStorage.setItem("star-nexus-prefs-v1",JSON.stringify(prefs));setText("prefsSaved","تم حفظ تعليمات المحادثة على هذا الجهاز فقط.");}catch{setText("prefsSaved","التخزين المحلي غير متاح.");}});
 loadPrefs();renderSources();renderModels();try{const hash=location.hash.slice(1);if(titles[hash])openView(hash);}catch{}

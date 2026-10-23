@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="STAR NEXUS">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title>STAR NEXUS · AI COMMAND CENTER</title>
-<link rel="stylesheet" href="/nexus.css"><link rel="stylesheet" href="/nexus-v4.css"><script src="/nexus.js" defer></script><script src="/nexus-github.js" defer></script>
+<link rel="stylesheet" href="/nexus.css"><link rel="stylesheet" href="/nexus-v4.css"><link rel="stylesheet" href="/nexus-v5.css"><script src="/nexus.js" defer></script><script src="/nexus-github.js" defer></script>
 </head>
 <body>
 <div class="aurora aurora-a" aria-hidden="true"></div><div class="aurora aurora-b" aria-hidden="true"></div>
@@ -86,7 +86,7 @@
 <section class="page" id="view-chat" aria-label="محادثة الذكاء">
   <div class="section-heading"><div><span class="overline">WORKSPACE / NEURAL CHAT</span><h1>مركز المحادثة</h1><p>اتصل بمحرك STAR الحقيقي؛ الردود تأتي من API المحمي بعد تسجيل دخول المالك.</p></div><span class="heading-mark">◈</span></div>
   <div class="chat-shell">
-    <div class="chat-top"><div class="avatar-neural">✳</div><div><strong>STAR NEXUS AI</strong><small id="chatModel">اكتشاف المزود...</small></div><span class="spacer"></span><button type="button" class="text-btn" id="clearChat">مسح المحادثة</button></div>
+    <div class="chat-top"><div class="avatar-neural">✳</div><div><strong>STAR NEXUS AI</strong><small id="chatModel">اكتشاف المزود...</small></div><span class="spacer"></span><label class="nexus-picker" for="chatModelSelect">النموذج <select id="chatModelSelect" aria-label="اختر نموذج الذكاء" disabled><option value="">النموذج الافتراضي</option></select></label><button type="button" class="text-btn" id="clearChat">مسح المحادثة</button></div>
     <div class="chat-thread" id="chatThread" aria-live="polite" aria-relevant="additions text"><div class="chat-empty"><span class="chat-empty-icon">✳</span><h2>بماذا تريد أن نبدأ؟</h2><p>مراجعة كود، تحليل أمني، تصميم واجهة أو خطة مشروع. يمكنك تعديل طريقة الإجابة من إعدادات المالك.</p><div class="prompts"><button type="button" data-prompt="حلل بنية STAR AI واقترح 3 تحسينات قابلة للتنفيذ">تحسين مشروعي ↗</button><button type="button" data-prompt="ساعدني في مراجعة أمان واجهة API مع توضيح الفرضيات">مراجعة API ↗</button><button type="button" data-prompt="صمم خطة لتشغيل نموذج محلي مع بوابة HTTPS محمية">نموذج مستقل ↗</button></div></div></div>
     <form id="chatForm" class="chat-form"><textarea id="chatInput" rows="2" maxlength="6000" required aria-label="أرسل رسالتك" placeholder="اكتب طلبك هنا… (Enter للإرسال، Shift+Enter لسطر جديد)"></textarea><div class="compose-bottom"><span>STAR • <span id="composeMode">OWNER-GATED INFERENCE</span></span><button id="chatSend" class="send-btn" type="submit" aria-label="إرسال">↗</button></div></form>
     <div class="chat-note" role="status" id="chatNotice"></div>
@@ -114,7 +114,7 @@
 
 <section class="page" id="view-models" aria-label="مختبر النماذج">
   <div class="section-heading"><div><span class="overline">AI ENGINE / MULTI PROVIDER</span><h1>مختبر النماذج</h1><p>اختر بنية الاستدلال التي تناسبك. تغيير المزود الفعلي يتم من أسرار الخادم، لا من المتصفح.</p></div><span class="heading-mark">⬡</span></div>
-  <div class="highlight-row"><div><span class="overline">ACTIVE ENGINE</span><strong id="currentModelFull">جاري الكشف…</strong><small id="modelStatusText">الاتصال لم يُختبر بعد</small></div><button type="button" class="secondary-btn" id="refreshModels">إعادة الفحص ↻</button></div>
+  <div class="highlight-row"><div><span class="overline">ACTIVE ENGINE</span><strong id="currentModelFull">جاري الكشف…</strong><small id="modelStatusText">الاتصال لم يُختبر بعد</small></div><div class="nexus-model-tools"><button type="button" class="secondary-btn" id="probeModels">اختبار الاتصال ↗</button><button type="button" class="secondary-btn" id="refreshModels">إعادة الفحص ↻</button></div></div>
   <div class="model-grid" id="modelGrid"></div>
   <div class="instruction-card"><span>✦</span><div><strong>هل تريد نموذجا محلياً بالكامل؟</strong><p>جهّز Ollama على خادمك، ثم اربطه ببوابة STAR HTTPS الخاصة. اسم WormGPT في قائمة المصادر لا يثبت امتلاك أوزان النموذج الأصلي.</p></div><a href="/sovereign.html">إعدادات النموذج ↗</a></div>
 </section>

@@ -20,9 +20,9 @@ function compareToken(expected,supplied){
   const h=s=>createHash("sha256").update(s).digest();
   return timingSafeEqual(h(expected),h(supplied));
 }
-function cleanRequest(body,model){
+function cleanRequest(body,model,allowedModels){
   if(!body||typeof body!=="object"||Array.isArray(body))return null;
-  if(body.model!==model)return null;
+  if(typeof body.model!=="string"||!allowedModels.includes(body.model))return null;
   const messages=body.messages;
   if(!Array.isArray(messages)||messages.length<1||messages.length>12)return null;
   let length=0;
@@ -34,17 +34,21 @@ function cleanRequest(body,model){
   const tokens=body.max_tokens===undefined?1400:Number(body.max_tokens);
   const temperature=body.temperature===undefined?0.15:Number(body.temperature);
   if(!Number.isInteger(tokens)||tokens<1||tokens>4096||!Number.isFinite(temperature)||temperature<0||temperature>1)return null;
-  return {model,messages:messages.map(m=>({role:m.role,content:m.content})),max_tokens:tokens,temperature,stream:false};
+  return {model:body.model,messages:messages.map(m=>({role:m.role,content:m.content})),max_tokens:tokens,temperature,stream:false};
 }
-export function createGateway({token,model="gpt-oss:20b",endpoint="http://ollama:11434/v1/chat/completions",upstreamFetch=globalThis.fetch}={}){
+export function createGateway({token,model="gpt-oss:20b",allowedModels=[model],endpoint="http://ollama:11434/v1/chat/completions",upstreamFetch=globalThis.fetch}={}){
   if(typeof token!=="string"||token.length<32||token.length>256)throw Error("STAR_BACKEND_TOKEN must contain 32 to 256 random characters");
-  if(!/^[A-Za-z0-9._:-]{3,120}$/.test(model))throw Error("Invalid STAR_MODEL");
+  if(!/^[A-Za-z0-9._:/-]{3,120}$/.test(model))throw Error("Invalid STAR_MODEL");
+  if(!Array.isArray(allowedModels)||allowedModels.length<1||allowedModels.length>12||
+    allowedModels.some(item=>typeof item!=="string"||!/^[A-Za-z0-9._:/-]{3,120}$/.test(item))||
+    !allowedModels.includes(model)||new Set(allowedModels).size!==allowedModels.length)
+    throw Error("Invalid STAR_ALLOWED_MODELS list; must include STAR_MODEL");
   if(!["http://ollama:11434/v1/chat/completions","http://127.0.0.1:11434/v1/chat/completions"].includes(endpoint))throw Error("Upstream must remain the private Ollama service");
   return http.createServer(async(req,res)=>{
     const header=req.headers.authorization||"";
     const supplied=header.startsWith("Bearer ")?header.slice(7).trim():"";
     if(!compareToken(token,supplied))return respond(res,401,{error:"Unauthorized"});
-    if(req.url==="/health"&&req.method==="GET")return respond(res,200,{ok:true,model,access:"authenticated"});
+    if(req.url==="/health"&&req.method==="GET")return respond(res,200,{ok:true,model,models:allowedModels,access:"authenticated"});
     if(req.url!=="/chat/completions"||req.method!=="POST")return respond(res,404,{error:"Not found"});
     if(!/^application\/json(?:\s*;|$)/i.test(req.headers["content-type"]||""))return respond(res,415,{error:"JSON required"});
     let size=0,chunks=[];
@@ -55,7 +59,7 @@ export function createGateway({token,model="gpt-oss:20b",endpoint="http://ollama
         chunks.push(chunk);
       }
       const body=JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      const payload=cleanRequest(body,model);
+      const payload=cleanRequest(body,model,allowedModels);
       if(!payload)return respond(res,400,{error:"Invalid model or chat request"});
       const remote=await upstreamFetch(endpoint,{
         method:"POST",
@@ -81,6 +85,9 @@ export function createGateway({token,model="gpt-oss:20b",endpoint="http://ollama
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   const port=Number(process.env.PORT||8080);
   if(!Number.isInteger(port)||port<1||port>65535)throw Error("Invalid PORT");
-  const server=createGateway({token:process.env.STAR_BACKEND_TOKEN,model:process.env.STAR_MODEL||"gpt-oss:20b",endpoint:process.env.OLLAMA_ENDPOINT||"http://ollama:11434/v1/chat/completions"});
+  const model=process.env.STAR_MODEL||"gpt-oss:20b";
+  const extra=(process.env.STAR_ALLOWED_MODELS||model).split(",").map(x=>x.trim()).filter(Boolean);
+  const server=createGateway({token:process.env.STAR_BACKEND_TOKEN,model,allowedModels:extra,
+    endpoint:process.env.OLLAMA_ENDPOINT||"http://ollama:11434/v1/chat/completions"});
   server.listen(port,"0.0.0.0",()=>console.log("STAR authenticated inference gateway started on internal port "+port));
 }

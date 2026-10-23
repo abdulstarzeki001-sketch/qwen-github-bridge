@@ -16,7 +16,7 @@ After configuring the STAR authenticated inference gateway against your persiste
 
 ```ini
 STAR_AI_PROVIDER=selfhosted
-STAR_SELFHOSTED_URL=https://YOUR_PRIVATE_GATEWAY/v1/chat/completions
+STAR_SELFHOSTED_URL=https://YOUR_PRIVATE_GATEWAY/chat/completions
 STAR_SELFHOSTED_MODEL=IHA089/drana-infinity-3b:3b
 STAR_ALLOWED_MODELS=IHA089/drana-infinity-3b:3b
 ```

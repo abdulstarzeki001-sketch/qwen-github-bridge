@@ -85,6 +85,18 @@ jobs:
       - name: Build
         run: docker build --pull -t star-cyber-ai-x:ci .
 
+      - name: Check opt-in agent runtime Compose configuration
+        env:
+          STAR_BACKEND_TOKEN: ci-test-backend-token-not-for-deployment
+          CF_TUNNEL_TOKEN: ci-test-tunnel-not-for-deployment
+        run: docker compose -f deploy/independent-ai/compose.yaml --profile agent config --quiet
+
+      - name: Build verified third-party coding agent container
+        run: docker build -f deploy/independent-ai/Dockerfile.agent -t star-wormgpt-agent:ci deploy/independent-ai
+
+      - name: Smoke-test coding agent version
+        run: docker run --rm --network none --read-only star-wormgpt-agent:ci --version
+
 
   netlify:
     name: Netlify functions
@@ -120,6 +132,9 @@ jobs:
       - name: Test NEXUS V4 history and GitHub Studio
         run: node scripts/test-nexus-v4.mjs && node --check web/nexus-github.js && node --check functions/_nexus_context.js
 
+      - name: Test NEXUS V5 model switching and private GPU runtime
+        run: node scripts/test-nexus-v5.mjs && node --check web/nexus.js && node --check deploy/independent-ai/gateway.mjs
+
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 
@@ -139,7 +154,7 @@ jobs:
         run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
 
       - name: Check Runpod Codex setup and GPU Pod startup scripts
-        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
+        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/pull-models.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
 
       - name: Check dashboard inline JavaScript
         run: |

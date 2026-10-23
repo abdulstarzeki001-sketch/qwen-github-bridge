@@ -1,0 +1,6 @@
+/* NEXUS V5 — model picker / live gateway status */
+.nexus-picker{display:flex;align-items:center;gap:9px;font-size:10px;color:#8daec0;white-space:nowrap}
+.nexus-picker select{appearance:auto;min-width:0;max-width:205px;padding:10px 11px;border-radius:9px;color:#b9ecdd;border:1px solid #376477;background:#102534;font-size:11px}
+.nexus-picker select:disabled{opacity:.57;cursor:not-allowed}
+.nexus-model-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:660px){.chat-top{flex-wrap:wrap}.chat-top .spacer{display:none}.nexus-picker{order:4;width:100%;justify-content:space-between;gap:5px}.nexus-picker select{max-width:70%;width:70%}.nexus-model-tools{width:100%}.nexus-model-tools button{flex:1}}
