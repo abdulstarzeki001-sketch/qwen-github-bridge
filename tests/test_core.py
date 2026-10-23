@@ -168,6 +168,7 @@ def test_wormgpt_provider_requires_verified_endpoint_configuration():
     )
     for unsafe in (
         "http://127.0.0.1:11434/v1",
+        "https://127.0.0.1/v1",
         "https://model.example.org/v1?secret=value",
         "https://user:password@model.example.org/v1",
     ):
