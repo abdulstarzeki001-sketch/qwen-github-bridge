@@ -153,6 +153,9 @@ jobs:
       - name: Test private GPU owner-only gateway
         run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
 
+      - name: Test RunPod V7 cost-gated Pod provision controller
+        run: node scripts/test-runpod-v7.mjs && node --check scripts/runpod-control.mjs
+
       - name: Test RunPod V6 model preload and authenticated inference verifier
         run: node scripts/test-runpod-v6.mjs && node --check scripts/verify-runpod.mjs && node --check web/runpod-setup.js && bash -n deploy/independent-ai/runpod/model-config.sh
 
