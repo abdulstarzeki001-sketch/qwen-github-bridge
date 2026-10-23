@@ -263,7 +263,7 @@ export async function onRequest({request,env,context}){
     if(!owner.ok)return json({error:"Owner sign-in required"},401);
     const provider=resolvedAiProvider(env);
     return json({ok:true,version:"3.0",provider,telegram:{configured:telegramConfigured(env)},
-      integrations:{catalog_count:14,external_code_executed:false},
+      integrations:{catalog_count:17,external_code_executed:false},
       capabilities:{web_chat:true,github_repository_intelligence:policy.allowGithubRead,telegram_webhook:true}});
   }
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
