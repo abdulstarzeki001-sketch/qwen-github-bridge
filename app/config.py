@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import os
+from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 
@@ -59,9 +60,14 @@ class Settings:
             base = self.wormgpt_base_url.strip().rstrip("/")
             parsed = urlsplit(base)
             host = (parsed.hostname or "").lower()
+            try:
+                ip_address(host)
+                is_ip_literal = True
+            except ValueError:
+                is_ip_literal = False
             if (
                 parsed.scheme != "https"
-                or not host or "." not in host
+                or not host or "." not in host or is_ip_literal
                 or host == "localhost"
                 or host.endswith((".localhost", ".local", ".internal"))
                 or parsed.username or parsed.password or parsed.port is not None
