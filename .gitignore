@@ -32,3 +32,6 @@ node_modules/
 
 # Local third-party agent installations
 .integrations/
+# Host-side coding agent sandbox and local model state
+deploy/independent-ai/agent-workspace/*
+!deploy/independent-ai/agent-workspace/.gitkeep
