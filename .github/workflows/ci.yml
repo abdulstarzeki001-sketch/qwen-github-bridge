@@ -111,6 +111,9 @@ jobs:
       - name: Test SOVEREIGN owner inference controls and local gateway
         run: node scripts/test-sovereign.mjs && node scripts/test-sovereign-settings.mjs && node scripts/test-sovereign-gateway.mjs && node scripts/test-sovereign-ui.mjs && node --check web/star-sovereign.js && node --check sovereign-gateway/server.mjs
 
+      - name: Test optional WormGPT-compatible backend and owner authentication
+        run: node scripts/test-wormgpt.mjs && node --check functions/_wormgpt.js
+
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 
