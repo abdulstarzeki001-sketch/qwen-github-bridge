@@ -1,0 +1,93 @@
+name: RunPod GPU Control (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action - plan and list cannot incur GPU charges"
+        required: true
+        default: plan
+        type: choice
+        options:
+          - plan
+          - list
+          - create
+      gpu_type:
+        description: "RunPod GPU model ID from current catalog"
+        required: true
+        default: "NVIDIA GeForce RTX 4090"
+        type: string
+      model:
+        description: "First model to load (default is budget-friendly coder)"
+        required: true
+        default: "qwen2.5-coder:7b"
+        type: string
+      volume_gb:
+        description: "Persistent disk size GB (billed separately)"
+        required: true
+        default: "60"
+        type: string
+      confirm_paid:
+        description: "Type CREATE_PAID_GPU to start a billable Pod; ignored for plan/list"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runpod-manual-create
+  cancel-in-progress: false
+
+jobs:
+  runpod-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate plan and RunPod v2 controller
+        run: node scripts/test-runpod-v7.mjs && node --check scripts/runpod-control.mjs
+      - name: Verify manual financial confirmation
+        if: inputs.action == 'create'
+        env:
+          APPROVAL: ${{ inputs.confirm_paid }}
+        run: |
+          if [ "$APPROVAL" != "CREATE_PAID_GPU" ]; then
+            echo "Creation blocked: explicit CREATE_PAID_GPU confirmation is required" >&2
+            exit 1
+          fi
+      - name: Check image can be pulled anonymously before paid creation
+        if: inputs.action == 'create'
+        run: |
+          set -euo pipefail
+          docker manifest inspect ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest >/dev/null || {
+            echo "GPU creation stopped. Container image isn't publicly pullable from GHCR."
+            echo "Set GHCR package visibility to Public in GitHub Packages, then re-run."
+            exit 1
+          }
+      - name: Execute selected RunPod action
+        env:
+          ACTION: ${{ inputs.action }}
+          STAR_GPU_ID: ${{ inputs.gpu_type }}
+          STAR_MODEL: ${{ inputs.model }}
+          STAR_VOLUME_GB: ${{ inputs.volume_gb }}
+          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+          STAR_BACKEND_TOKEN: ${{ secrets.STAR_BACKEND_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "$ACTION" == "plan" ]]; then
+            node scripts/runpod-control.mjs plan --gpu "$STAR_GPU_ID" --model "$STAR_MODEL" --volume "$STAR_VOLUME_GB"
+          elif [[ "$ACTION" == "list" ]]; then
+            node scripts/runpod-control.mjs list
+          elif [[ "$ACTION" == "create" ]]; then
+            test -n "$RUNPOD_API_KEY" || { echo "Missing RUNPOD_API_KEY GitHub Actions secret" >&2; exit 1; }
+            test -n "$STAR_BACKEND_TOKEN" || { echo "Missing STAR_BACKEND_TOKEN GitHub Actions secret" >&2; exit 1; }
+            node scripts/runpod-control.mjs create --confirm-paid --gpu "$STAR_GPU_ID" --model "$STAR_MODEL" --volume "$STAR_VOLUME_GB"
+          else
+            echo "Unknown manual action" >&2
+            exit 2
+          fi

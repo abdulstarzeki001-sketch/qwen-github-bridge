@@ -51,6 +51,34 @@ STAR_ALLOWED_MODELS=gpt-oss:20b,qwen2.5-coder:7b,IHA089/drana-infinity-3b:3b
 
 Allocate adequate disk space for all weights (60–100 GB or more depending on the models) and leave enough GPU VRAM. Ollama runs one model at a time on the 24 GB bootstrap configuration, so switching may trigger a model unload/reload. Model releases, their terms, and hardware needs can change. Do not assume a selected model is ready until you receive an actual chat response.
 
+## Automated Pod management with RunPod REST API v2
+
+To bridge the final gap between a **published Docker image** and a **running, billable GPU Pod**, this repo includes an owner-controlled RunPod API v2 tool: `scripts/runpod-control.mjs`.
+
+**Option 1 (GitHub Actions, iPhone-friendly):**
+Open [RunPod GPU Control](https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/runpod-gpu-control.yml) → **Run workflow**.
+`plan` requires no API key or money and previews the exact Pod configuration.
+`list` uses the `RUNPOD_API_KEY` Actions secret to discover the Pods already in your own RunPod account.
+`create` requires `RUNPOD_API_KEY`, `STAR_BACKEND_TOKEN` in **GitHub Actions secrets**, plus explicit `CREATE_PAID_GPU` confirmation. It creates exactly one 8080/http Pod only on an explicit manual run, and returns the Pod ID. It does **not** fund your account, verify GHCR package visibility, update Cloudflare secrets, or automatically retry a failed or uncertain creation response. You may be charged for Pod usage, storage, and related resources. A missing balance can produce HTTP 402.
+
+**Option 2 (private terminal):**
+
+```sh
+node scripts/runpod-control.mjs plan
+# Export RUNPOD_API_KEY in your own terminal or a secret manager (never commit it).
+node scripts/runpod-control.mjs list
+# Only after confirming budget, GPU availability and GHCR image access:
+node scripts/runpod-control.mjs create --confirm-paid --gpu "NVIDIA GeForce RTX 4090" --model qwen2.5-coder:7b --volume 60
+```
+
+The script uses `https://api.runpod.io/v2/pods` rather than deprecated REST v1, and excludes API tokens and environment secrets from printed output. It does not print logs from RunPod containing secrets. API-key permissions and GPU resource availability determine whether creation succeeds. Current v2 docs: https://docs.runpod.io/api-reference-v2/pods/create-a-pod .
+
+**Important:** The GitHub Actions paid-create workflow checks anonymous GHCR image pull before creating a Pod. If `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` is private, RunPod cannot pull it anonymously. Change GHCR package visibility through your GitHub account or add an approved private registry credential in RunPod before creating a billable Pod.
+
+## No credits or no GPU available?
+
+Continue using the existing Cloudflare Workers AI path. With Workers AI `AI` Binding configured, set `STAR_AI_PROVIDER=cloudflare` in Cloudflare Pages and redeploy. This serves a Cloudflare-hosted model instead of a self-owned GPU model, and provider usage limits still apply. **It does not activate the WormGPTv2 CLI or train local weights.** Do not change `STAR_AI_PROVIDER` to `selfhosted` until `node scripts/verify-runpod.mjs` passes an actual completion.
+
 ## Create the RunPod Pod
 
 1. Open [RunPod](https://www.runpod.io/) and create a GPU Pod (this **incurs charges**).
