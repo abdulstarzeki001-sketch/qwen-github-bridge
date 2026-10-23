@@ -154,7 +154,7 @@ jobs:
         run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
 
       - name: Check Runpod Codex setup and GPU Pod startup scripts
-        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
+        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/pull-models.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
 
       - name: Check dashboard inline JavaScript
         run: |
