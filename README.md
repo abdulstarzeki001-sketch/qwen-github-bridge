@@ -29,6 +29,13 @@ Runbooks: [CLI](integrations/wormgptv2/README.md), [Web](integrations/wormxgpt/R
 
 Temporary GitHub Actions runners are **not persistent AI hosts**. Do not interpret a build/startup smoke check as proof that the external service can chat from an iPhone or Telegram.
 
+## STAR NEXUS V4 — functional upgrades
+
+- **Multi-turn AI conversations:** the browser sends a bounded window of previous dialogue to the owner-authenticated `/api/chat`. The server strictly checks history roles/sizes and redacts known secret patterns. The earlier STAR UI only sent the latest prompt; now supported providers can use the previous dialogue.
+- **GitHub Studio:** new responsive `/#github` view, authenticated read-only file browser via existing GitHub App endpoints, text-only source display, and explicit **stage to chat** action. Files are not automatically sent to the AI. Requires existing GitHub App installation/secrets on Cloudflare.
+- Models, Telegram, previous STAR UI, vault and scanner remain unchanged. No third-party executable is deployed with this upgrade.
+- The browser does not persist private conversation history across sessions: it remains in the current tab until cleared or reloaded.
+
 ## Architecture
 
 ```text

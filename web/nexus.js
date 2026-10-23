@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id), nav=[...document.querySelectorAll("[data-view]")];
-const titles={overview:"لوحة القيادة",chat:"مركز المحادثة",models:"مختبر النماذج",agents:"الوكلاء والتكاملات",telegram:"Telegram Hub",settings:"إعدادات المالك"};
+const titles={overview:"لوحة القيادة",chat:"مركز المحادثة",models:"مختبر النماذج",agents:"الوكلاء والتكاملات",telegram:"Telegram Hub",github:"GitHub Studio",settings:"إعدادات المالك"};
 const sources=[
 {id:"wormgpt-v2",name:"WormGPTv2",repo:"WormGPTv2/wormgpt",type:"agent",desc:"وكيل برمجة عبر CLI يتصل بواجهات OpenAI-compatible وOllama. لا يوفر أوزان WormGPT الأصلية.",icon:"⌘",status:"adapter",tech:"Node 22+ · CLI · Ollama"},
 {id:"wormxgpt",name:"WormXGPT",repo:"gaur-avvv/wormxgpt",type:"web",desc:"واجهة React متعددة النماذج ومفاهيم MCP. استفادت واجهة NEXUS من فكرة مركز الأدوات، دون تشغيل الحزمة الخارجية.",icon:"◈",status:"reference",tech:"React · Vite · MCP"},
@@ -58,7 +58,7 @@ function displayBubble(role,text){const thread=$("chatThread");thread.querySelec
 function promptValue(){return $("chatInput").value.trim();}
 async function chat(ev){ev?.preventDefault();const prompt=promptValue();if(!prompt||busy)return;if(!auth){setText("chatNotice","يجب تفعيل جلسة المالك قبل إرسال الطلب.");openAuth();return;}
  busy=true;$("chatSend").disabled=true;displayBubble("user",prompt);$("chatInput").value="";setText("chatNotice","جاري الاستدلال…");history.push({role:"user",content:prompt});try{
- const data=await api("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Origin":location.origin},body:JSON.stringify({prompt,owner_instructions:prefs.owner_instructions,temperature:prefs.temperature,max_tokens:prefs.max_tokens})});displayBubble("ai",data.content||"رد فارغ");history.push({role:"assistant",content:data.content||""});setText("chatNotice","تم · "+(data.model||"STAR MODEL"));}
+ const data=await api("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","Origin":location.origin},body:JSON.stringify({prompt,history:history.slice(0,-1).slice(-8).map(m=>({role:m.role,content:m.content.slice(-700)})),owner_instructions:prefs.owner_instructions,temperature:prefs.temperature,max_tokens:prefs.max_tokens})});displayBubble("ai",data.content||"رد فارغ");history.push({role:"assistant",content:data.content||""});history=history.slice(-10);setText("chatNotice","تم · "+(data.model||"STAR MODEL")+" · سياق المحادثة مفعّل");}
  catch(e){displayBubble("ai","تعذر الحصول على رد: "+e.message);setText("chatNotice","فشل الاتصال بالنموذج");}finally{busy=false;$("chatSend").disabled=false;$("chatInput").focus();}}
 $("chatForm").addEventListener("submit",chat);
 $("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("chatForm").requestSubmit();}});

@@ -117,6 +117,9 @@ jobs:
       - name: Test STAR NEXUS V3 Telegram webhook, owner status, new UI
         run: node scripts/test-nexus-v3.mjs && node --check web/nexus.js && node --check functions/_nexus_telegram.js
 
+      - name: Test NEXUS V4 history and GitHub Studio
+        run: node scripts/test-nexus-v4.mjs && node --check web/nexus-github.js && node --check functions/_nexus_context.js
+
       - name: Test persistent STAR Vault database gateway and UI scripts
         run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
 

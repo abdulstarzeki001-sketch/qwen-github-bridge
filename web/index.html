@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="STAR NEXUS">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <title>STAR NEXUS · AI COMMAND CENTER</title>
-<link rel="stylesheet" href="/nexus.css"><script src="/nexus.js" defer></script>
+<link rel="stylesheet" href="/nexus.css"><link rel="stylesheet" href="/nexus-v4.css"><script src="/nexus.js" defer></script><script src="/nexus-github.js" defer></script>
 </head>
 <body>
 <div class="aurora aurora-a" aria-hidden="true"></div><div class="aurora aurora-b" aria-hidden="true"></div>
@@ -21,6 +21,7 @@
     <button class="nav-item active" data-view="overview" type="button"><span class="nav-icon">◈</span><span>لوحة القيادة</span></button>
     <button class="nav-item" data-view="chat" type="button"><span class="nav-icon">▣</span><span>مركز المحادثة</span><span class="mini-key">AI</span></button>
     <button class="nav-item" data-view="models" type="button"><span class="nav-icon">⬡</span><span>مختبر النماذج</span></button>
+    <button class="nav-item" data-view="github" type="button"><span class="nav-icon">◇</span><span>GitHub Studio</span></button>
     <button class="nav-item" data-view="agents" type="button"><span class="nav-icon">⌘</span><span>الوكلاء والتكاملات</span></button>
   </nav>
   <div class="workspace-label next">CHANNELS & CONTROL <span>02</span></div>
@@ -65,7 +66,7 @@
     <div class="action-grid">
       <button type="button" data-go="chat"><span class="action-art">◈</span><strong>محادثة ذكية</strong><small>اسأل النموذج الحالي</small><span class="action-arrow">↖</span></button>
       <button type="button" data-go="models"><span class="action-art">◉</span><strong>النماذج</strong><small>المزود والأوزان</small><span class="action-arrow">↖</span></button>
-      <button type="button" data-go="agents"><span class="action-art">⌘</span><strong>المستودعات</strong><small>وكلاء GitHub والأدوات</small><span class="action-arrow">↖</span></button>
+      <button type="button" data-go="github"><span class="action-art">◇</span><strong>GitHub Studio</strong><small>استعراض وفهم الملفات</small><span class="action-arrow">↖</span></button>
       <button type="button" data-go="telegram"><span class="action-art">➤</span><strong>Telegram</strong><small>بوت مرتبط بالنظام</small><span class="action-arrow">↖</span></button>
     </div>
   </article>
@@ -90,6 +91,25 @@
     <form id="chatForm" class="chat-form"><textarea id="chatInput" rows="2" maxlength="6000" required aria-label="أرسل رسالتك" placeholder="اكتب طلبك هنا… (Enter للإرسال، Shift+Enter لسطر جديد)"></textarea><div class="compose-bottom"><span>STAR • <span id="composeMode">OWNER-GATED INFERENCE</span></span><button id="chatSend" class="send-btn" type="submit" aria-label="إرسال">↗</button></div></form>
     <div class="chat-note" role="status" id="chatNotice"></div>
   </div>
+</section>
+
+<section class="page" id="view-github" aria-label="GitHub Studio">
+  <div class="section-heading"><div><span class="overline">REPOSITORY INTELLIGENCE / V4</span><h1>GitHub Studio</h1><p>استعرض الملفات الموجودة في المستودع من داخل STAR. يمكنك تجهيز مقتطف للمراجعة بالذكاء دون إرسال الملف تلقائياً.</p></div><span class="heading-mark">◇</span></div>
+  <div class="studio-toolbar"><div><span class="overline">CONNECTED REPOSITORY</span><h2 id="gitRepo">STAR · qwen-github-bridge</h2><span class="studio-branch" id="gitBranch">الفرع: جاري الفحص…</span></div><button type="button" id="gitRefresh" class="secondary-btn">تحديث الاتصال ↻</button></div>
+  <div class="studio-grid">
+    <section class="panel studio-tree" aria-label="مستعرض ملفات GitHub">
+      <div class="studio-tree-head"><div><span class="overline">FILE EXPLORER</span><h2>المستودع</h2></div><button type="button" id="gitUp" class="studio-icon-btn" title="الرجوع إلى المجلد الأعلى" aria-label="أعلى مجلد">↑</button></div>
+      <div class="studio-path" id="gitPath" dir="ltr">/</div>
+      <div class="studio-list" id="gitEntries" aria-live="polite"><p class="tiny-muted">يلزم تسجيل دخول المالك وربط GitHub App.</p></div>
+    </section>
+    <section class="panel studio-viewer" aria-label="محتوى الملف">
+      <div class="studio-tree-head"><div><span class="overline">SOURCE INSPECTOR</span><h2 id="gitFileName">اختر ملفاً</h2></div><span id="gitFileSize" class="studio-branch">READ ONLY</span></div>
+      <pre id="gitFilePreview" class="studio-code" dir="ltr">اختر ملفاً من القائمة لعرض محتواه.</pre>
+      <div class="studio-actions"><button type="button" class="primary-btn" id="gitStage" disabled>جهّز للتحليل بـ STAR ↗</button><a class="secondary-btn" id="gitOpenGithub" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge" target="_blank" rel="noopener noreferrer">المستودع ↗</a></div>
+      <p class="tiny-muted">المراجعة تتطلب خطوة إرسال منك. أي ملف يُعرض كنص فقط، بدون تشغيل أكواده.</p>
+    </section>
+  </div>
+  <p id="gitNotice" role="status" class="studio-notice"></p>
 </section>
 
 <section class="page" id="view-models" aria-label="مختبر النماذج">
@@ -131,9 +151,9 @@
   <div class="settings-links"><a href="/legacy-dashboard.html">لوحة المشروع القديمة ↗</a><a href="/ai-v2.html">STAR COMMANDER III ↗</a><a href="/sovereign.html">STAR SOVEREIGN ↗</a><a href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge">GitHub ↗</a></div>
 </section>
 </main>
-<footer class="footer"><span>© STAR NEXUS · INTELLIGENCE SYSTEM</span><span>ENGINEERED FOR CONTROL <b>●</b> V3.0</span></footer>
+<footer class="footer"><span>© STAR NEXUS · INTELLIGENCE SYSTEM</span><span>ENGINEERED FOR CONTROL <b>●</b> V4.0</span></footer>
 </div></div>
-<nav class="mobile-dock" aria-label="التنقل على الهاتف"><button class="active" data-view="overview"><span>◈</span>الرئيسية</button><button data-view="chat"><span>▣</span>المحادثة</button><button data-view="models"><span>⬡</span>النماذج</button><button data-view="agents"><span>⌘</span>التكاملات</button><button data-view="telegram"><span>➤</span>تلجرام</button></nav>
+<nav class="mobile-dock" aria-label="التنقل على الهاتف"><button class="active" data-view="overview"><span>◈</span>الرئيسية</button><button data-view="chat"><span>▣</span>المحادثة</button><button data-view="models"><span>⬡</span>النماذج</button><button data-view="github"><span>◇</span>GitHub</button><button data-view="agents"><span>⌘</span>التكاملات</button><button data-view="telegram"><span>➤</span>تلجرام</button></nav>
 <dialog id="authDialog" class="auth-dialog"><form method="dialog" id="authForm"><div class="auth-art">✳</div><h2>تفعيل جهاز المالك</h2><p>أدخل STAR API Token الخاص بك مرة واحدة لتخزين جلسة مالك آمنة عبر HttpOnly Cookie. الرمز لا يُحفظ في LocalStorage.</p><input id="authToken" type="password" autocomplete="off" minlength="32" placeholder="رمز المالك (32 حرفاً على الأقل)" required><div class="auth-actions"><button type="button" id="closeAuth">إلغاء</button><button class="primary-btn" type="submit" id="authSubmit">تفعيل ↗</button></div><div id="authError" role="status"></div></form></dialog>
 <!-- Inline boot marker retained for static smoke test compatibility. -->
 <script>window.STAR_NEXUS_VERSION="3.0";</script>
