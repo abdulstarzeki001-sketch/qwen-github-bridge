@@ -1,0 +1,78 @@
+name: Run upstream integrations (isolated)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-upstreams.yml'
+      - 'integrations/wormgptv2/**'
+      - 'integrations/wormxgpt/**'
+  push:
+    branches:
+      - 'feature/run-upstreams-phase1'
+    paths:
+      - '.github/workflows/verify-upstreams.yml'
+      - 'integrations/wormgptv2/**'
+      - 'integrations/wormxgpt/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: star-upstream-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wormgptv2:
+    name: "01 · WormGPTv2 CLI (Node 22)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Verify pinned release and start CLI smoke
+        shell: bash
+        run: bash integrations/wormgptv2/bootstrap.sh
+      - name: Assert command-line availability
+        run: |
+          test -f .integrations/wormgptv2/node_modules/@gitlawb/wormgpt/dist/cli.mjs
+          timeout 30s node .integrations/wormgptv2/node_modules/@gitlawb/wormgpt/dist/cli.mjs --version
+          echo "WormGPTv2 CLI successfully executed --version, no external AI account connected."
+
+  wormxgpt:
+    name: "02 · WormXGPT React frontend (Vite build)"
+    needs: wormgptv2
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Fetch pinned public source without STAR credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-tags --filter=blob:none https://github.com/gaur-avvv/wormxgpt.git upstream
+          git -C upstream checkout --detach d4abdb4c782d3489d5b107b072c01217d53e9396
+          test "$(git -C upstream rev-parse HEAD)" = "d4abdb4c782d3489d5b107b072c01217d53e9396"
+      - name: Install dependencies without lifecycle scripts
+        working-directory: upstream
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Build actual WormXGPT frontend
+        working-directory: upstream
+        run: |
+          npm run build
+          test -s dist/index.html
+          echo "WormXGPT React frontend compiled. Publish requires a dedicated isolated origin."
+      - name: Save isolated frontend preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormxgpt-frontend-static
+          path: upstream/dist/
+          if-no-files-found: error
+          retention-days: 7
