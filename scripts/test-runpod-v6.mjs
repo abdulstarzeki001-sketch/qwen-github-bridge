@@ -41,7 +41,7 @@ const gateway=createGateway({
 await new Promise(resolve=>gateway.listen(0,"127.0.0.1",resolve));
 const endpoint="http://127.0.0.1:"+gateway.address().port+"/chat/completions";
 try{
-  assert.rejects(
+  await assert.rejects(
     ()=>verifyRunpod({endpoint,token}),
     /HTTPS/
   );
