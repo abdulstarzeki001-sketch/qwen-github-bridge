@@ -19,7 +19,7 @@ const sources=[
 ];
 const modelCards=[
 {name:"Cloudflare Workers AI",tag:"CLOUDFLARE",id:"cloudflare",desc:"محرك الاستدلال الموجود في مشروع STAR. يعمل عند وجود AI Binding على حساب Cloudflare.",url:"https://developers.cloudflare.com/workers-ai/",symbol:"◉"},
-{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"/SELF_HOSTED.md",symbol:"⬡"},
+{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/SELF_HOSTED.md",symbol:"⬡"},
 {name:"WormGPT-Compatible API",tag:"THIRD PARTY",id:"wormgpt",desc:"واجهة اختيارية في المشروع، تحتاج نموذجاً حقيقياً موثوقاً وAPI متوافقاً، ولا تتضمن WormGPT الأصلي.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/docs/WORMGPT_INTEGRATION.md",symbol:"⌘"},
 {name:"OpenAI",tag:"CLOUD API",id:"openai",desc:"مزوّد OpenAI المعتمد على مفتاح خادم خاص؛ لا تحفظ مفتاحك في Safari.",url:"https://platform.openai.com/docs",symbol:"✦"},
 {name:"Anthropic",tag:"CLOUD API",id:"anthropic",desc:"تكامل خادم منفصل للعمل مع Claude من خلال Cloudflare.",url:"/sovereign.html",symbol:"◈"},
@@ -28,7 +28,7 @@ const modelCards=[
 let auth=false,health=null,status=null,busy=false,filter="all";
 let history=[],prefs={owner_instructions:"",temperature:0.2,max_tokens:1400};
 function setText(id,value){const e=$(id);if(e)e.textContent=value}
-function openView(name){if(!titles[name])return;document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="view-"+name));nav.forEach(x=>x.classList.toggle("active",x.dataset.view===name));setText("crumb",titles[name]);document.title=titles[name]+" · STAR NEXUS";try{history.replaceState(null,"","#"+name)}catch{}window.scrollTo?.({top:0,behavior:"smooth"});if(name==="agents")renderSources();}
+function openView(name){if(!titles[name])return;document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="view-"+name));nav.forEach(x=>x.classList.toggle("active",x.dataset.view===name));setText("crumb",titles[name]);document.title=titles[name]+" · STAR NEXUS";try{window.history.replaceState(null,"","#"+name)}catch{}window.scrollTo?.({top:0,behavior:"smooth"});if(name==="agents")renderSources();}
 nav.forEach(x=>x.addEventListener("click",()=>openView(x.dataset.view)));
 document.querySelectorAll("[data-go]").forEach(x=>x.addEventListener("click",()=>openView(x.dataset.go)));
 function statusLabel(el,active,good,bad){const e=$(el);if(!e)return;e.textContent=active?good:bad;e.classList.toggle("bad",!active)}
