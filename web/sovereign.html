@@ -32,7 +32,7 @@
       <p class="hint">هذه التعليمات تضاف إلى سياسة الخادم. يمكنك تعديل سياسة الخادم الرئيسية عبر STAR_OWNER_POLICY_JSON. لا تدخل مفاتيح أو أسرارًا هنا.</p>
       <label for="model">النموذج (اختياري)</label>
       <input id="model" type="text" maxlength="160" spellcheck="false" dir="ltr" placeholder="اتركه فارغًا لاستخدام نموذج الخادم">
-      <p class="hint">تغيير النموذج يتطلب تضمين معرّفه في STAR_ALLOWED_MODELS على الخادم. لا تتبدل شركة المزود تلقائيًا.</p>
+      <p class="hint">تغيير النموذج يتطلب تضمين معرّفه في STAR_ALLOWED_MODELS على الخادم. لا تتبدل شركة المزود تلقائيًا. خيار WormGPT متاح فقط عبر API موثوق بعد تهيئة أسرار STAR_WORMGPT_* على Cloudflare؛ ظهور الاسم لا يعني تثبيت النموذج الأصلي.</p>
       <div class="fields">
         <div><label for="temperature">المرونة / Temperature <output id="temperatureValue">0.15</output></label><input id="temperature" type="range" min="0" max="1" step="0.05" value="0.15"></div>
         <div><label for="maxTokens">الحد الأقصى للرد</label><select id="maxTokens"><option value="512">512 tokens</option><option value="1400" selected>1,400 tokens</option><option value="2048">2,048 tokens</option><option value="4096">4,096 tokens</option></select></div>
