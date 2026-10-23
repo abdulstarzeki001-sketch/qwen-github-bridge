@@ -6,7 +6,8 @@ FROM ollama/ollama:latest
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 COPY gateway.mjs /opt/star/gateway.mjs
 COPY runpod/start-runpod.sh /opt/star/start-runpod.sh
-RUN chmod 755 /opt/star/start-runpod.sh && mkdir -p /workspace/ollama
+COPY runpod/model-config.sh /opt/star/model-config.sh
+RUN chmod 755 /opt/star/start-runpod.sh /opt/star/model-config.sh && mkdir -p /workspace/ollama
 
 ENV OLLAMA_HOST=127.0.0.1:11434 \
     OLLAMA_MODELS=/workspace/ollama \
