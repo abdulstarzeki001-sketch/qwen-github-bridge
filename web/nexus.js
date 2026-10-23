@@ -22,7 +22,7 @@ const sources=[
 ];
 const modelCards=[
 {name:"Cloudflare Workers AI",tag:"CLOUDFLARE",id:"cloudflare",desc:"محرك الاستدلال الموجود في مشروع STAR. يعمل عند وجود AI Binding على حساب Cloudflare.",url:"https://developers.cloudflare.com/workers-ai/",symbol:"◉"},
-{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/SELF_HOSTED.md",symbol:"⬡"},
+{name:"Private Ollama",tag:"SELF-HOSTED",id:"selfhosted",desc:"نماذج Qwen وDrana وgpt-oss على خادم GPU خاص، خلف بوابة HTTPS محمية.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/deploy/independent-ai/README.md",symbol:"⬡"},
 {name:"WormGPT-Compatible API",tag:"THIRD PARTY",id:"wormgpt",desc:"واجهة اختيارية في المشروع، تحتاج نموذجاً حقيقياً موثوقاً وAPI متوافقاً، ولا تتضمن WormGPT الأصلي.",url:"https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/blob/main/docs/WORMGPT_INTEGRATION.md",symbol:"⌘"},
 {name:"OpenAI",tag:"CLOUD API",id:"openai",desc:"مزوّد OpenAI المعتمد على مفتاح خادم خاص؛ لا تحفظ مفتاحك في Safari.",url:"https://platform.openai.com/docs",symbol:"✦"},
 {name:"Anthropic",tag:"CLOUD API",id:"anthropic",desc:"تكامل خادم منفصل للعمل مع Claude من خلال Cloudflare.",url:"/sovereign.html",symbol:"◈"},
