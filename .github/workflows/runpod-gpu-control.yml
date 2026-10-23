@@ -60,6 +60,15 @@ jobs:
             echo "Creation blocked: explicit CREATE_PAID_GPU confirmation is required" >&2
             exit 1
           fi
+      - name: Check image can be pulled anonymously before paid creation
+        if: inputs.action == 'create'
+        run: |
+          set -euo pipefail
+          docker manifest inspect ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest >/dev/null || {
+            echo "GPU creation stopped. Container image isn't publicly pullable from GHCR."
+            echo "Set GHCR package visibility to Public in GitHub Packages, then re-run."
+            exit 1
+          }
       - name: Execute selected RunPod action
         env:
           ACTION: ${{ inputs.action }}
