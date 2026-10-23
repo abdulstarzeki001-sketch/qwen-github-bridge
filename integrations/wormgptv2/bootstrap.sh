@@ -8,8 +8,9 @@ command -v curl >/dev/null || { echo "curl is required." >&2; exit 1; }
 command -v sha256sum >/dev/null || { echo "sha256sum is required." >&2; exit 1; }
 node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)' || { echo "Requires Node.js >=22" >&2; exit 1; }
 mkdir -p .integrations/wormgptv2
-archive="$(mktemp)"
-trap 'rm -f "$archive"' EXIT
+tempdir="$(mktemp -d)"
+archive="$tempdir/wormgpt-v0.22.0.tgz"
+trap 'rm -rf "$tempdir"' EXIT
 source_url="https://github.com/WormGPTv2/wormgpt/releases/download/v0.22.0/gitlawb-wormgpt-0.22.0.tgz"
 expected_sha256="4b4668f8e00a41fc7780c368a22dfc268dd9cf5aa74dd73230de96ed5093a0fd"
 echo "Downloading WormGPTv2 0.22.0 tagged release for verification."
