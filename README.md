@@ -16,6 +16,19 @@ The default `/` route is now the new **STAR NEXUS** command center. The former F
 
 [Telegram setup guide](/telegram-setup.html) · [Community sources](integrations/SOURCES.md) · [Existing integrations](docs/WORMGPT_INTEGRATION.md)
 
+## Sequential upstream execution (one repository at a time)
+
+STAR includes the [Launch Integrations page](/integrations-run.html) and an [isolated GitHub Actions workflow](.github/workflows/verify-upstreams.yml). Jobs run **sequentially**:
+
+1. WormGPTv2 CLI v0.22.0 — verify the pinned SHA-256 and actually execute its CLI `--version`; conversational use requires an LLM provider.
+2. WormXGPT React — clone pinned source, install without lifecycle scripts, build Vite and upload an artifact; a hosted UI is not deployed automatically.
+3. WormGPT Telegram Python — import/build the client offline and test STAR's existing webhook with mocked messaging; real Telegram requires user-created bot credentials.
+4. Drana-Infinity — exercise its Ollama inventory model chooser with a test inventory; actual LLM inference requires a persistent Ollama server.
+
+Runbooks: [CLI](integrations/wormgptv2/README.md), [Web](integrations/wormxgpt/README.md), [Telegram](integrations/telegram/README.md), [Drana](integrations/drana/README.md).
+
+Temporary GitHub Actions runners are **not persistent AI hosts**. Do not interpret a build/startup smoke check as proof that the external service can chat from an iPhone or Telegram.
+
 ## Architecture
 
 ```text

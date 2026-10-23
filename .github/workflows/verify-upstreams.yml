@@ -1,0 +1,231 @@
+name: Run upstream integrations (isolated)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-upstreams.yml'
+      - 'integrations/wormgptv2/**'
+      - 'integrations/wormxgpt/**'
+      - 'integrations/telegram/**'
+      - 'integrations/drana/**'
+      - 'integrations/electron/**'
+      - 'integrations/streamlit/**'
+      - 'integrations/prompt-skills/**'
+  push:
+    branches:
+      - 'feature/run-upstreams-phase1'
+    paths:
+      - '.github/workflows/verify-upstreams.yml'
+      - 'integrations/wormgptv2/**'
+      - 'integrations/wormxgpt/**'
+      - 'integrations/telegram/**'
+      - 'integrations/drana/**'
+      - 'integrations/electron/**'
+      - 'integrations/streamlit/**'
+      - 'integrations/prompt-skills/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: star-upstream-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wormgptv2:
+    name: "01 · WormGPTv2 CLI (Node 22)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Verify pinned release and start CLI smoke
+        shell: bash
+        run: bash integrations/wormgptv2/bootstrap.sh
+      - name: Assert command-line availability
+        run: |
+          test -f .integrations/wormgptv2/node_modules/@gitlawb/wormgpt/dist/cli.mjs
+          timeout 30s node .integrations/wormgptv2/node_modules/@gitlawb/wormgpt/dist/cli.mjs --version
+          echo "WormGPTv2 CLI successfully executed --version, no external AI account connected."
+
+  wormxgpt:
+    name: "02 · WormXGPT React frontend (Vite build)"
+    needs: wormgptv2
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Fetch pinned public source without STAR credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-tags --filter=blob:none https://github.com/gaur-avvv/wormxgpt.git upstream
+          git -C upstream checkout --detach d4abdb4c782d3489d5b107b072c01217d53e9396
+          test "$(git -C upstream rev-parse HEAD)" = "d4abdb4c782d3489d5b107b072c01217d53e9396"
+      - name: Install dependencies without lifecycle scripts
+        working-directory: upstream
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Build actual WormXGPT frontend
+        working-directory: upstream
+        run: |
+          npm run build
+          test -s dist/index.html
+          echo "WormXGPT React frontend compiled. Publish requires a dedicated isolated origin."
+      - name: Save isolated frontend preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormxgpt-frontend-static
+          path: upstream/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  telegram-bot:
+    name: "03 · WormGPT Telegram Python boot and STAR webhook"
+    needs: wormxgpt
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Run actual STAR Telegram webhook simulation
+        run: node scripts/test-nexus-v3.mjs
+      - name: Clone pinned public Telegram bot source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/jailideaid/WormGPT.git upstream-tg
+          git -C upstream-tg checkout --detach 6a4ebe384ff07adb6a691edaad12815b2642226b
+          test "$(git -C upstream-tg rev-parse HEAD)" = "6a4ebe384ff07adb6a691edaad12815b2642226b"
+      - name: Install Python bot requirements without owner tokens
+        working-directory: upstream-tg
+        run: python -m pip install -r requirements.txt
+      - name: Import and initialize Telegram application offline
+        working-directory: upstream-tg
+        env:
+          TELEGRAM_TOKEN: "123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          OPENROUTER_KEY: "dummy-for-smoke-only"
+        run: |
+          python -m compileall -q telegram_bot.py keep_alive.py main.py
+          python - <<'PY'
+          import telegram_bot
+          from telegram.ext import ApplicationBuilder
+          app = ApplicationBuilder().token("123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA").build()
+          assert callable(telegram_bot.run_bot)
+          assert app is not None
+          print("Telegram bot imports and builds offline. Polling requires a real token.")
+          PY
+
+  drana-model:
+    name: "04 · Drana-Infinity Ollama model selector (no GPU)"
+    needs: telegram-bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Clone pinned Drana-Infinity source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/IHA089/Drana-Infinity.git upstream-drana
+          git -C upstream-drana checkout --detach 88f3730bc536928b87da97fcae7639f3f10e5390
+      - name: Test real upstream model resolution with mocked Ollama inventory
+        working-directory: upstream-drana
+        run: |
+          python -m py_compile get_model.py
+          python - <<'PY'
+          from unittest.mock import patch
+          from subprocess import CompletedProcess
+          from get_model import get_drana_model
+          with patch("subprocess.run",return_value=CompletedProcess(args=["ollama","list"],returncode=0,stdout="NAME SIZE\nIHA089/drana-infinity-3b:3b 2.0 GB\n")):
+              assert get_drana_model() == "IHA089/drana-infinity-3b:3b"
+          print("Drana model selector executed. GPU model itself has NOT been downloaded or hosted.")
+          PY
+
+  electron:
+    name: "05 · Worm-GPT Electron renderer (no desktop execution)"
+    needs: drana-model
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Clone pinned Electron application source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/lahirusanjika/Worm-GPT.git upstream-electron
+          git -C upstream-electron checkout --detach 063068472198d476210129d4352600ab5522c2e4
+          test "$(git -C upstream-electron rev-parse HEAD)" = "063068472198d476210129d4352600ab5522c2e4"
+      - name: Install dependencies without lifecycle scripts
+        working-directory: upstream-electron
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Compile Electron React renderer
+        working-directory: upstream-electron
+        run: |
+          npm run build:renderer
+          test -s app/renderer/bundle.js
+          echo "Electron UI bundle built. Windows EXE not installed or executed."
+      - name: Upload Electron renderer for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormgpt-electron-renderer
+          path: upstream-electron/app/renderer/bundle.js
+          retention-days: 7
+
+  streamlit:
+    name: "06 · worm-gpt Streamlit static startup checks"
+    needs: electron
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Clone pinned Streamlit source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/prithwishpal/worm-gpt.git upstream-streamlit
+          git -C upstream-streamlit checkout --detach db577367bc822c082ab8a9330ab05fe3cd530f8f
+          test "$(git -C upstream-streamlit rev-parse HEAD)" = "db577367bc822c082ab8a9330ab05fe3cd530f8f"
+      - name: Compile both application entry points without credentials
+        working-directory: upstream-streamlit
+        run: |
+          python -m py_compile worm-gpt.py worm-gpt-web.py
+          python - <<'PY'
+          import ast, pathlib
+          for f in ["worm-gpt.py","worm-gpt-web.py"]:
+              t=ast.parse(pathlib.Path(f).read_text(encoding="utf-8"))
+              assert len(t.body)>0
+              print("Compiled:", f)
+          PY
+          echo "Python compilation verified. Streamlit not exposed with default login."
+
+  prompt-skills:
+    name: "07 · XGPT-WormGPT text assets (no code execution)"
+    needs: streamlit
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Clone pinned skills library
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/gaur-avvv/XGPT-WormGPT.git upstream-prompts
+          git -C upstream-prompts checkout --detach 96edda3d6377304a88c517287576c4fc6c116784
+          test "$(git -C upstream-prompts rev-parse HEAD)" = "96edda3d6377304a88c517287576c4fc6c116784"
+      - name: Confirm source provides text prompts, not executable model weights
+        run: |
+          test -s upstream-prompts/Worm.txt
+          test -s upstream-prompts/Agentic-Mode.txt
+          test -s upstream-prompts/skills/README.md
+          wc -c upstream-prompts/Worm.txt upstream-prompts/Agentic-Mode.txt
+          echo "Prompt assets verified as references, NOT installed as system instructions."
