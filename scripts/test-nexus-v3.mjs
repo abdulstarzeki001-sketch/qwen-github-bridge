@@ -48,7 +48,7 @@ try{
  assert.equal(r.status,200);
  const data=await r.json();
  assert.equal(data.telegram.configured,true);
- assert.equal(data.integrations.catalog_count,14);
+ assert.equal(data.integrations.catalog_count,17);
  assert.equal(data.integrations.external_code_executed,false);
 }finally{globalThis.fetch=original;}
 
