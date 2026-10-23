@@ -8,7 +8,7 @@ function apply(p){const d={...defaults(),...p};$("instructions").value=String(d.
 function render(role,text){const box=$("messages");box.querySelector(".empty")?.remove();const node=document.createElement("article");node.className="message "+role;const who=document.createElement("b");who.textContent=role==="user"?"أنت":"STAR AI";const content=document.createElement("div");content.textContent=text;node.append(who,content);box.append(node);box.scrollTop=box.scrollHeight;if(window.STAR_VAULT)window.STAR_VAULT.capture(role,text,"SOVEREIGN")}
 async function check(){
   try{const [auth,health]=await Promise.all([fetch("/api/auth/session",{credentials:"same-origin",cache:"no-store"}),fetch("/api/health",{cache:"no-store"})]);authenticated=auth.ok;$("ownerStatus").textContent=authenticated?"✓ جلسة المالك فعالة":"يتطلب تفعيل المالك عبر STAR CORE";
-    if(health.ok){const h=await health.json();$("gatewayStatus").textContent=h.ai_gateway?"✓ مزود مهيأ · "+(h.ai_model||""):"المزود غير مهيأ";}else $("gatewayStatus").textContent="تعذر فحص المزود";
+    if(health.ok){const h=await health.json();$("gatewayStatus").textContent=h.ai_gateway?"✓ "+(h.ai_provider||"AI")+" مهيأ · "+(h.ai_model||"")+" (لم يُختبر الاتصال)":"المزود غير مهيأ";}else $("gatewayStatus").textContent="تعذر فحص المزود";
     if(authenticated){await loadServer(true);await loadVaultSettings()}
   }catch{$("ownerStatus").textContent="تعذر فحص تسجيل الدخول";$("gatewayStatus").textContent="تعذر فحص المزود"}
 }
