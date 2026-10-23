@@ -33,6 +33,7 @@
 <a class="primary-btn" href="https://console.runpod.io/deploy" target="_blank" rel="noopener noreferrer">فتح لوحة RunPod ↗</a><a class="secondary-btn" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/runpod-gpu-control.yml" target="_blank" rel="noopener noreferrer">إدارة GPU من GitHub ↗</a>
 <a class="secondary-btn" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/tree/main/deploy/independent-ai/runpod" target="_blank" rel="noopener noreferrer">ملفات التشغيل ↗</a>
 </div></header>
+<div class="gpu-warning"><strong>ما عندك رصيد GPU؟</strong> يمكن استخدام نموذج Cloudflare Workers AI بدل RunPod مؤقتاً إذا كانت خدمة Workers AI مفعّلة في حساب Cloudflare. اضبط <code>STAR_AI_PROVIDER=cloudflare</code> وأعد نشر Pages، أو اترك المزود الافتراضي عندما يكون AI Binding موجوداً. هذا يبقي محادثة STAR متاحة لكنه ليس نموذجك المحلي المستقل ولا يوفّر تشغيل WormGPTv2 على GPU.</div>
 <div class="gpu-warning"><strong>قبل التشغيل:</strong> تحتاج حساب RunPod مموّلاً وخادم NVIDIA متاحاً وتخزيناً دائماً. نجاح نشر صورة Docker لا يعني بدء خادم GPU. تحقّق من إتاحة الصورة للقراءة من RunPod في GitHub Container Registry.</div>
 <section class="gpu-steps">
 <article class="panel"><span class="gpu-stepno">STEP / 01</span><h2>اختر صورة الحاوية</h2>
