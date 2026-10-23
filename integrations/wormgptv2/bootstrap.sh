@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 command -v node >/dev/null || { echo "Install Node.js 22+ first." >&2; exit 1; }
 command -v npm >/dev/null || { echo "npm is required." >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl is required." >&2; exit 1; }
-command -v sha256sum >/dev/null || { echo "sha256sum is required." >&2; exit 1; }
+command -v sha256sum >/dev/null || command -v shasum >/dev/null || { echo "Need sha256sum or shasum." >&2; exit 1; }
 node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)' || { echo "Requires Node.js >=22" >&2; exit 1; }
 mkdir -p .integrations/wormgptv2
 tempdir="$(mktemp -d)"
@@ -15,7 +15,13 @@ source_url="https://github.com/WormGPTv2/wormgpt/releases/download/v0.22.0/gitla
 expected_sha256="4b4668f8e00a41fc7780c368a22dfc268dd9cf5aa74dd73230de96ed5093a0fd"
 echo "Downloading WormGPTv2 0.22.0 tagged release for verification."
 curl --fail --location --silent --show-error --retry 2 --connect-timeout 15 "$source_url" -o "$archive"
-echo "$expected_sha256  $archive" | sha256sum -c -
+if command -v sha256sum >/dev/null; then
+  echo "$expected_sha256  $archive" | sha256sum -c -
+else
+  actual_sha256="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+  test "$actual_sha256" = "$expected_sha256" || { echo "SHA-256 mismatch" >&2; exit 1; }
+  echo "SHA-256 verified (shasum)."
+fi
 tar -xOzf "$archive" package/package.json | node --input-type=module -e '
 let input="";for await(const chunk of process.stdin)input+=chunk;
 const p=JSON.parse(input);
