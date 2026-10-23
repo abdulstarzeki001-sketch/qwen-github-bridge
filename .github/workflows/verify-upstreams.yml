@@ -8,6 +8,9 @@ on:
       - 'integrations/wormxgpt/**'
       - 'integrations/telegram/**'
       - 'integrations/drana/**'
+      - 'integrations/electron/**'
+      - 'integrations/streamlit/**'
+      - 'integrations/prompt-skills/**'
   push:
     branches:
       - 'feature/run-upstreams-phase1'
@@ -17,6 +20,9 @@ on:
       - 'integrations/wormxgpt/**'
       - 'integrations/telegram/**'
       - 'integrations/drana/**'
+      - 'integrations/electron/**'
+      - 'integrations/streamlit/**'
+      - 'integrations/prompt-skills/**'
   workflow_dispatch:
 
 permissions:
@@ -147,3 +153,79 @@ jobs:
               assert get_drana_model() == "IHA089/drana-infinity-3b:3b"
           print("Drana model selector executed. GPU model itself has NOT been downloaded or hosted.")
           PY
+
+  electron:
+    name: "05 · Worm-GPT Electron renderer (no desktop execution)"
+    needs: drana-model
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Clone pinned Electron application source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/lahirusanjika/Worm-GPT.git upstream-electron
+          git -C upstream-electron checkout --detach 063068472198d476210129d4352600ab5522c2e4
+          test "$(git -C upstream-electron rev-parse HEAD)" = "063068472198d476210129d4352600ab5522c2e4"
+      - name: Install dependencies without lifecycle scripts
+        working-directory: upstream-electron
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Compile Electron React renderer
+        working-directory: upstream-electron
+        run: |
+          npm run build:renderer
+          test -s app/renderer/bundle.js
+          echo "Electron UI bundle built. Windows EXE not installed or executed."
+      - name: Upload Electron renderer for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: wormgpt-electron-renderer
+          path: upstream-electron/app/renderer/bundle.js
+          retention-days: 7
+
+  streamlit:
+    name: "06 · worm-gpt Streamlit static startup checks"
+    needs: electron
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Clone pinned Streamlit source
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/prithwishpal/worm-gpt.git upstream-streamlit
+          git -C upstream-streamlit checkout --detach db577367bc822c082ab8a9330ab05fe3cd530f8f
+          test "$(git -C upstream-streamlit rev-parse HEAD)" = "db577367bc822c082ab8a9330ab05fe3cd530f8f"
+      - name: Compile both application entry points without credentials
+        working-directory: upstream-streamlit
+        run: |
+          python -m py_compile worm-gpt.py worm-gpt-web.py
+          python - <<'PY'
+          import ast, pathlib
+          for f in ["worm-gpt.py","worm-gpt-web.py"]:
+              t=ast.parse(pathlib.Path(f).read_text(encoding="utf-8"))
+              assert len(t.body)>0
+              print("Compiled:", f)
+          PY
+          echo "Python compilation verified. Streamlit not exposed with default login."
+
+  prompt-skills:
+    name: "07 · XGPT-WormGPT text assets (no code execution)"
+    needs: streamlit
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Clone pinned skills library
+        run: |
+          git clone --no-tags --filter=blob:none https://github.com/gaur-avvv/XGPT-WormGPT.git upstream-prompts
+          git -C upstream-prompts checkout --detach 96edda3d6377304a88c517287576c4fc6c116784
+          test "$(git -C upstream-prompts rev-parse HEAD)" = "96edda3d6377304a88c517287576c4fc6c116784"
+      - name: Confirm source provides text prompts, not executable model weights
+        run: |
+          test -s upstream-prompts/Worm.txt
+          test -s upstream-prompts/Agentic-Mode.txt
+          test -s upstream-prompts/skills/README.md
+          wc -c upstream-prompts/Worm.txt upstream-prompts/Agentic-Mode.txt
+          echo "Prompt assets verified as references, NOT installed as system instructions."
