@@ -72,6 +72,30 @@ Never put `STAR_SELFHOSTED_TOKEN` in a public HTML page, GitHub commit, Pages so
 
 8. Redeploy STAR Pages and log in as its owner from iPhone. STAR's backend will contact your model using the existing owner-only `/api/chat`. The iPhone never receives the server's backend token.
 
+## STAR NEXUS V5 — use multiple Ollama models through one protected gateway
+
+This runtime now integrates **Qwen2.5 Coder**, **Drana-Infinity**, and **gpt-oss** with one private Ollama server and one authenticated STAR gateway. None is the original WormGPT model.
+
+1. Configure `STAR_ALLOWED_MODELS` in the GPU host's `.env` (the supplied example includes three models). `STAR_MODEL` must be one of them.
+2. Start the private GPU stack with `docker compose up -d`. No Ollama or gateway ports are exposed directly.
+3. Download the selected models onto the persistent volume: `bash pull-models.sh` (this downloads multiple GB of model weights; verify storage and licensing first).
+4. Keep the **same allowlist** in Cloudflare Pages environment as `STAR_ALLOWED_MODELS`, with `STAR_SELFHOSTED_URL`, `STAR_SELFHOSTED_MODEL` and secret `STAR_SELFHOSTED_TOKEN` pointing at your working gateway. The model picker only offers entries approved on the server.
+5. A private owner endpoint `/api/nexus/models` returns the allowlist, and `/api/nexus/model-probe` checks authenticated `/health` reachability for the private provider. This does not claim model inference is available until you also send a successful chat.
+
+### Opt-in terminal coding agent on the same private network
+
+A pinned-release WormGPTv2 (CLI) Docker build is defined under `Dockerfile.agent`. Run from this directory:
+
+```sh
+docker compose --profile agent build agent
+docker compose --profile agent run --rm agent --version
+docker compose --profile agent run --rm agent
+```
+
+This is an interactive **terminal-only agent**, not an HTTP service. It can access the local Ollama endpoint by Docker DNS `http://ollama:11434/v1`. The agent receives no production tokens and sees only files copied to `agent-workspace/`; do not put private credentials or live production data there. It starts only when you explicitly launch its Compose profile; it will not start as part of `docker compose up -d`.
+
+**Runtime preconditions:** your own paid/owned persistent NVIDIA GPU VM, working Docker + GPU toolkit, model storage, Cloudflare Tunnel hostname, and secrets. GitHub Actions performs build checks on disposable runners; it does not host these containers permanently.
+
 ## Operate
 
 - `docker compose ps` — see services.
