@@ -34,6 +34,11 @@ case "$COMMAND" in
     shift
     sh "$ROOT/scripts/ish/fetch-sources.sh" "${1:-core}" "${2:-}"
     ;;
+  telegram)
+    shift
+    command -v python3 >/dev/null 2>&1 || { echo "Python 3 required: apk add python3" >&2; exit 1; }
+    exec python3 "$ROOT/scripts/ish/telegram.py" "${1:-help}"
+    ;;
   doctor)
     echo "===== STAR iSH diagnostics ====="
     echo "Repository: $ROOT"
@@ -77,6 +82,11 @@ STAR NEXUS iSH commands (run inside the cloned STAR repository):
   sh scripts/ish/star.sh sources core
   sh scripts/ish/star.sh sources all
   sh scripts/ish/star.sh sources one drana
+  sh scripts/ish/star.sh telegram help
+  sh scripts/ish/star.sh telegram chat-id
+  sh scripts/ish/star.sh telegram check-star
+  sh scripts/ish/star.sh telegram set-webhook
+  sh scripts/ish/star.sh telegram status
   sh scripts/ish/star.sh doctor
   sh scripts/ish/star.sh serve 8080
 Everything under integrations/upstreams/ is third-party source, not auto-installed/executed.

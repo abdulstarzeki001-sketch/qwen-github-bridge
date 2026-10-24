@@ -76,6 +76,35 @@ On the **same iPad**, open `http://127.0.0.1:8080/` in Safari. Keep the iSH sess
 
 **Important:** The local Python server only serves static HTML, CSS, JavaScript. Calls to `/api/chat`, `/api/github/browse`, authentication and model selection require the actual deployed Cloudflare Pages Functions. Use [STAR online](https://star-cyber-ai-x.pages.dev/) for interactive AI/chat/GitHub, or SSH to your own Linux/GPU server.
 
+## Telegram: connect the first-party Cloudflare bot (no always-on iPad process)
+
+1. Open `@BotFather` inside Telegram → `/newbot` and save the generated token privately.
+2. Open your own bot conversation and send `/start`. Before setting a webhook, find your numeric private-chat ID from iSH:
+   ```sh
+   cd ~/qwen-github-bridge
+   python3 scripts/ish/telegram.py bot-info
+   python3 scripts/ish/telegram.py chat-id
+   ```
+   The script prompts for the token with hidden input. Do **not** enter it into a shell command, GitHub source file, or chat message.
+3. In Cloudflare Pages project `star-cyber-ai-x` → **Settings → Variables and Secrets → Production**:
+   - `TELEGRAM_BOT_TOKEN`: encrypted secret (the token from BotFather)
+   - `TELEGRAM_WEBHOOK_SECRET`: encrypted secret with 32–256 URL-safe letters/digits/dashes
+   - `TELEGRAM_ALLOWED_CHAT_IDS`: private numeric chat ID found in step 2
+   - An actual AI provider must be configured, for example `STAR_AI_PROVIDER=cloudflare` **with** a working Workers AI `AI` binding.
+4. Deploy Pages **after** configuring secrets. The webhook must be publicly accessible to Telegram, but is protected at the handler by the secret header and allowed chat IDs. If Cloudflare Access guards the entire site, configure only the webhook path to be reachable by Telegram; keep the rest owner-only.
+5. Validate and register the bot from iSH:
+   ```sh
+   python3 scripts/ish/telegram.py check-star
+   python3 scripts/ish/telegram.py set-webhook
+   python3 scripts/ish/telegram.py status
+   ```
+   For `set-webhook`, type the **exact same** BotFather token and Telegram webhook secret stored on Cloudflare. The secret is never written to files.
+6. In Telegram, send `/start` then ask a question. This uses STAR's **Cloudflare Webhook**, so iSH need not stay open to reply.
+
+The two alternatives `getUpdates` (Telegram polling) and `setWebhook` are exclusive. If you need to run an upstream Python bot separately, give it a different bot token and a separate process/host; do not compete with STAR over the same bot.
+
+**Limitations:** Telegram access is chat-only in the current STAR Cloudflare adapter. It cannot automatically run source repo commands, edit GitHub, deploy workers, or call shell tools via Telegram. Source downloads in `integrations/upstreams` are not services. The seven isolated upstream CI jobs are smoke tests, not persistent running integrations.
+
 ## Health & troubleshooting
 
 ```sh
