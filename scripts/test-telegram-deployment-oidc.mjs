@@ -11,7 +11,7 @@ const repo="abdulstarzeki001-sketch/qwen-github-bridge";
 const ref=repo+"/.github/workflows/verify-star-telegram-production.yml@refs/heads/main";
 const claims={
   iss:"https://token.actions.githubusercontent.com",aud:"star-nexus-telegram-webhook",
-  repository:repo,ref:"refs/heads/main",workflow_ref:ref,
+  repository:repo,repository_id:"1412897704",repository_owner_id:"311850512",ref:"refs/heads/main",workflow_ref:ref,
   sub:"repo:"+repo+":ref:refs/heads/main",event_name:"workflow_run",
   iat:now-5,nbf:now-5,exp:now+300
 };
@@ -24,9 +24,13 @@ async function sign(c=claims){
 const token=await sign();
 const fetchJwks=async()=>Response.json({keys:[jwk]});
 assert.equal(await verifyStarDeploymentOidc(token,{jwksFetch:fetchJwks,now}),true);
+const immutable="repo:abdulstarzeki001-sketch@311850512/qwen-github-bridge@1412897704:ref:refs/heads/main";
+assert.equal(await verifyStarDeploymentOidc(await sign({...claims,sub:immutable}),{jwksFetch:fetchJwks,now}),true);
+assert.equal(await verifyStarDeploymentOidc(await sign({...claims,sub:immutable.replace("@1412897704","@99999999")}),{jwksFetch:fetchJwks,now}),false);
 for(const override of [
   {aud:"other-application"},{ref:"refs/heads/feature"},{repository:"evil/other"},
   {sub:"repo:evil/other:ref:refs/heads/main"},
+  {repository_id:"9999"},{repository_owner_id:"12345"},
   {workflow_ref:repo+"/.github/workflows/other.yml@refs/heads/main"},
   {event_name:"pull_request"},{iss:"https://attacker.invalid"},
   {exp:now-50},{iat:now+200},{nbf:now+200}
