@@ -30,6 +30,9 @@ node_modules/
 # Netlify local state
 .netlify/
 
+# Local pinned source checkouts on iSH/iPad (never deployed to Cloudflare)
+integrations/upstreams/
+
 # Local third-party agent installations
 .integrations/
 # Host-side coding agent sandbox and local model state
