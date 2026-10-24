@@ -1,0 +1,59 @@
+name: Build STAR iSH Upstream Source Bundle
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/ish/**'
+      - '.github/workflows/ish-sources-bundle.yml'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Core 7 tested sources or all 17 references (data only)"
+        required: true
+        type: choice
+        default: core
+        options:
+          - core
+          - all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ish-sources-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  collect:
+    name: Collect pinned upstream source trees as an artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate registry and shell scripts before downloading
+        run: |
+          node scripts/test-ish-workspace.mjs
+          sh -n scripts/ish/star.sh
+          sh -n scripts/ish/fetch-sources.sh
+      - name: Download pinned public Git repositories as plain source files
+        env:
+          SOURCE_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'core' }}
+        run: sh scripts/ish/fetch-sources.sh "$SOURCE_PROFILE"
+      - name: Save compact source snapshot and provenance
+        env:
+          SOURCE_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'core' }}
+        run: |
+          set -eu
+          mkdir -p /tmp/star-archive
+          cp scripts/ish/sources.psv /tmp/star-archive/sources.psv
+          tar --exclude='.git' -czf /tmp/star-archive/star-upstreams.tar.gz -C integrations upstreams
+          ls -lh /tmp/star-archive/star-upstreams.tar.gz
+      - name: Archive for transfer to iPad and source review
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-upstreams-${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'core' }}
+          path: /tmp/star-archive/
+          if-no-files-found: error
+          retention-days: 14

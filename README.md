@@ -59,6 +59,25 @@ To test a live Pod from a checked-out STAR repository, set `STAR_RUNPOD_ENDPOINT
 
 [RunPod deployment documentation](deploy/independent-ai/runpod/README.md) · [iPhone deployment walkthrough](web/gpu-deploy.html)
 
+## iPad iSH — local STAR workspace and upstream source retrieval
+
+The iSH Alpine setup lives in [scripts/ish](scripts/ish/README.md), with an [Arabic iPad guide](web/ish-setup.html) served at [STAR iSH setup](https://star-cyber-ai-x.pages.dev/ish-setup.html).
+
+```sh
+apk update
+apk add --no-cache git python3 curl ca-certificates openssh-client
+git clone --depth 1 https://github.com/abdulstarzeki001-sketch/qwen-github-bridge.git
+cd qwen-github-bridge
+sh scripts/ish/star.sh doctor
+sh scripts/ish/star.sh sources core
+sh scripts/ish/star.sh serve 8080
+```
+
+- `sources core` downloads 7 version-pinned public source repositories; `sources all` retrieves all 17 references as data only. Files reside under `integrations/upstreams/`, which Git ignores. **No external binaries, installers, scripts, or dependencies are automatically executed.**
+- An isolated [source-bundle workflow](.github/workflows/ish-sources-bundle.yml) can publish downloadable archive artifacts without committing outside source trees into STAR production.
+- iSH can run a static web preview on iPad; real auth/API/AI services stay on Cloudflare or the separate GPU host.
+- `sh scripts/ish/star.sh sync` only updates a clean `main` checkout through fast-forward, preserving user changes.
+
 ## Architecture
 
 ```text

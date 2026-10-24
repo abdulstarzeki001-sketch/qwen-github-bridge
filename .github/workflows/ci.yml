@@ -129,6 +129,9 @@ jobs:
       - name: Test STAR NEXUS V3 Telegram webhook, owner status, new UI
         run: node scripts/test-nexus-v3.mjs && node --check web/nexus.js && node --check functions/_nexus_telegram.js
 
+      - name: Test iSH iPad workspace and 17 pinned upstream source catalog
+        run: node scripts/test-ish-workspace.mjs && sh -n scripts/ish/star.sh && sh -n scripts/ish/fetch-sources.sh
+
       - name: Test NEXUS V4 history and GitHub Studio
         run: node scripts/test-nexus-v4.mjs && node --check web/nexus-github.js && node --check functions/_nexus_context.js
 
