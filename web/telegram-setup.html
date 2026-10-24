@@ -1,4 +1,13 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#060c16"><title>Telegram · STAR NEXUS</title><link rel="stylesheet" href="/nexus.css"></head><body style="padding:20px"><main style="max-width:900px;margin:auto;padding:20px"><a href="/" class="secondary-btn">← العودة إلى STAR NEXUS</a><section class="panel" style="margin-top:20px"><span class="overline">DEPLOYMENT / TELEGRAM</span><h1>دليل تفعيل بوت Telegram</h1><p>البوت يستخدم النموذج المهيأ حالياً في STAR ولا يُسمح له بالوصول إلى GitHub أو تنفيذ أي أمر أو تنزيل أي ملف. إضافة المفاتيح وتسجيل Webhook تتم مرة واحدة من حسابك على Cloudflare.</p>
+<section class="panel" style="padding:18px;border:1px solid #295063;margin:18px 0">
+<h2>ربط @Aistar0017616bot مباشرة من STAR</h2>
+<p>إذا خزّنت <code>TELEGRAM_BOT_TOKEN</code> و<code>TELEGRAM_WEBHOOK_SECRET</code> و<code>TELEGRAM_ALLOWED_CHAT_IDS</code> في إعدادات Cloudflare Production، يمكنك تفعيل Webhook دون إدخال أي أسرار داخل المتصفح أو iSH. يجب تسجيل الدخول كمالك STAR أولاً.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">
+<button id="telegramConnect" class="primary-btn" type="button">تفعيل وربط البوت الآن ↗</button>
+<button id="telegramCheck" class="secondary-btn" type="button">فحص الاتصال</button>
+</div>
+<p id="telegramSetupStatus" role="status" aria-live="polite">اضغط فحص الاتصال لمعرفة حالة البوت.</p>
+</section>
 <h2>1. إنشاء البوت</h2><p>افتح Telegram وابحث عن @BotFather، ثم أرسل /newbot واحفظ التوكن بعيداً عن GitHub والرسائل العامة.</p>
 <h2>2. إعداد أسرار Cloudflare Pages</h2><p>ضمن مشروع star-cyber-ai-x افتح Settings → Variables and Secrets وأضف التالي في بيئة Production:</p>
 <pre><code>TELEGRAM_BOT_TOKEN = 123456789:YOUR_PRIVATE_BOT_TOKEN
@@ -27,4 +36,46 @@ curl --fail-with-body -sS \
 <p>أعد نشر Cloudflare بعد إضافة الأسرار؛ استخدم الرابط الفعلي لمشروعك إذا كان لديك نطاق مختلف. تأكد من إعداد Telegram Chat ID المسموح له.</p>
 <h2>5. الاختبار</h2><p>أرسل /start من حسابك المسموح، ثم سؤالاً عادياً. في NEXUS ← Telegram Hub يمكنك رؤية حالة إعداد الأسرار، لكنها ليست اختبار اتصال مباشر. انتبه أن Telegram يعيد إرسال بعض التحديثات عند فشل التوصيل، وقد يصل رد مكرر؛ يمكن لاحقاً تفعيل مخزن KV لمنع التكرار إن لزم.</p>
 <h2>استرجاع الخدمة</h2><p>لحذف الـ Webhook استخدم Telegram deleteWebhook، ثم احذف أسرار البوت من Cloudflare. إلغاء إعداد Telegram لا يؤثر على واجهة STAR الأساسية.</p>
-<p>ملاحظات: نموذج Cloudflare Workers AI المدمج هو الأسهل للتفعيل. النماذج المستضافة ذاتياً تحتاج خادماً يعمل وعنوان HTTPS. لا تنسخ مفاتيح خدمة Telegram إلى مستودعات طرف ثالث.</p></section></main></body></html>
+<p>ملاحظات: نموذج Cloudflare Workers AI المدمج هو الأسهل للتفعيل. النماذج المستضافة ذاتياً تحتاج خادماً يعمل وعنوان HTTPS. لا تنسخ مفاتيح خدمة Telegram إلى مستودعات طرف ثالث.</p></section></main>
+<script>
+(() => {
+ const out=document.getElementById('telegramSetupStatus');
+ const connect=document.getElementById('telegramConnect');
+ const check=document.getElementById('telegramCheck');
+ async function call(method){
+  check.disabled=true;connect.disabled=true;
+  out.textContent=method==='POST'?'جارٍ ربط Telegram من Cloudflare…':'جارٍ فحص إعداد Telegram…';
+  try{
+    const response=await fetch('/api/telegram/admin',{
+      method,credentials:'same-origin',cache:'no-store',
+      ...(method==='POST'?{headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'connect'})}:{})
+    });
+    let data={};try{data=await response.json()}catch{}
+    if(response.status===401){
+      out.textContent='يجب تسجيل دخول المالك أولاً من الصفحة الرئيسية STAR NEXUS ← إعدادات المالك.';
+      return;
+    }
+    if(!response.ok||data.ok!==true){
+      out.textContent=typeof data.error==='string'?data.error:'فشل فحص Telegram. راجع أسرار Cloudflare وإعادة نشر Production.';
+      return;
+    }
+    if(!data.configured){
+      out.textContent='المتغيرات الثلاثة غير جاهزة في Cloudflare Production. احفظها وأعد النشر.';
+      return;
+    }
+    if(data.connected){
+      out.textContent='تم ربط Webhook: @Aistar0017616bot ← STAR NEXUS. أرسل /start للبوت للتحقق من الرد.'+
+        (Number.isInteger(data.pending_updates)?' · رسائل بانتظار المعالجة: '+data.pending_updates:'');
+    }else{
+      out.textContent=data.registered_elsewhere?
+        'البوت مربوط حالياً بعنوان مختلف. اضغط «تفعيل وربط البوت الآن» لنقله إلى STAR.':
+        'المتغيرات جاهزة، لكن Webhook غير مسجّل. اضغط «تفعيل وربط البوت الآن».';
+    }
+  }catch{out.textContent='تعذر الوصول إلى API. افحص اتصال Cloudflare ثم أعد المحاولة.'}
+  finally{check.disabled=false;connect.disabled=false}
+ }
+ check.addEventListener('click',()=>call('GET'));
+ connect.addEventListener('click',()=>call('POST'));
+ call('GET');
+})();
+</script></body></html>

@@ -129,6 +129,12 @@ jobs:
       - name: Test STAR NEXUS V3 Telegram webhook, owner status, new UI
         run: node scripts/test-nexus-v3.mjs && node --check web/nexus.js && node --check functions/_nexus_telegram.js
 
+      - name: Test signed deployment automation for Telegram without leaking Cloudflare secrets
+        run: node scripts/test-telegram-deployment-oidc.mjs && node --check functions/_telegram_github_oidc.js
+
+      - name: Test one-click owner-authenticated Telegram webhook activation
+        run: node scripts/test-telegram-owner-setup.mjs && node --check functions/_telegram_admin.js
+
       - name: Test iSH Telegram webhook setup and privacy
         run: python3 -m unittest discover -s scripts/ish -p 'test_telegram.py' -v
 
