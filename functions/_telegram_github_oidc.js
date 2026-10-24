@@ -24,8 +24,10 @@ export async function verifyStarDeploymentOidc(token,{jwksFetch=fetch,now=Math.f
       !/^[A-Za-z0-9_-]{1,100}$/.test(header.kid))return false;
     if(claims?.iss!==ISSUER||claims.aud!==AUDIENCE||
       claims.repository!==REPOSITORY||claims.ref!=="refs/heads/main"||
-      claims.workflow_ref!==WORKFLOW_REF||!["workflow_run","workflow_dispatch","push"].includes(claims.event_name)||
-      claims.sub!=="repo:"+REPOSITORY+":ref:refs/heads/main")return false;
+      claims.workflow_ref!==WORKFLOW_REF||!["workflow_run","workflow_dispatch","push"].includes(claims.event_name))return false;
+    // GitHub organizations may customize the OIDC `sub` claim template.
+    // The separately signed issuer, audience, repository, main branch and
+    // exact workflow_ref claims are all mandatory; do not pin a sub template.
     if(!Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
       !Number.isSafeInteger(claims.nbf)||claims.exp<=now-30||claims.iat>now+60||
       claims.nbf>now+60||claims.exp-claims.iat>900||claims.iat<now-900)return false;
