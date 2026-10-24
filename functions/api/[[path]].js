@@ -5,7 +5,7 @@ import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_se
 import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 import { handleVault, vaultReady } from "../_vault.js";
 import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
-import { telegramConfigured, handleTelegramWebhook } from "../_nexus_telegram.js";
+import { telegramConfigured, handleTelegramWebhook, probeTelegramAi } from "../_nexus_telegram.js";
 import { telegramOwnerStatus, telegramOwnerConnect } from "../_telegram_admin.js";
 import { verifyStarDeploymentOidc } from "../_telegram_github_oidc.js";
 import { conversationMessages } from "../_nexus_context.js";
@@ -79,7 +79,7 @@ function ownerChatOptions(body,env,policy){
   const allowed=String(env.STAR_ALLOWED_MODELS||"").split(",").map(x=>x.trim()).filter(Boolean);
   if(selected&&!allowed.includes(selected))
     return {error:"Requested model is not on the server allowlist"};
-  if(selected&&resolvedAiProvider(env)==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct")
+  if(selected&&resolvedAiProvider(env)==="cloudflare"&&selected!=="@cf/meta/llama-3.1-8b-instruct-fp8")
     return {error:"Cloudflare AI binding uses a fixed model in this release"};
   const instructions=typeof extra==="string"?extra.trim():"";
   const system=policy.identity+". "+policy.instructions+
@@ -167,7 +167,7 @@ export async function onRequest({request,env,context}){
     return json({
       ok:true,version:"0.7.0",runtime:"cloudflare",ai_provider:provider,
       ai_gateway:provider==="cloudflare"?Boolean(env.AI):provider==="selfhosted"?Boolean(env.STAR_SELFHOSTED_URL&&env.STAR_SELFHOSTED_TOKEN):provider==="wormgpt"?wormgptConfigured(env):provider==="openai"?Boolean(env.OPENAI_API_KEY):provider==="anthropic"?Boolean(env.ANTHROPIC_API_KEY):Boolean(env.OPENROUTER_API_KEY),
-      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):provider==="wormgpt"?(env.STAR_WORMGPT_MODEL||"not-configured"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
+      ai_model:provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct-fp8":provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):provider==="wormgpt"?(env.STAR_WORMGPT_MODEL||"not-configured"):provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):(env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free"),
       claude_proxy:Boolean(env.ANTHROPIC_API_KEY&&env.STAR_CLAUDE_PROXY_TOKEN),
       claude_proxy_model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",
       full_backend:false
@@ -269,7 +269,11 @@ export async function onRequest({request,env,context}){
     if(Number(request.headers.get("content-length")||"0")>1500)
       return json({error:"Payload too large"},413);
     let action;try{const data=await request.json();action=data?.action}catch{return json({error:"Invalid JSON"},400)}
-    if(action!=="connect")return json({error:"Invalid action"},400);
+    if(action!=="connect"&&action!=="probe-ai")return json({error:"Invalid action"},400);
+    if(action==="probe-ai"){
+      const result=await probeTelegramAi(env);
+      return json(result,result.ok?200:503);
+    }
     try{
       const result=await telegramOwnerConnect(env);
       return json(result,result.ok?200:503);
@@ -310,7 +314,7 @@ export async function onRequest({request,env,context}){
       Boolean(env.OPENROUTER_API_KEY);
     const defaultModel=provider==="selfhosted"?(env.STAR_SELFHOSTED_MODEL||"local-model"):
       provider==="wormgpt"?(env.STAR_WORMGPT_MODEL||""):
-      provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct":
+      provider==="cloudflare"?"@cf/meta/llama-3.1-8b-instruct-fp8":
       provider==="openai"?(env.STAR_OPENAI_MODEL||"gpt-4.1"):
       provider==="anthropic"?(env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5"):
       (env.STAR_CLOUDFLARE_MODEL||"nvidia/nemotron-3-ultra-550b-a55b:free");
@@ -388,7 +392,7 @@ export async function onRequest({request,env,context}){
   try{
     if(useWormGPT)return json(await wormgptChat(env,{...options,messages:conversation},safePrompt));
     if(useCloudflare){
-      const model="@cf/meta/llama-3.1-8b-instruct";
+      const model="@cf/meta/llama-3.1-8b-instruct-fp8";
       const result=await env.AI.run(model,{messages:conversation,max_tokens:Math.min(512,options.maxTokens)});
       const content=typeof result?.response==="string"?result.response:"";
       if(!content)return json({error:"Cloudflare AI returned no content"},502);

@@ -27,12 +27,12 @@ function normalizeModelResponse(data){
  if(Array.isArray(raw))return raw.filter(v=>v&&typeof v.text==="string").map(v=>v.text).join("\n").trim();
  return "";
 }
-async function infer(env,prompt){
+async function infer(env,prompt,{maxTokens=512}={}){
  const provider=String(env.STAR_AI_PROVIDER|| (env.AI?"cloudflare":"openrouter"));
  const messages=[{role:"system",content:modelPrompt},{role:"user",content:redactPrompt(prompt)}];
  if(provider==="cloudflare"){
   if(!env.AI)throw Error("Workers AI binding is missing");
-  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages,max_tokens:512});
+  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8",{messages,max_tokens:Math.min(512,Math.max(32,maxTokens))});
   if(typeof result?.response!=="string"||!result.response.trim())throw Error("Cloudflare AI returned no message");
   return result.response.trim();
  }
@@ -74,6 +74,20 @@ async function infer(env,prompt){
  const content=normalizeModelResponse(await upstream.json());
  if(!content)throw Error("No provider text");
  return content;
+}
+// Test an actual Cloudflare binding completion through signed deployment identity only.
+// Return no model output, prompts, tokens or provider errors to the client.
+export async function probeTelegramAi(env){
+ const provider=String(env.STAR_AI_PROVIDER||(env.AI?"cloudflare":"openrouter"));
+ if(provider!=="cloudflare")return {ok:false,provider,reason:"Telegram is configured for a non-Cloudflare provider"};
+ if(!env.AI)return {ok:false,provider,reason:"Workers AI binding missing"};
+ try{
+  const answer=await infer(env,"Say one short greeting in Arabic.",{maxTokens:64});
+  return {ok:typeof answer==="string"&&answer.trim().length>0,
+    provider,model:"@cf/meta/llama-3.1-8b-instruct-fp8",responded:answer.trim().length>0};
+ }catch{
+  return {ok:false,provider,model:"@cf/meta/llama-3.1-8b-instruct-fp8",reason:"Cloudflare Workers AI inference failed"};
+ }
 }
 async function sendMessage(env,chatId,text){
  const chunks=String(text||"").match(/[\s\S]{1,3400}/g)||[""];

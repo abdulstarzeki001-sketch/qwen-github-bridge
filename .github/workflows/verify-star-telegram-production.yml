@@ -5,11 +5,6 @@ on:
     workflows: ["Deploy STAR CORE V2 to Cloudflare Pages"]
     types: [completed]
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/verify-star-telegram-production.yml"
-      - "functions/_telegram_github_oidc.js"
 
 permissions:
   contents: read
@@ -18,7 +13,7 @@ permissions:
 jobs:
   verify:
     name: Check deployed Telegram API without credentials
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -108,6 +103,39 @@ jobs:
           if(x.ok!==true||x.connected!==true||x.bot_username!=="@Aistar0017616bot")process.exit(1);
           console.log("SUCCESS: @Aistar0017616bot webhook registered to STAR NEXUS using Cloudflare-stored secrets.");
           console.log("This confirms webhook configuration, not end-to-end model inference.");
+          '
+      - name: Probe actual Workers AI completion through signed deployment identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          json=$(curl -fsS --connect-timeout 7 --max-time 15 \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=star-nexus-telegram-webhook")
+          id_token=$(printf '%s' "$json" | node -e '
+            let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{
+              const v=JSON.parse(s).value;
+              if(typeof v!=="string"||v.length<100)process.exit(1);
+              process.stdout.write(v)
+            })')
+          unset json
+          code=$(curl --silent --show-error --connect-timeout 8 --max-time 50 \
+            -o /tmp/star-model-inference.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $id_token" \
+            -H 'Content-Type: application/json' \
+            --data '{"action":"probe-ai"}' \
+            'https://star-cyber-ai-x.pages.dev/api/telegram/bootstrap')
+          unset id_token
+          STAR_STATUS="$code" node -e '
+            const fs=require("node:fs");
+            const d=JSON.parse(fs.readFileSync("/tmp/star-model-inference.json","utf8"));
+            const ready=process.env.STAR_STATUS==="200"&&d.ok===true&&d.responded===true;
+            console.log("STAR inference:",JSON.stringify({
+              working:ready,
+              provider:typeof d.provider==="string"?d.provider:"unknown",
+              model:typeof d.model==="string"?d.model:"unknown",
+              error:!ready?(typeof d.reason==="string"?d.reason:"Unavailable"):null
+            }));
+            if(!ready)process.exit(1);
           '
       - name: Inspect AI status if public, without weakening owner access
         shell: bash

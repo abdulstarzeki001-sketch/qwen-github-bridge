@@ -46,8 +46,12 @@ assert.equal(await verifyStarDeploymentOidc(token,{jwksFetch:async()=>Response.j
 
 const appOrigin="https://star-cyber-ai-x.pages.dev";
 const botToken="123456789:"+ "A".repeat(38),secret="S".repeat(48);
+let aiCalls=0;
 const env={TELEGRAM_BOT_TOKEN:botToken,TELEGRAM_WEBHOOK_SECRET:secret,
-  TELEGRAM_ALLOWED_CHAT_IDS:"8650336140"};
+  TELEGRAM_ALLOWED_CHAT_IDS:"8650336140",AI:{run:async(model,opts)=>{
+    aiCalls++;assert.equal(model,"@cf/meta/llama-3.1-8b-instruct-fp8");
+    assert.equal(opts.max_tokens,64);return {response:"أهلاً"};
+  }}};
 let configured=false,registrations=0;
 const oldFetch=globalThis.fetch;
 globalThis.fetch=async (url,opts)=>{
@@ -82,6 +86,15 @@ try{
   r=await request(token,"GET");assert.equal(r.status,405);
   r=await request(token,"POST","invalid");
   assert.equal(r.status,400);assert.equal(registrations,0);
+  r=await request(token,"POST","probe-ai");
+  assert.equal(r.status,200);
+  let probe=await r.json();
+  assert.equal(probe.ok,true);
+  assert.equal(probe.responded,true);
+  assert.equal(probe.provider,"cloudflare");
+  assert.equal(probe.model,"@cf/meta/llama-3.1-8b-instruct-fp8");
+  assert.equal(aiCalls,1);
+  assert.ok(!JSON.stringify(probe).includes("أهلاً"));
   r=await request(token);
   assert.equal(r.status,200);
   const data=await r.json();

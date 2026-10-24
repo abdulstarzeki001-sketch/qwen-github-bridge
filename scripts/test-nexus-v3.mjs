@@ -13,7 +13,7 @@ const env={
  TELEGRAM_BOT_TOKEN:"123456789:"+ "A".repeat(38),
  TELEGRAM_WEBHOOK_SECRET:secret,
  TELEGRAM_ALLOWED_CHAT_IDS:"123456789",
- AI:{run:async(model,payload)=>{assert.equal(model,"@cf/meta/llama-3.1-8b-instruct");assert.match(payload.messages[1].content,/مرحبا/);return {response:"هذا رد من الذكاء"};}}
+ AI:{run:async(model,payload)=>{assert.equal(model,"@cf/meta/llama-3.1-8b-instruct-fp8");assert.match(payload.messages[1].content,/مرحبا/);return {response:"هذا رد من الذكاء"};}}
 };
 const webhook=(text,opts={})=>onRequest({
  request:new Request(site+"/api/telegram/webhook",{method:"POST",headers:{"Content-Type":"application/json",...(opts.secret===false?{}:{"X-Telegram-Bot-Api-Secret-Token":secret})},body:JSON.stringify({update_id:1000,message:{chat:{id:opts.chatId??123456789,type:opts.type||"private"},text}})}),

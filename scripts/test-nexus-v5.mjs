@@ -51,7 +51,7 @@ const cloudEnv={...env,STAR_AI_PROVIDER:"cloudflare",AI:{run:async()=>({response
 const cloudRequest=new Request(origin+"/api/nexus/models",{headers:{Authorization:"Bearer "+owner}});
 const cloudResult=await onRequest({env:cloudEnv,request:cloudRequest});
 assert.equal(cloudResult.status,200);
-assert.deepEqual((await cloudResult.json()).models,["@cf/meta/llama-3.1-8b-instruct"]);
+assert.deepEqual((await cloudResult.json()).models,["@cf/meta/llama-3.1-8b-instruct-fp8"]);
 const origFetch=globalThis.fetch;
 globalThis.fetch=async(url,opts)=>{
  assert.equal(String(url),"https://model.example.org/health");
