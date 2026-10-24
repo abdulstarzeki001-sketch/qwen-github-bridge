@@ -1,6 +1,7 @@
 // STAR NEXUS · Telegram webhook adapter.
 // No Telegram user can reach privileged GitHub, scanner, filesystem or owner settings routes.
 import { wormgptConfigured, wormgptChat } from "./_wormgpt.js";
+import { parseCodingCommand, describeCodingSkills, skillRequest, telegramModelLabel, fetchStarSource, sourceRequest } from "./_wormgpt_coding_skills.js";
 
 const json=(payload,status=200)=>Response.json(payload,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
 const maxIncomingBytes=16*1024;
@@ -27,18 +28,18 @@ function normalizeModelResponse(data){
  if(Array.isArray(raw))return raw.filter(v=>v&&typeof v.text==="string").map(v=>v.text).join("\n").trim();
  return "";
 }
-async function infer(env,prompt,{maxTokens=512}={}){
+async function infer(env,prompt,{maxTokens=512,system=modelPrompt}={}){
  const provider=String(env.STAR_AI_PROVIDER|| (env.AI?"cloudflare":"openrouter"));
- const messages=[{role:"system",content:modelPrompt},{role:"user",content:redactPrompt(prompt)}];
+ const messages=[{role:"system",content:system},{role:"user",content:redactPrompt(prompt)}];
  if(provider==="cloudflare"){
   if(!env.AI)throw Error("Workers AI binding is missing");
-  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8",{messages,max_tokens:Math.min(512,Math.max(32,maxTokens))});
+  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8",{messages,max_tokens:Math.min(768,Math.max(32,maxTokens))});
   if(typeof result?.response!=="string"||!result.response.trim())throw Error("Cloudflare AI returned no message");
   return result.response.trim();
  }
  if(provider==="wormgpt"){
   if(!wormgptConfigured(env))throw Error("WormGPT backend missing");
-  const result=await wormgptChat(env,{system:modelPrompt,maxTokens:800,temperature:0.2,modelOverride:""},redactPrompt(prompt));
+  const result=await wormgptChat(env,{system,maxTokens:Math.min(800,maxTokens),temperature:0.2,modelOverride:""},redactPrompt(prompt));
   return result.content;
  }
  let endpoint="",token="",model="";
@@ -57,7 +58,7 @@ async function infer(env,prompt,{maxTokens=512}={}){
   if(!env.ANTHROPIC_API_KEY)throw Error("Anthropic not configured");
   const r=await fetch("https://api.anthropic.com/v1/messages",{
     method:"POST",headers:{"x-api-key":env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","Content-Type":"application/json"},
-    body:JSON.stringify({model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",max_tokens:800,system:modelPrompt,messages:[{role:"user",content:redactPrompt(prompt)}]}),
+    body:JSON.stringify({model:env.STAR_ANTHROPIC_MODEL||"claude-sonnet-5-5",max_tokens:Math.min(800,maxTokens),system,messages:[{role:"user",content:redactPrompt(prompt)}]}),
     signal:AbortSignal.timeout(25000)
   });
   if(!r.ok)throw Error("Model gateway failure");const data=await r.json();
@@ -68,7 +69,7 @@ async function infer(env,prompt,{maxTokens=512}={}){
  if(token.length<10||!model)throw Error("Model backend not configured");
  const upstream=await fetch(endpoint,{
    method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-   body:JSON.stringify({model,max_tokens:800,temperature:0.2,messages}),signal:AbortSignal.timeout(provider==="selfhosted"?90000:25000)
+   body:JSON.stringify({model,max_tokens:Math.min(800,maxTokens),temperature:0.2,messages}),signal:AbortSignal.timeout(provider==="selfhosted"?90000:25000)
  });
  if(!upstream.ok)throw Error("AI backend returned "+upstream.status);
  const content=normalizeModelResponse(await upstream.json());
@@ -102,13 +103,49 @@ async function sendMessage(env,chatId,text){
 }
 async function processUpdate(env,chatId,text){
  try{
-  if(text==="/start"){await sendMessage(env,chatId,"STAR NEXUS جاهز. أرسل سؤالك ليتم توجيهه إلى محرك الذكاء الحالي على خادم STAR.");return;}
-  if(text==="/help"){await sendMessage(env,chatId,"اكتب سؤالك مباشرة. هذا البوت للمحادثة فقط، ولا ينفذ أوامر النظام أو تعديلات GitHub.");return;}
+  const command=parseCodingCommand(text);
+  if(command?.type==="other-bot")return;
+  if(command?.type==="start"){
+   await sendMessage(env,chatId,"STAR NEXUS جاهز ✅\nللمهام البرمجية المستوحاة من WormGPTv2 أرسل /skills.\nوللمحادثة العادية اكتب سؤالك مباشرة.\nالمهارات لا تنفّذ أوامر النظام ولا تعدّل GitHub.");
+   return;
+  }
+  if(command?.type==="help"||command?.type==="skills"){
+   await sendMessage(env,chatId,describeCodingSkills());
+   return;
+  }
+  if(command?.type==="model"||command?.type==="status"){
+   await sendMessage(env,chatId,telegramModelLabel(env));
+   return;
+  }
+  if(command?.type==="unknown"){
+   await sendMessage(env,chatId,"الأمر /"+command.command+" غير معروف.\nأرسل /skills لعرض المهارات.");
+   return;
+  }
+  if(command?.type==="repo"){
+   if(!command.argument){
+    await sendMessage(env,chatId,"مثال: /repo functions/_nexus_telegram.js\nالقراءة من ملفات STAR العامة على GitHub فقط.");
+    return;
+   }
+   const file=await fetchStarSource(command.argument);
+   if(file.error){await sendMessage(env,chatId,file.error);return;}
+   const req=sourceRequest(file);
+   const answer=await infer(env,req.prompt,{system:req.system,maxTokens:req.maxTokens});
+   await sendMessage(env,chatId,"تحليل ملف STAR (قراءة فقط): "+file.path+
+    (file.truncated?"\nملاحظة: تحليل جزء من الملف فقط.":"")+"\n\n"+answer);
+   return;
+  }
+  if(command?.type==="skill"){
+   const req=skillRequest(command);
+   if(req?.missing){await sendMessage(env,chatId,req.missing);return;}
+   const answer=await infer(env,req.prompt,{system:req.system,maxTokens:req.maxTokens});
+   await sendMessage(env,chatId,"["+command.command+"]\n"+answer);
+   return;
+  }
   const result=await infer(env,text);
   await sendMessage(env,chatId,result);
  }catch{
-  // Do not log prompts, tokens, chat identifiers or upstream response bodies.
-  try{await sendMessage(env,chatId,"تعذر استلام رد من النموذج حالياً. تحقق من إعدادات مزود STAR ثم حاول مجدداً.");}catch{}
+  // No prompts, chat IDs, model content or credentials in logs.
+  try{await sendMessage(env,chatId,"تعذّر استلام رد من النموذج حالياً. تحقق من إعدادات مزود STAR ثم حاول مجدداً.");}catch{}
  }
 }
 export async function handleTelegramWebhook(request,env,ctx){
