@@ -51,7 +51,7 @@ jobs:
           tar --exclude='.git' -czf /tmp/star-archive/star-upstreams.tar.gz -C integrations upstreams
           ls -lh /tmp/star-archive/star-upstreams.tar.gz
       - name: Archive for transfer to iPad and source review
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: star-upstreams-${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'core' }}
           path: /tmp/star-archive/
