@@ -1,0 +1,54 @@
+name: Inspect Cloudflare Access Route Permissions (read-only)
+
+on:
+  push:
+    branches:
+      - feature/cloudflare-access-telegram-probe
+    paths:
+      - .github/workflows/inspect-telegram-access.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd2680f7c5ff39f8d9177a51dbf7fec75' }}
+    steps:
+      - name: Inspect Cloudflare Access application metadata without modification
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          if(!token){console.log("No authorized Cloudflare token in GitHub Secrets.");process.exit(0)}
+          const candidates=[...new Set([process.env.CLOUDFLARE_ACCOUNT_ID,
+            "d2680f7c5ff39f8d9177a51dbf7fec75","d45cb55f3d7654fc0eee90ca0e844378"].filter(Boolean))];
+          for(const id of candidates){
+            const uri="https://api.cloudflare.com/client/v4/accounts/"+id+"/access/apps";
+            try{
+              const r=await fetch(uri,{headers:{Authorization:"Bearer "+token,
+                Accept:"application/json"},signal:AbortSignal.timeout(12000)});
+              const body=await r.json().catch(()=>({}));
+              console.log("Account "+id+" Access application list HTTP "+r.status+
+                " success="+Boolean(body.success));
+              if(r.ok&&body.success===true){
+                const apps=Array.isArray(body.result)?body.result:[];
+                const matching=apps.filter(a=>JSON.stringify([a.domain,a.self_hosted_domains,
+                  a.name]).includes("star-cyber-ai-x.pages.dev"));
+                for(const a of matching)console.log(JSON.stringify({
+                  id:a.id,name:a.name,domain:a.domain,app_type:a.type,
+                  policy_count:Array.isArray(a.policies)?a.policies.length:null
+                }));
+                console.log("Matching STAR Access apps: "+matching.length);
+              }else{
+                console.log("Account Access list permission or API error code: "+
+                  (body?.errors?.[0]?.code??"unknown"));
+              }
+            }catch{console.log("Access application list was unreachable for account "+id)}
+          }
+          NODE
