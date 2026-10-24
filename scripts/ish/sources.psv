@@ -1,6 +1,6 @@
 # STAR NEXUS upstream source snapshot registry. Pipe separated. Do not execute retrieved code.
 # id|owner/repo|pinned-commit-SHA|group|description
-wormgpt-v2|WormGPTv2/wormgpt|f32f2ad1a3af5f5ce80f0124755581584dce5db8|core|Node coding CLI source
+wormgpt-v2|WormGPTv2/wormgpt|afe69af5ef61a7d7a0b1dd0bf0fe3a3f01f0607d|core|Node coding CLI source
 wormxgpt|gaur-avvv/wormxgpt|d4abdb4c782d3489d5b107b072c01217d53e9396|core|React Vite source
 telegram-bot|jailideaid/WormGPT|6a4ebe384ff07adb6a691edaad12815b2642226b|core|Telegram Python bot source
 drana|IHA089/Drana-Infinity|88f3730bc536928b87da97fcae7639f3f10e5390|core|Drana model integration source
