@@ -5,6 +5,11 @@ on:
     workflows: ["Deploy STAR CORE V2 to Cloudflare Pages"]
     types: [completed]
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-star-telegram-production.yml"
+      - "functions/_telegram_github_oidc.js"
 
 permissions:
   contents: read
@@ -13,7 +18,7 @@ permissions:
 jobs:
   verify:
     name: Check deployed Telegram API without credentials
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -55,6 +60,27 @@ jobs:
               process.stdout.write(v)
             })')
           unset json
+          STAR_DIAG_TOKEN="$id_token" node -e '
+          const t=process.env.STAR_DIAG_TOKEN||"";
+          const [h,p]=t.split(".");
+          const header=JSON.parse(Buffer.from(h,"base64url").toString());
+          const c=JSON.parse(Buffer.from(p,"base64url").toString());
+          const repo="abdulstarzeki001-sketch/qwen-github-bridge";
+          const now=Math.floor(Date.now()/1000);
+          console.log("OIDC allowlist diagnostics (booleans only):",JSON.stringify({
+            algorithm:header.alg==="RS256",
+            issuer:c.iss==="https://token.actions.githubusercontent.com",
+            audience:c.aud==="star-nexus-telegram-webhook",
+            repository:c.repository===repo,
+            branch:c.ref==="refs/heads/main",
+            workflow:c.workflow_ref===repo+"/.github/workflows/verify-star-telegram-production.yml@refs/heads/main",
+            sub:c.sub==="repo:"+repo+":ref:refs/heads/main",
+            event:c.event_name==="workflow_run"||c.event_name==="workflow_dispatch",
+            time:typeof c.exp==="number"&&c.exp>now
+              &&typeof c.iat==="number"&&c.iat>=now-900
+              &&typeof c.nbf==="number"&&c.nbf<=now+60
+          }));
+          '
           code=$(curl --silent --show-error --connect-timeout 7 --max-time 30 \
             -o /tmp/star-telegram-bootstrap.json -w '%{http_code}' -X POST \
             -H "Authorization: Bearer $id_token" \
@@ -65,6 +91,11 @@ jobs:
           if [ "$code" != '200' ]; then
             echo "Automatic Telegram webhook activation did not complete (Cloudflare HTTP $code)."
             echo "BotFather identity, Cloudflare Production secrets, and GitHub workflow OIDC must be valid."
+            node -e '
+              const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/star-telegram-bootstrap.json","utf8"));
+              const message=typeof d.error==="string"?d.error:"No JSON error provided";
+              console.log("STAR bootstrap response:",message.slice(0,180));
+            ' || true
             exit 1
           fi
           node -e '
