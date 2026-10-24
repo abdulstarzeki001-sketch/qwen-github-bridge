@@ -73,10 +73,33 @@ export async function setupTelegramAccess({
   return {dryRun,created:added,already_present:present,note:"No other STAR paths were changed."};
 }
 
+export async function resolveCloudflarePagesAccount(apiToken,{candidates=[],fetcher=fetch}={}){
+  for(const id of [...new Set(candidates)]){
+    if(!/^[a-f0-9]{32}$/.test(id))continue;
+    try{
+      const response=await fetcher(API+id+"/pages/projects/star-cyber-ai-x",{
+        headers:{Authorization:"Bearer "+apiToken,Accept:"application/json"},
+        signal:AbortSignal.timeout(16000)
+      });
+      if(!response.ok)continue;
+      const data=await response.json();
+      if(data?.success===true&&data.result?.name==="star-cyber-ai-x")return id;
+    }catch{}
+  }
+  throw Error("Cannot verify an existing STAR Pages project with the current Cloudflare API token");
+}
+
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   try{
-    const accountId=process.env.CLOUDFLARE_ACCOUNT_ID;
     const apiToken=process.env.CLOUDFLARE_API_TOKEN;
+    if(!apiToken)throw Error("Missing Cloudflare API token");
+    const accountId=await resolveCloudflarePagesAccount(apiToken,{
+      candidates:[
+        process.env.CLOUDFLARE_ACCOUNT_ID,
+        "d2680f7c5ff39f8d9177a51dbf7fec75",
+        "d45cb55f3d7654fc0eee90ca0e844378"
+      ]
+    });
     const result=await setupTelegramAccess({accountId,apiToken,dryRun:!process.argv.includes("--apply")});
     console.log(JSON.stringify(result));
   }catch(e){
