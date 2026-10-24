@@ -1,0 +1,40 @@
+name: Configure STAR Telegram Access Exceptions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/configure-telegram-access.yml"
+      - "scripts/configure-telegram-access.mjs"
+      - "scripts/test-configure-telegram-access.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-path-exception:
+    name: Exempt signed Telegram endpoints ONLY
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd2680f7c5ff39f8d9177a51dbf7fec75' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate two exact paths and test idempotent setup offline
+        run: node scripts/test-configure-telegram-access.mjs
+      - name: Verify account and preview scoped Access changes
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: node scripts/configure-telegram-access.mjs
+      - name: Apply ONLY verified machine endpoint exceptions
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: node scripts/configure-telegram-access.mjs --apply
+      - name: Explain missing token
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: |
+          echo "No Cloudflare Pages API token. Configure CLOUDFLARE_PAGES_TOKEN with Access: Apps and Policies Write + Pages Read permissions."
+          exit 1
