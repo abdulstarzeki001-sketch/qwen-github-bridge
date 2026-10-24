@@ -85,8 +85,12 @@ export async function fetchStarSource(input,{fetcher=fetch}={}){
  let output="",bytes=0,cut=false;const reader=response.body.getReader(),decoder=new TextDecoder();
  try{
   while(true){const part=await reader.read();if(part.done)break;
+   const space=LIMIT-bytes;
+   if(part.value.byteLength>space){
+    output+=decoder.decode(part.value.slice(0,Math.max(0,space)),{stream:true});
+    cut=true;await reader.cancel().catch(()=>{});break;
+   }
    bytes+=part.value.byteLength;
-   if(bytes>LIMIT){cut=true;await reader.cancel().catch(()=>{});break}
    output+=decoder.decode(part.value,{stream:true});
   }
   if(!cut)output+=decoder.decode();
