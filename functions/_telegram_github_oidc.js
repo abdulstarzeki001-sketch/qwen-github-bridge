@@ -4,6 +4,12 @@ const ISSUER="https://token.actions.githubusercontent.com";
 const JWKS_URL=ISSUER+"/.well-known/jwks";
 const AUDIENCE="star-nexus-telegram-webhook";
 const REPOSITORY="abdulstarzeki001-sketch/qwen-github-bridge";
+const OWNER_ID="311850512";
+const REPOSITORY_ID="1412897704";
+const VALID_SUBJECTS=new Set([
+  "repo:"+REPOSITORY+":ref:refs/heads/main",
+  "repo:abdulstarzeki001-sketch@"+OWNER_ID+"/qwen-github-bridge@"+REPOSITORY_ID+":ref:refs/heads/main"
+]);
 const WORKFLOW_REF=REPOSITORY+"/.github/workflows/verify-star-telegram-production.yml@refs/heads/main";
 
 function unbase64url(part){
@@ -25,7 +31,9 @@ export async function verifyStarDeploymentOidc(token,{jwksFetch=fetch,now=Math.f
     if(claims?.iss!==ISSUER||claims.aud!==AUDIENCE||
       claims.repository!==REPOSITORY||claims.ref!=="refs/heads/main"||
       claims.workflow_ref!==WORKFLOW_REF||!["workflow_run","workflow_dispatch","push"].includes(claims.event_name)||
-      claims.sub!=="repo:"+REPOSITORY+":ref:refs/heads/main")return false;
+      !VALID_SUBJECTS.has(claims.sub)||
+      String(claims.repository_id)!==REPOSITORY_ID||
+      String(claims.repository_owner_id)!==OWNER_ID)return false;
     if(!Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
       !Number.isSafeInteger(claims.nbf)||claims.exp<=now-30||claims.iat>now+60||
       claims.nbf>now+60||claims.exp-claims.iat>900||claims.iat<now-900)return false;
