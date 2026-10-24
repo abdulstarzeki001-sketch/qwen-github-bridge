@@ -1,4 +1,21 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#060c16"><title>Telegram · STAR NEXUS</title><link rel="stylesheet" href="/nexus.css"></head><body style="padding:20px"><main style="max-width:900px;margin:auto;padding:20px"><a href="/" class="secondary-btn">← العودة إلى STAR NEXUS</a><section class="panel" style="margin-top:20px"><span class="overline">DEPLOYMENT / TELEGRAM</span><h1>دليل تفعيل بوت Telegram</h1><p>البوت يستخدم النموذج المهيأ حالياً في STAR ولا يُسمح له بالوصول إلى GitHub أو تنفيذ أي أمر أو تنزيل أي ملف. إضافة المفاتيح وتسجيل Webhook تتم مرة واحدة من حسابك على Cloudflare.</p>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#060c16"><title>Telegram · STAR NEXUS</title><link rel="stylesheet" href="/nexus.css"></head><body style="padding:20px"><main style="max-width:900px;margin:auto;padding:20px"><a href="/" class="secondary-btn">← العودة إلى STAR NEXUS</a><section class="panel" style="margin-top:20px"><span class="overline">DEPLOYMENT / TELEGRAM</span><h1>دليل تفعيل بوت Telegram</h1>
+<section class="panel" style="margin:18px 0;padding:18px;border:1px solid #385d67">
+<h2>مهارات برمجية مستوحاة من WormGPTv2</h2>
+<p>الأوامر تعمل في @Aistar0017616bot باستخدام محرك STAR الحالي على Cloudflare، دون الحاجة إلى GPU أو إبقاء iSH شغالاً.</p>
+<pre><code>/skills                    عرض المهارات
+/code اكتب دالة Python     إنشاء كود
+/debug الصق الخطأ          تحليل وتصحيح أخطاء
+/review الصق الكود         مراجعة كود
+/tests اكتب اختبارات       إنشاء اختبارات مقترحة
+/refactor حسّن الكود       تحسين الكود
+/security راجع الكود       تدقيق أمني دفاعي
+/patch أصلح الدالة         اقتراح تعديل diff
+/plan اكتب خطة             تخطيط المشروع
+/explain اشرح الكود        شرح مفصل
+/repo functions/_nexus_telegram.js
+/model                     اسم مزود ونموذج AI</code></pre>
+<p>أمر /repo يفحص ملفاً عاماً من مستودع STAR فقط، للقراءة والتحليل دون تعديل أو تنفيذ. هذه مهارات نصية مستوحاة من أسلوب وكلاء البرمجة؛ ليست تشغيل WormGPTv2 CLI الأصلي أو أوزانه، ولا تمنح Telegram وصولاً إلى الطرفية أو مفاتيح GitHub.</p>
+</section><p>البوت يستخدم النموذج المهيأ حالياً في STAR ولا يُسمح له بالوصول إلى GitHub أو تنفيذ أي أمر أو تنزيل أي ملف. إضافة المفاتيح وتسجيل Webhook تتم مرة واحدة من حسابك على Cloudflare.</p>
 <section class="panel" style="padding:18px;border:1px solid #295063;margin:18px 0">
 <h2>ربط @Aistar0017616bot مباشرة من STAR</h2>
 <p>إذا خزّنت <code>TELEGRAM_BOT_TOKEN</code> و<code>TELEGRAM_WEBHOOK_SECRET</code> و<code>TELEGRAM_ALLOWED_CHAT_IDS</code> في إعدادات Cloudflare Production، يمكنك تفعيل Webhook دون إدخال أي أسرار داخل المتصفح أو iSH. يجب تسجيل الدخول كمالك STAR أولاً.</p>
