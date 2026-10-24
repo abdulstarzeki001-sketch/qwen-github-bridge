@@ -1,7 +1,7 @@
 // STAR NEXUS · Telegram webhook adapter.
 // No Telegram user can reach privileged GitHub, scanner, filesystem or owner settings routes.
 import { wormgptConfigured, wormgptChat } from "./_wormgpt.js";
-import { parseCodingCommand, describeCodingSkills, skillRequest, telegramModelLabel, fetchStarSource, sourceRequest } from "./_wormgpt_coding_skills.js";
+import { parseCodingCommand, describeCodingSkills, skillRequest, telegramModelLabel, fetchStarSource, sourceRequest, compareArgs, compareSourceRequest, inspectJsonStructure } from "./_wormgpt_coding_skills.js";
 
 const json=(payload,status=200)=>Response.json(payload,{status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
 const maxIncomingBytes=16*1024;
@@ -119,6 +119,25 @@ async function processUpdate(env,chatId,text){
   }
   if(command?.type==="unknown"){
    await sendMessage(env,chatId,"الأمر /"+command.command+" غير معروف.\nأرسل /skills لعرض المهارات.");
+   return;
+  }
+  if(command?.type==="json"){
+   const data=inspectJsonStructure(command.argument);
+   await sendMessage(env,chatId,data.report||data.error);
+   return;
+  }
+  if(command?.type==="compare"){
+   const paths=compareArgs(command.argument);
+   if(!paths){
+    await sendMessage(env,chatId,"استعمل مساري ملفين مختلفين من مستودع STAR العام.\nمثال: /compare functions/_nexus_telegram.js functions/_wormgpt_coding_skills.js");
+    return;
+   }
+   const files=await Promise.all(paths.map(path=>fetchStarSource(path)));
+   const failed=files.find(file=>file.error);
+   if(failed){await sendMessage(env,chatId,failed.error);return}
+   const req=compareSourceRequest(files[0],files[1]);
+   const answer=await infer(env,req.prompt,{system:req.system,maxTokens:req.maxTokens});
+   await sendMessage(env,chatId,"مقارنة مصدرين عامين (قراءة فقط):\n"+paths.join(" ⇄ ")+"\n\n"+answer);
    return;
   }
   if(command?.type==="repo"){
