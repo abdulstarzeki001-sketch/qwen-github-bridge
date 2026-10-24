@@ -5,7 +5,7 @@ import { makeOwnerCookie, readOwnerCookie, clearOwnerCookie } from "../_owner_se
 import { validateOwnerProfile, ownerStorageReady, readOwnerSettings, writeOwnerSettings, removeOwnerSettings } from "../_owner_settings.js";
 import { handleVault, vaultReady } from "../_vault.js";
 import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
-import { telegramConfigured, handleTelegramWebhook } from "../_nexus_telegram.js";
+import { telegramConfigured, handleTelegramWebhook, probeTelegramAi } from "../_nexus_telegram.js";
 import { telegramOwnerStatus, telegramOwnerConnect } from "../_telegram_admin.js";
 import { verifyStarDeploymentOidc } from "../_telegram_github_oidc.js";
 import { conversationMessages } from "../_nexus_context.js";
@@ -269,7 +269,11 @@ export async function onRequest({request,env,context}){
     if(Number(request.headers.get("content-length")||"0")>1500)
       return json({error:"Payload too large"},413);
     let action;try{const data=await request.json();action=data?.action}catch{return json({error:"Invalid JSON"},400)}
-    if(action!=="connect")return json({error:"Invalid action"},400);
+    if(action!=="connect"&&action!=="probe-ai")return json({error:"Invalid action"},400);
+    if(action==="probe-ai"){
+      const result=await probeTelegramAi(env);
+      return json(result,result.ok?200:503);
+    }
     try{
       const result=await telegramOwnerConnect(env);
       return json(result,result.ok?200:503);
