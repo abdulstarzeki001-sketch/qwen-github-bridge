@@ -7,6 +7,7 @@ import { handleVault, vaultReady } from "../_vault.js";
 import { wormgptConfigured, wormgptChat } from "../_wormgpt.js";
 import { telegramConfigured, handleTelegramWebhook } from "../_nexus_telegram.js";
 import { telegramOwnerStatus, telegramOwnerConnect } from "../_telegram_admin.js";
+import { verifyStarDeploymentOidc } from "../_telegram_github_oidc.js";
 import { conversationMessages } from "../_nexus_context.js";
 
 const API_HEADERS={"cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY","referrer-policy":"no-referrer","permissions-policy":"camera=(), microphone=(), geolocation=()"};
@@ -258,6 +259,23 @@ export async function onRequest({request,env,context}){
     if(!policy.allowGithubRead)return json({error:"GitHub reading disabled by owner"},403);
     const owner=await hasOwnerAccess(request,env);
     return makeGithubHandler(env,owner.ok)(request);
+  }
+  // Deployment bootstrap accepts ONLY a signed GitHub OIDC token from this repo's
+  // exact main-branch verification workflow. It never accepts browser inputs as URLs.
+  if(path==="/api/telegram/bootstrap"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    const token=(request.headers.get("authorization")||"").replace(/^Bearer /i,"");
+    if(!(await verifyStarDeploymentOidc(token)))return json({error:"Unauthorized deployment"},401);
+    if(Number(request.headers.get("content-length")||"0")>1500)
+      return json({error:"Payload too large"},413);
+    let action;try{const data=await request.json();action=data?.action}catch{return json({error:"Invalid JSON"},400)}
+    if(action!=="connect")return json({error:"Invalid action"},400);
+    try{
+      const result=await telegramOwnerConnect(env);
+      return json(result,result.ok?200:503);
+    }catch{
+      return json({ok:false,error:"Automatic Telegram setup failed. Verify Cloudflare Production variables and bot identity."},502);
+    }
   }
   if(path==="/api/telegram/webhook")return handleTelegramWebhook(request,env,context);
   if(path==="/api/telegram/admin"){
