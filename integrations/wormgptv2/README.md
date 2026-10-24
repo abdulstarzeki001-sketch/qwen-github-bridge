@@ -34,6 +34,9 @@ STAR adds coding-agent-style text skills to the allowlisted Telegram channel **w
 - `/code ...`, `/debug ...`, `/review ...`, `/tests ...`, `/refactor ...`, `/security ...`, `/patch ...`, `/explain ...`, `/plan ...`: produce code, reviews, proposals, tests and guidance using the active STAR AI provider
 - `/repo functions/_nexus_telegram.js`: read a bounded portion of a **public file in this STAR repository** and review it as untrusted text. No arbitrary hosts, other GitHub repositories, hidden files or private secrets may be requested
 - `/model`: report provider and model without secret values; ordinary questions keep working
+- Engineering specializations: `/api`, `/sql`, `/docker`, `/cloudflare`, `/frontend`, `/python`, `/typescript`, `/performance`, `/architecture`, `/regex`, `/docs`, `/incident`, `/translate`, `/jsonschema`.
+- `/json {"name":"STAR"}`: deterministic built-in JSON syntax check and type-only structure summary; no AI inference or value echo. Sensitive keys hidden.
+- `/compare functions/_nexus_telegram.js functions/_wormgpt_coding_skills.js`: compare bounded excerpts of two *public* source files from this project via a single model call; no writes or arbitrary URL access.
 
 Skills do not run code, execute shell commands, edit files or push to GitHub. Generated patches are proposals, not applied modifications. Cloudflare output is limited and source reads are bounded; large reviews may need narrower inputs. These are STAR-created capabilities **inspired by** coding-agent workflows, not the original WormGPT model weights or CLI runtime.
 
