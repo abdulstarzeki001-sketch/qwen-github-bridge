@@ -126,6 +126,9 @@ jobs:
       - name: Test optional WormGPT-compatible backend and owner authentication
         run: node scripts/test-wormgpt.mjs && node --check functions/_wormgpt.js
 
+      - name: Test expanded STAR Telegram developer toolbox and deterministic JSON
+        run: node scripts/test-telegram-expanded-toolbox.mjs && node --check functions/_wormgpt_coding_skills.js
+
       - name: Test STAR Telegram coding-agent skills and safe public repo inspection
         run: node scripts/test-wormgpt-telegram-skills.mjs && node --check functions/_wormgpt_coding_skills.js
 
