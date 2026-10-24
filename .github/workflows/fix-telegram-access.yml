@@ -1,0 +1,74 @@
+name: Fix Narrow STAR Telegram Cloudflare Access Routes
+
+on:
+  push:
+    branches: [feature/cloudflare-access-telegram-probe]
+    paths:
+      - .github/workflows/fix-telegram-access.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Create only two narrowly scoped Telegram path exception apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          if(!token){console.error("Missing Cloudflare token");process.exit(1)}
+          const account="d45cb55f3d7654fc0eee90ca0e844378";
+          const base="https://api.cloudflare.com/client/v4/accounts/"+account+"/access/apps";
+          async function cf(method,url,body){
+            const r=await fetch(url,{
+              method,headers:{Authorization:"Bearer "+token,Accept:"application/json",
+                ...(body?{"Content-Type":"application/json"}:{})},
+              ...(body?{body:JSON.stringify(body)}:{}),
+              signal:AbortSignal.timeout(16000)
+            });
+            const data=await r.json().catch(()=>({}));
+            if(!r.ok||!data.success){
+              console.log("Cloudflare "+method+" status="+r.status+
+                " errorCode="+(data?.errors?.[0]?.code??"unknown"));
+              throw Error("Cloudflare Access API refused this operation");
+            }
+            return data.result;
+          }
+          const host="star-cyber-ai-x.pages.dev";
+          const apps=await cf("GET",base);
+          const root=apps.find(x=>x.name==="STAR AI PRIVATE"&&x.domain===host&&
+            x.type==="self_hosted");
+          if(!root){throw Error("Expected protected STAR AI PRIVATE root application missing; abort")}
+          console.log("Protected root application verified. No root app or root policy will be changed.");
+          const paths=[
+            {path:"/api/telegram/webhook",label:"STAR Telegram Webhook — secret-header protected"},
+            {path:"/api/telegram/bootstrap",label:"STAR GitHub OIDC Telegram Bootstrap — signed workflow only"}
+          ];
+          for(const item of paths){
+            const domain=host+item.path;
+            const existing=apps.find(x=>x.domain===domain);
+            if(existing){
+              console.log("Path already has an Access application: "+domain+" (id="+existing.id+").");
+              console.log("Do not overwrite pre-existing policies; verify it separately.");
+              continue;
+            }
+            const payload={
+              type:"self_hosted",name:item.label,domain,app_launcher_visible:false,
+              session_duration:"24h",
+              policies:[{
+                name:"STAR Telegram path only — public access with application-layer auth",
+                decision:"bypass",include:[{everyone:{}}],precedence:1
+              }]
+            };
+            const result=await cf("POST",base,payload);
+            console.log("CREATED narrow app: "+result.domain+" id="+result.id);
+          }
+          console.log("Cloudflare root policy left unchanged; webhook validates Telegram secret, bootstrap validates GitHub OIDC JWT.");
+          NODE
