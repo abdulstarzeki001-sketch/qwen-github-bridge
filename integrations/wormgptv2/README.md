@@ -26,6 +26,19 @@ STAR_LOCAL_MODEL=qwen2.5-coder:7b bash integrations/wormgptv2/run-local.sh
 
 Shell and GitHub write privileges remain gated by agent approval settings. Review changes before committing/pushing.
 
+## STAR Telegram coding assistant skills (no GPU required)
+
+STAR adds coding-agent-style text skills to the allowlisted Telegram channel **without executing** the original WormGPTv2 Node CLI or pulling unknown third-party binaries.
+
+- `/skills`: list the commands
+- `/code ...`, `/debug ...`, `/review ...`, `/tests ...`, `/refactor ...`, `/security ...`, `/patch ...`, `/explain ...`, `/plan ...`: produce code, reviews, proposals, tests and guidance using the active STAR AI provider
+- `/repo functions/_nexus_telegram.js`: read a bounded portion of a **public file in this STAR repository** and review it as untrusted text. No arbitrary hosts, other GitHub repositories, hidden files or private secrets may be requested
+- `/model`: report provider and model without secret values; ordinary questions keep working
+
+Skills do not run code, execute shell commands, edit files or push to GitHub. Generated patches are proposals, not applied modifications. Cloudflare output is limited and source reads are bounded; large reviews may need narrower inputs. These are STAR-created capabilities **inspired by** coding-agent workflows, not the original WormGPT model weights or CLI runtime.
+
+Run `node scripts/test-wormgpt-telegram-skills.mjs` to exercise mocked Telegram delivery, model calls, public GitHub source reading and access controls. The independent production workflow checks real AI inference without executing third-party code.
+
 ## CI verification
 
 The workflow `.github/workflows/verify-upstreams.yml` runs the real upstream CLI with `--version` on an ephemeral GitHub Actions runner, then the WormXGPT frontend build as job 02. Neither requires a model API key, but these are **startup/build smoke tests**, not proof that an interactive AI conversation is available from an iPhone.
