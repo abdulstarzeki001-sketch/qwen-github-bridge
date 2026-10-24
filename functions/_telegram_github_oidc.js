@@ -24,7 +24,7 @@ export async function verifyStarDeploymentOidc(token,{jwksFetch=fetch,now=Math.f
       !/^[A-Za-z0-9_-]{1,100}$/.test(header.kid))return false;
     if(claims?.iss!==ISSUER||claims.aud!==AUDIENCE||
       claims.repository!==REPOSITORY||claims.ref!=="refs/heads/main"||
-      claims.workflow_ref!==WORKFLOW_REF||!["workflow_run","workflow_dispatch"].includes(claims.event_name)||
+      claims.workflow_ref!==WORKFLOW_REF||!["workflow_run","workflow_dispatch","push"].includes(claims.event_name)||
       claims.sub!=="repo:"+REPOSITORY+":ref:refs/heads/main")return false;
     if(!Number.isSafeInteger(claims.exp)||!Number.isSafeInteger(claims.iat)||
       !Number.isSafeInteger(claims.nbf)||claims.exp<=now-30||claims.iat>now+60||
