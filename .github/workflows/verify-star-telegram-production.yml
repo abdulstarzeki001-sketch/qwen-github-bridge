@@ -75,7 +75,7 @@ jobs:
             branch:c.ref==="refs/heads/main",
             workflow:c.workflow_ref===repo+"/.github/workflows/verify-star-telegram-production.yml@refs/heads/main",
             sub:c.sub==="repo:"+repo+":ref:refs/heads/main",
-            event:c.event_name==="workflow_run"||c.event_name==="workflow_dispatch",
+            event:["workflow_run","workflow_dispatch","push"].includes(c.event_name),
             time:typeof c.exp==="number"&&c.exp>now
               &&typeof c.iat==="number"&&c.iat>=now-900
               &&typeof c.nbf==="number"&&c.nbf<=now+60
