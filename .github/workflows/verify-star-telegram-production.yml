@@ -5,11 +5,6 @@ on:
     workflows: ["Deploy STAR CORE V2 to Cloudflare Pages"]
     types: [completed]
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/verify-star-telegram-production.yml"
-      - "functions/_telegram_github_oidc.js"
 
 permissions:
   contents: read
@@ -18,7 +13,7 @@ permissions:
 jobs:
   verify:
     name: Check deployed Telegram API without credentials
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
