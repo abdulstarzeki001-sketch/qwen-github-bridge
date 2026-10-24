@@ -21,7 +21,7 @@ assert.equal(conversationMessages({history:[{role:"assistant",content:"a".repeat
 assert.equal(conversationMessages({history:"plain"},"s","q",redact).error,"history must be an array");
 let captured=null;
 const env={STAR_API_TOKEN:token,AI:{run:async(model,payload)=>{
-  assert.equal(model,"@cf/meta/llama-3.1-8b-instruct");
+  assert.equal(model,"@cf/meta/llama-3.1-8b-instruct-fp8");
   captured=payload.messages;
   return {response:"Continuing the conversation"};
 }}};
