@@ -24,9 +24,10 @@ async function sign(c=claims){
 const token=await sign();
 const fetchJwks=async()=>Response.json({keys:[jwk]});
 assert.equal(await verifyStarDeploymentOidc(token,{jwksFetch:fetchJwks,now}),true);
+// GitHub may customize sub; the signed repository, ref and workflow still fully constrain authorization.
+assert.equal(await verifyStarDeploymentOidc(await sign({...claims,sub:"repo:"+repo+":job_workflow_ref:custom-org-template"}),{jwksFetch:fetchJwks,now}),true);
 for(const override of [
   {aud:"other-application"},{ref:"refs/heads/feature"},{repository:"evil/other"},
-  {sub:"repo:evil/other:ref:refs/heads/main"},
   {workflow_ref:repo+"/.github/workflows/other.yml@refs/heads/main"},
   {event_name:"pull_request"},{iss:"https://attacker.invalid"},
   {exp:now-50},{iat:now+200},{nbf:now+200}
