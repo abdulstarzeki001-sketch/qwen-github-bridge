@@ -1,0 +1,19 @@
+# STAR NEXUS upstream source snapshot registry. Pipe separated. Do not execute retrieved code.
+# id|owner/repo|pinned-commit-SHA|group|description
+wormgpt-v2|WormGPTv2/wormgpt|f32f2ad1a3af5f5ce80f0124755581584dce5db8|core|Node coding CLI source
+wormxgpt|gaur-avvv/wormxgpt|d4abdb4c782d3489d5b107b072c01217d53e9396|core|React Vite source
+telegram-bot|jailideaid/WormGPT|6a4ebe384ff07adb6a691edaad12815b2642226b|core|Telegram Python bot source
+drana|IHA089/Drana-Infinity|88f3730bc536928b87da97fcae7639f3f10e5390|core|Drana model integration source
+electron|lahirusanjika/Worm-GPT|063068472198d476210129d4352600ab5522c2e4|core|Electron renderer source
+streamlit|prithwishpal/worm-gpt|db577367bc822c082ab8a9330ab05fe3cd530f8f|core|Streamlit source
+xgpt-prompts|gaur-avvv/XGPT-WormGPT|96edda3d6377304a88c517287576c4fc6c116784|core|Text prompts not instructions
+wormgpt-installer|jailbreakwormGPT/wormGPT|879862fa71f3f5ebb9d9ae3800ea95d7b2d80baf|reference|Unverified installer reference only
+worm-ai|0x6b6679/worm-ai|c560312f6bf128c4a7da29b6a03bdc0583cdcf24|reference|Opaque dependency reference
+worm-gpt-archived|0x6b6679/worm-gpt|1ae016e6b32e915c24fab765f9152672d61d1170|reference|Archived source
+wormgpt-desktop|cameleonnbss/WormGPT-desktop|20113922df612c1cffbc75fb34515063e3b874ab|reference|Windows model application
+telegram-fork|shahzadkhld/wormgpt|6a4ebe384ff07adb6a691edaad12815b2642226b|reference|Community Telegram fork
+father-telegram|father-bot/chatgpt_telegram_bot|3631d6534f2c0d8b834d63c820b71aade52540e8|reference|Telegram architecture
+wechat-bot|wangrongding/wechat-bot|43c6c5075393ca50a430629108251d9be104d5b9|reference|Multi-channel bot source
+wormgpt-exe|JuraSecurity/Worm-GPT|433f83502e1a79e4db66191350d3015c79f591a5|reference|Includes unverified EXE; never execute
+wormgpt-archives|MrZXN777/WormGPT-|c705c4ddf514802e57e06b9a3a5e7a7d94de2d96|reference|Unverified archives; never execute
+wormgpt-info|WormGPT-AI/WormGPT|7490f577cd1e16a21950de5b38e1817f14f104b5|reference|README-only reference
