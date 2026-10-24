@@ -32,7 +32,7 @@ async function infer(env,prompt){
  const messages=[{role:"system",content:modelPrompt},{role:"user",content:redactPrompt(prompt)}];
  if(provider==="cloudflare"){
   if(!env.AI)throw Error("Workers AI binding is missing");
-  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct",{messages,max_tokens:512});
+  const result=await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8",{messages,max_tokens:512});
   if(typeof result?.response!=="string"||!result.response.trim())throw Error("Cloudflare AI returned no message");
   return result.response.trim();
  }
