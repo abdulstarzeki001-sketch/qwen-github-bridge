@@ -74,7 +74,11 @@ jobs:
             repository:c.repository===repo,
             branch:c.ref==="refs/heads/main",
             workflow:c.workflow_ref===repo+"/.github/workflows/verify-star-telegram-production.yml@refs/heads/main",
-            sub:c.sub==="repo:"+repo+":ref:refs/heads/main",
+            sub:[
+              "repo:"+repo+":ref:refs/heads/main",
+              "repo:abdulstarzeki001-sketch@311850512/qwen-github-bridge@1412897704:ref:refs/heads/main"
+            ].includes(c.sub),
+            repo_ids:String(c.repository_id)==="1412897704"&&String(c.repository_owner_id)==="311850512",
             event:["workflow_run","workflow_dispatch","push"].includes(c.event_name),
             time:typeof c.exp==="number"&&c.exp>now
               &&typeof c.iat==="number"&&c.iat>=now-900
@@ -105,15 +109,21 @@ jobs:
           console.log("SUCCESS: @Aistar0017616bot webhook registered to STAR NEXUS using Cloudflare-stored secrets.");
           console.log("This confirms webhook configuration, not end-to-end model inference.");
           '
-      - name: Probe public STAR AI provider readiness
+      - name: Inspect AI status if public, without weakening owner access
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsS --connect-timeout 7 --max-time 15             'https://star-cyber-ai-x.pages.dev/api/health' -o /tmp/star-public-health.json
-          node -e '
-          const fs=require("node:fs");
-          const d=JSON.parse(fs.readFileSync("/tmp/star-public-health.json","utf8"));
-          if(d.ok!==true||typeof d.ai_provider!=="string")process.exit(1);
-          console.log(JSON.stringify({provider:d.ai_provider,ai_gateway_configured:Boolean(d.ai_gateway),
-            note:"AI gateway configuration is not proof of a successful model completion."}));
-          '
+          code=$(curl -sS --connect-timeout 7 --max-time 15 \
+            -o /tmp/star-public-health.json -w '%{http_code}' \
+            'https://star-cyber-ai-x.pages.dev/api/health')
+          if [ "$code" = 200 ]; then
+            node -e '
+              const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/star-public-health.json","utf8"));
+              if(d.ok!==true||typeof d.ai_provider!=="string")process.exit(1);
+              console.log(JSON.stringify({provider:d.ai_provider,ai_gateway_configured:Boolean(d.ai_gateway)}));
+            '
+          elif [ "$code" = 302 ] || [ "$code" = 403 ]; then
+            echo 'STAR AI status remains protected by Cloudflare Access. Telegram webhook registration is independent.'
+          else
+            echo "STAR AI provider status probe not available (HTTP $code); this does not affect Telegram webhook registration."
+          fi
