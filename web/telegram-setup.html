@@ -5,7 +5,17 @@
 TELEGRAM_WEBHOOK_SECRET = A_LONG_RANDOM_ALPHANUMERIC_SECRET_AT_LEAST_32
 TELEGRAM_ALLOWED_CHAT_IDS = YOUR_PERSONAL_NUMERIC_TELEGRAM_CHAT_ID</code></pre>
 <p>يمكن فصل أكثر من Chat ID بفواصل. النظام يقبل المحادثات الخاصة فقط. استخدم قيمة عشوائية قوية للـ Webhook Secret من الأحرف والأرقام والشرطة والشرطة السفلية. لا تضع مفاتيحك في الكود أو المتصفح.</p>
-<h2>3. تسجيل عنوان Telegram Webhook</h2><p>من طرفية جهازك، أدخل القيم الخاصة في البيئة دون تسجيلها في ملفات المشروع، ثم نفذ:</p>
+<h2>3. أسهل طريقة من iSH على الآيباد</h2>
+<p>بعد إنشاء البوت، افتح المحادثة معه وأرسل /start، ثم استخدم أوامر iSH التالية. لا تحفظ التوكن داخل GitHub:</p>
+<pre><code>cd ~/qwen-github-bridge
+sh scripts/ish/star.sh sync
+python3 scripts/ish/telegram.py chat-id
+# أدخل Chat ID في Cloudflare وأعد النشر
+python3 scripts/ish/telegram.py check-star
+python3 scripts/ish/telegram.py set-webhook
+python3 scripts/ish/telegram.py status</code></pre>
+<p>يطلب البرنامج توكن البوت وسر Webhook بإدخال مخفي. إذا كان عنوان Cloudflare محمياً بـ Cloudflare Access بالكامل، اسمح لتلغرام بالوصول إلى مسار Webhook فقط، مع إبقاء فحص السر داخل دالة STAR. يجب ظهور HTTP 401 لفحص بدون السر قبل ربط Telegram.</p>
+<h2>4. تسجيل عنوان Telegram Webhook يدوياً</h2><p>من طرفية جهازك، أدخل القيم الخاصة في البيئة دون تسجيلها في ملفات المشروع، ثم نفذ:</p>
 <pre><code>read -rs TG_TOKEN
 echo
 read -rs TG_SECRET
@@ -15,6 +25,6 @@ curl --fail-with-body -sS \
   --data-urlencode "url=https://star-cyber-ai-x.pages.dev/api/telegram/webhook" \
   --data-urlencode "secret_token=$TG_SECRET"</code></pre>
 <p>أعد نشر Cloudflare بعد إضافة الأسرار؛ استخدم الرابط الفعلي لمشروعك إذا كان لديك نطاق مختلف. تأكد من إعداد Telegram Chat ID المسموح له.</p>
-<h2>4. الاختبار</h2><p>أرسل /start من حسابك المسموح، ثم سؤالاً عادياً. في NEXUS ← Telegram Hub يمكنك رؤية حالة إعداد الأسرار، لكنها ليست اختبار اتصال مباشر. انتبه أن Telegram يعيد إرسال بعض التحديثات عند فشل التوصيل، وقد يصل رد مكرر؛ يمكن لاحقاً تفعيل مخزن KV لمنع التكرار إن لزم.</p>
+<h2>5. الاختبار</h2><p>أرسل /start من حسابك المسموح، ثم سؤالاً عادياً. في NEXUS ← Telegram Hub يمكنك رؤية حالة إعداد الأسرار، لكنها ليست اختبار اتصال مباشر. انتبه أن Telegram يعيد إرسال بعض التحديثات عند فشل التوصيل، وقد يصل رد مكرر؛ يمكن لاحقاً تفعيل مخزن KV لمنع التكرار إن لزم.</p>
 <h2>استرجاع الخدمة</h2><p>لحذف الـ Webhook استخدم Telegram deleteWebhook، ثم احذف أسرار البوت من Cloudflare. إلغاء إعداد Telegram لا يؤثر على واجهة STAR الأساسية.</p>
 <p>ملاحظات: نموذج Cloudflare Workers AI المدمج هو الأسهل للتفعيل. النماذج المستضافة ذاتياً تحتاج خادماً يعمل وعنوان HTTPS. لا تنسخ مفاتيح خدمة Telegram إلى مستودعات طرف ثالث.</p></section></main></body></html>
