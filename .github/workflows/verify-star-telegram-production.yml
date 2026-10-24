@@ -1,0 +1,52 @@
+name: Verify STAR Telegram Production Configuration
+
+on:
+  workflow_run:
+    workflows: ["Deploy STAR CORE V2 to Cloudflare Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Check deployed Telegram API without credentials
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public Pages function without Telegram secret header
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://star-cyber-ai-x.pages.dev/api/telegram/webhook'
+          status=''
+          for attempt in 1 2 3 4; do
+            status=$(curl --silent --show-error --connect-timeout 7 --max-time 15               -o /dev/null -w '%{http_code}' -X POST               -H 'Content-Type: application/json' --data '{}' "$url") || status='000'
+            case "$status" in
+              401) break;;
+              503|403|404|000) sleep 8;;
+              *) break;;
+            esac
+          done
+          case "$status" in
+            401) echo 'PASS: Telegram webhook is reachable and rejects an unauthenticated request.';;
+            503) echo 'BLOCKED: Telegram Production secrets are missing/invalid. Check Cloudflare Variables and Secrets, then redeploy.';exit 1;;
+            403) echo 'BLOCKED: Cloudflare Access or WAF disallows Telegram webhook traffic. Keep the secret check but allow requests to this path.';exit 1;;
+            404) echo 'BLOCKED: Telegram webhook Function is not deployed at the expected route.';exit 1;;
+            000) echo 'BLOCKED: Cannot reach STAR Telegram Function over HTTPS.';exit 1;;
+            *) echo "Unexpected webhook status: $status";exit 1;;
+          esac
+      - name: Probe public STAR AI provider readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --connect-timeout 7 --max-time 15             'https://star-cyber-ai-x.pages.dev/api/health' -o /tmp/star-public-health.json
+          node -e '
+          const fs=require("node:fs");
+          const d=JSON.parse(fs.readFileSync("/tmp/star-public-health.json","utf8"));
+          if(d.ok!==true||typeof d.ai_provider!=="string")process.exit(1);
+          console.log(JSON.stringify({provider:d.ai_provider,ai_gateway_configured:Boolean(d.ai_gateway),
+            note:"AI gateway configuration is not proof of a successful model completion."}));
+          '
