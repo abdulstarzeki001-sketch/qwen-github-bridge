@@ -1,49 +1,21 @@
 # Free AI Brain — Cloudflare Workers AI
 
-STAR CYBER AI X uses Cloudflare Workers AI as the recommended free starting brain.
+The live STAR web app is hosted by Cloudflare Pages. Its production and preview environments have a Workers AI binding named `AI`, and the chat handler uses that binding by default.
 
-## Why this is the best free option
+## What you need
 
-- It is an API service, not a temporary notebook session.
-- STAR can call it directly through an OpenAI-compatible endpoint.
-- No GPU setup, CUDA installation, or model download is required.
-- Cloudflare includes a daily free Workers AI allocation.
-- You can switch later to a private GPU server without changing the rest of STAR.
-
-Default model:
+No separate Cloudflare account ID, API token, GPU, model download, OpenRouter key, or OpenAI key is needed for Pages chat. The model is:
 
 ```text
-@cf/meta/llama-3.1-8b-instruct
+@cf/meta/llama-3.1-8b-instruct-fp8
 ```
 
-## Required environment values
+The binding is configured in [wrangler.toml](../wrangler.toml) and in the Cloudflare Pages project. The application calls `env.AI.run(...)`; it does not call the Cloudflare REST API.
 
-```env
-AI_PROVIDER=cloudflare
-CLOUDFLARE_ACCOUNT_ID=...
-CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
-```
+Workers AI has a free daily allocation. Quota and billing depend on the Cloudflare plan; on the Free plan, requests pause after the daily quota is reached until it resets. See [Cloudflare's current Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/).
 
-STAR resolves this automatically to:
+## Provider changes
 
-```text
-https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1/chat/completions
-```
+Leave `STAR_AI_PROVIDER` unset to use the bound Workers AI model. If you intentionally switch providers, configure that provider's credentials as Cloudflare Pages secrets and set the matching provider variable. Never commit credentials to Git.
 
-## Cloudflare API token
-
-Create a scoped Cloudflare API token for Workers AI. Do not use the Global API Key and do not commit the token to Git.
-
-For a custom token, grant the Workers AI permissions required by Cloudflare's REST API documentation. Keep the token only in deployment secrets or the runtime environment.
-
-## Switch to private GPU later
-
-```env
-AI_PROVIDER=self_hosted
-LLM_BASE_URL=https://your-private-model.example/v1
-LLM_API_KEY=...
-LLM_MODEL=...
-```
-
-The Burp, repository, evidence, retest, and reporting layers continue working unchanged.
+The Docker/FastAPI runtime has separate configuration. For a private GPU host running Qwen and Open Interpreter, see [the independent AI runbook](../deploy/independent-ai/README.md). Open Interpreter runs on that GPU host; it is not a shell executor inside Cloudflare Pages.

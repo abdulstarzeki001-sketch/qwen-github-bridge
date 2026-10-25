@@ -14,5 +14,9 @@ compatibility_flags = ["nodejs_compat"]
 #
 # Other optional providers remain supported (Workers AI, OpenAI, OpenRouter, self-hosted).
 
+[vars]
+STAR_ACCESS_TEAM_DOMAIN = "https://fancy-haze-5879.cloudflareaccess.com"
+STAR_ACCESS_AUD = "c5c1dd3b60b39d02c09c57b077b06fb627063cb89558e494f1420509329e35b3"
+
 [ai]
 binding = "AI"

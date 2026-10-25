@@ -5,14 +5,14 @@ export async function ownerAccess(request,env){
   const team=(env.STAR_ACCESS_TEAM_DOMAIN||"").trim().toLowerCase();
   const aud=(env.STAR_ACCESS_AUD||"").trim();
   const owner=(env.STAR_OWNER_EMAIL||"").trim().toLowerCase();
-  if(!team||!aud||!owner||!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(team))return false;
+  if(!team||!aud||!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(team))return false;
   const token=request.headers.get("cf-access-jwt-assertion");
   if(!token)return false;
   try{
     const parts=token.split(".");if(parts.length!==3)return false;
     const header=json(parts[0]),payload=json(parts[1]);
     if(header.alg!=="RS256"||typeof header.kid!=="string")return false;
-    if(payload.iss!==team||!Array.isArray(payload.aud)||!payload.aud.includes(aud)||payload.email?.toLowerCase()!==owner)return false;
+    if(payload.iss!==team||!Array.isArray(payload.aud)||!payload.aud.includes(aud)||(owner&&payload.email?.toLowerCase()!==owner))return false;
     const now=Math.floor(Date.now()/1000);
     if(!Number.isFinite(payload.exp)||payload.exp<=now||!Number.isFinite(payload.iat)||payload.iat>now+60)return false;
     const res=await fetch(team+"/cdn-cgi/access/certs");

@@ -142,28 +142,15 @@ Authorization: Bearer <STAR_API_TOKEN>
 
 ## AI brain
 
-The Docker/FastAPI runtime can use Cloudflare Workers AI. For the Netlify web runtime, the preferred zero-provider-key path is **Netlify AI Gateway**.
+The production site runs on Cloudflare Pages. Production and preview have the Cloudflare Workers AI binding named `AI`, so Pages chat uses Cloudflare's hosted model without an account ID, API token, GPU, or external provider key.
 
-```env
-AI_PROVIDER=cloudflare
-CLOUDFLARE_ACCOUNT_ID=...
-CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
-```
+The default Pages model is `@cf/meta/llama-3.1-8b-instruct-fp8`. Workers AI usage is subject to Cloudflare's free allocation and plan limits; see [current pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/).
 
-STAR calls Cloudflare through its OpenAI-compatible Chat Completions endpoint.
+Leave `STAR_AI_PROVIDER` unset to use the binding. To choose another provider, set that variable and the corresponding server-side credentials in Cloudflare Pages. The Docker/FastAPI runtime has its own provider configuration.
 
-Later, you can switch to a private GPU without changing the rest of STAR:
+A private GPU deployment can run Qwen and Open Interpreter using [the independent AI runbook](deploy/independent-ai/README.md). Open Interpreter runs on that separate GPU host; Cloudflare Pages chat does not execute shell commands.
 
-```env
-AI_PROVIDER=self_hosted
-LLM_BASE_URL=https://your-private-model.example/v1
-LLM_API_KEY=...
-LLM_MODEL=...
-```
-
-See `docs/FREE_AI_BRAIN.md`.
-
+See [the Cloudflare Pages deployment guide](CLOUDFLARE_DEPLOY.md) and [Workers AI setup](docs/FREE_AI_BRAIN.md).
 ## Optional WormGPT-compatible provider
 
 STAR includes a dedicated `wormgpt` provider option for **independently reviewed OpenAI-compatible inference APIs** on Cloudflare Pages and the self-hosted FastAPI stack. It does **not** install or certify the original WormGPT model. The existing provider remains the default until its owner deliberately supplies a trusted HTTPS inference server, model ID, and server-side secret. See [WormGPT integration and security setup](docs/WORMGPT_INTEGRATION.md).
@@ -230,31 +217,11 @@ If `DEPLOY_WEBHOOK_URL` is configured as a repository secret, the publish workfl
 See `docs/` for deployment, Burp integration, repository intelligence, security model, and roadmap.
 
 
-## AI provider status
+## Cloudflare Pages production
 
-GitHub Models inference was fully retired by GitHub on July 30, 2026, so STAR no longer uses that endpoint.
+The production project is `star-cyber-ai-x`, connected to this repository's `main` branch and serving `web/`. Cloudflare Pages provides the web runtime and Workers AI binding. GitHub provides source control and CI.
 
-For the always-on AI brain, the current free-start path is **Cloudflare Workers AI**. GitHub continues to handle source control, CI, Burp extension builds, GHCR publishing, repository intelligence, and release history.
-
-The Cloudflare adapter and connectivity test are already included; activation requires the Cloudflare account ID and scoped Workers AI API token to be stored as secrets, never committed to the repository.
-
-
-## Netlify web runtime
-
-The repository is ready for a Netlify production deploy:
-
-- static dashboard: `web/`
-- health function: `GET /api/health`
-- AI chat function: `POST /api/chat`
-- AI provider: Netlify AI Gateway through OpenRouter
-- default model route: `openrouter/free`
-- external provider API key required: **no**
-
-The Netlify project already exists as `star-cyber-ai-x`.
-
-Netlify AI Gateway activates after the project's first production deploy. The site should stay protected until deployment and access controls are reviewed.
-
-See `docs/NETLIFY_DEPLOY.md`.
+Owner access is protected by the existing Cloudflare Access application, whose allow policy is restricted to the owner's account. Wrangler includes the Access team issuer and application audience so the Pages API can validate Access sessions.
 
 ## Claude through Cloudflare
 
