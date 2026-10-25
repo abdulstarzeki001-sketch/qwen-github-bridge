@@ -3,6 +3,7 @@ const $=id=>document.getElementById(id), nav=[...document.querySelectorAll("[dat
 const titles={overview:"لوحة القيادة",chat:"مركز المحادثة",models:"مختبر النماذج",agents:"الوكلاء والتكاملات",telegram:"Telegram Hub",github:"GitHub Studio",settings:"إعدادات المالك"};
 const sources=[
 {id:"open-interpreter",name:"Open Interpreter",repo:"openinterpreter/openinterpreter",type:"agent",desc:"محرك STAR الأساسي للتنفيذ والبرمجة عبر الطرفية. يعمل داخل حاوية معزولة ويتصل بنموذج Ollama المحلي؛ التنفيذ يتطلب موافقة.",icon:"⌘",status:"adapter",tech:"Rust CLI · Workspace sandbox · Ollama"},
+{id:"wormgpt-v2-reference",name:"WormGPTv2 (reference)",repo:"WormGPTv2/wormgpt",type:"reference",desc:"مرجع مجتمعي سابق؛ محرك التنفيذ الأساسي في STAR هو Open Interpreter.",icon:"⌘",status:"reference",tech:"Community CLI · Reference"},
 {id:"wormxgpt",name:"WormXGPT",repo:"gaur-avvv/wormxgpt",type:"web",desc:"واجهة React متعددة النماذج ومفاهيم MCP. استفادت واجهة NEXUS من فكرة مركز الأدوات، دون تشغيل الحزمة الخارجية.",icon:"◈",status:"reference",tech:"React · Vite · MCP"},
 {id:"xgpt",name:"XGPT-WormGPT",repo:"gaur-avvv/XGPT-WormGPT",type:"reference",desc:"ملفات تعليمات وأفكار مهارات نصية، وليست نموذج ذكاء أو API مستقل.",icon:"≋",status:"reference",tech:"Prompts · Skills"},
 {id:"jailbreak",name:"WormGPT 4 (community)",repo:"jailbreakwormGPT/wormGPT",type:"reference",desc:"مشروع مجتمعي يستخدم اسم WormGPT؛ التثبيت الآلي لا يثبت وجود نموذج أصلي موثوق.",icon:"⊙",status:"reference",tech:"Python · Installer"},
