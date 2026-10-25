@@ -1,0 +1,29 @@
+# Optional Open Interpreter coding executor, pinned to an upstream release.
+# It runs only on demand, uses the local Ollama service, and receives no STAR secrets.
+FROM node:24-bookworm-slim
+
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl git bash \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG OPEN_INTERPRETER_VERSION=0.0.56
+ARG OPEN_INTERPRETER_INSTALLER_REV=ac1fcc8fe57aba51fcc3c79afd57a0883237fe87
+ENV HOME=/home/node \
+    INTERPRETER_HOME=/home/node/.openinterpreter \
+    PATH=/home/node/.local/bin:${PATH} \
+    OPEN_INTERPRETER_RELEASE=${OPEN_INTERPRETER_VERSION} \
+    OPEN_INTERPRETER_NONINTERACTIVE=1
+
+USER node
+RUN set -eu; \
+    curl -fsSL --retry 2 --connect-timeout 15 \
+      "https://raw.githubusercontent.com/openinterpreter/openinterpreter/${OPEN_INTERPRETER_INSTALLER_REV}/scripts/install/install.sh" \
+      -o /tmp/open-interpreter-install.sh; \
+    sh /tmp/open-interpreter-install.sh --release "${OPEN_INTERPRETER_VERSION}"; \
+    rm -f /tmp/open-interpreter-install.sh; \
+    interpreter --version
+
+WORKDIR /workspace
+ENTRYPOINT ["interpreter"]
+CMD ["--oss","--local-provider","ollama","--model","qwen2.5-coder:7b","--sandbox","workspace-write","--ask-for-approval","on-request","--cd","/workspace"]
