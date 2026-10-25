@@ -33,8 +33,7 @@ PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "Hard-coded credential assignment",
         re.compile(
-            r"""(?i)\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret(?:[_-]?key)?|client[_-]?secret|password)\b"""
-            r"""\s*[:=]\s*["']?([A-Za-z0-9/+_.=-]{16,})"""
+            r"""(?i)\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret(?:[_-]?key)?|client[_-]?secret|password)\b\s*[:=]\s*["']([A-Za-z0-9/+_.=-]{20,})["']"""
         ),
     ),
 )
