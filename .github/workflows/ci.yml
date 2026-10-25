@@ -85,17 +85,17 @@ jobs:
       - name: Build
         run: docker build --pull -t star-cyber-ai-x:ci .
 
-      - name: Check opt-in agent runtime Compose configuration
+      - name: Check opt-in Open Interpreter Compose configuration
         env:
           STAR_BACKEND_TOKEN: ci-test-backend-token-not-for-deployment
           CF_TUNNEL_TOKEN: ci-test-tunnel-not-for-deployment
-        run: docker compose -f deploy/independent-ai/compose.yaml --profile agent config --quiet
+        run: docker compose -f deploy/independent-ai/compose.yaml --profile interpreter config --quiet
 
-      - name: Build verified third-party coding agent container
-        run: docker build -f deploy/independent-ai/Dockerfile.agent -t star-wormgpt-agent:ci deploy/independent-ai
+      - name: Build pinned Open Interpreter executor container
+        run: docker build -f deploy/independent-ai/Dockerfile.interpreter -t star-open-interpreter:ci deploy/independent-ai
 
-      - name: Smoke-test coding agent version
-        run: docker run --rm --network none --read-only star-wormgpt-agent:ci --version
+      - name: Smoke-test Open Interpreter version
+        run: docker run --rm --network none --read-only star-open-interpreter:ci --version
 
 
   netlify:
