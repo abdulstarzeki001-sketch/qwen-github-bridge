@@ -15,6 +15,9 @@ ENV HOME=/home/node \
     OPEN_INTERPRETER_RELEASE=${OPEN_INTERPRETER_VERSION} \
     OPEN_INTERPRETER_NONINTERACTIVE=1
 
+RUN mkdir -p /home/node/.openinterpreter \
+ && chown -R node:node /home/node/.openinterpreter
+
 USER node
 RUN set -eu; \
     curl -fsSL --retry 2 --connect-timeout 15 \
