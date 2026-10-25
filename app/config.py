@@ -9,8 +9,8 @@ class Settings:
     app_name: str = os.getenv("APP_NAME", "STAR CYBER AI X")
     app_env: str = os.getenv("APP_ENV", "dev")
     api_token: str = os.getenv("STAR_API_TOKEN", "")
-    database_path: str = os.getenv("DATABASE_PATH", "/data/starcyber.db")
-    evidence_dir: str = os.getenv("EVIDENCE_DIR", "/data/evidence")
+    database_path: str = os.getenv("DATABASE_PATH", "/tmp/starcyber.db")
+    evidence_dir: str = os.getenv("EVIDENCE_DIR", "/tmp/evidence")
 
     ai_provider: str = os.getenv("AI_PROVIDER", "cloudflare").strip().lower()
 
