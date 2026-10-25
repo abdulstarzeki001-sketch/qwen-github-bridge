@@ -37,6 +37,7 @@ services:
       STAR_MODEL: ${STAR_MODEL:-gpt-oss:20b}
       STAR_ALLOWED_MODELS: ${STAR_ALLOWED_MODELS:-gpt-oss:20b}
       OLLAMA_ENDPOINT: "http://ollama:11434/v1/chat/completions"
+      INTERPRETER_ENDPOINT: "http://interpreter-web:8090/execute"
     volumes:
       - ./gateway.mjs:/app/gateway.mjs:ro
     read_only: true
@@ -49,6 +50,7 @@ services:
       - "8080"
     networks:
       - star-private
+      - interpreter-private
     depends_on:
       - ollama
 
@@ -91,6 +93,39 @@ services:
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
+    networks:
+      - interpreter-private
+    depends_on:
+      - ollama
+
+  interpreter-web:
+    profiles: ["interpreter"]
+    build:
+      context: .
+      dockerfile: Dockerfile.interpreter
+    entrypoint: ["node", "/app/interpreter-server.mjs"]
+    restart: unless-stopped
+    init: true
+    user: node
+    working_dir: /workspace
+    environment:
+      PORT: "8090"
+      STAR_INTERPRETER_TOKEN: ${STAR_BACKEND_TOKEN:?Set STAR_BACKEND_TOKEN in .env}
+      STAR_AGENT_MODEL: ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      CODEX_OSS_BASE_URL: "http://ollama:11434/v1"
+      HOME: "/home/node"
+      INTERPRETER_HOME: "/home/node/.openinterpreter"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./agent-workspace:/workspace
+      - interpreter-home:/home/node/.openinterpreter
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "8090"
     networks:
       - interpreter-private
     depends_on:

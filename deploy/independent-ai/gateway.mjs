@@ -36,9 +36,10 @@ function cleanRequest(body,model,allowedModels){
   if(!Number.isInteger(tokens)||tokens<1||tokens>4096||!Number.isFinite(temperature)||temperature<0||temperature>1)return null;
   return {model:body.model,messages:messages.map(m=>({role:m.role,content:m.content})),max_tokens:tokens,temperature,stream:false};
 }
-export function createGateway({token,model="gpt-oss:20b",allowedModels=[model],endpoint="http://ollama:11434/v1/chat/completions",upstreamFetch=globalThis.fetch}={}){
+export function createGateway({token,model="gpt-oss:20b",allowedModels=[model],endpoint="http://ollama:11434/v1/chat/completions",interpreterEndpoint="",upstreamFetch=globalThis.fetch}={}){
   if(typeof token!=="string"||token.length<32||token.length>256)throw Error("STAR_BACKEND_TOKEN must contain 32 to 256 random characters");
   if(!/^[A-Za-z0-9._:/-]{3,120}$/.test(model))throw Error("Invalid STAR_MODEL");
+  if(interpreterEndpoint&&interpreterEndpoint!=="http://interpreter-web:8090/execute")throw Error("Invalid Open Interpreter endpoint");
   if(!Array.isArray(allowedModels)||allowedModels.length<1||allowedModels.length>12||
     allowedModels.some(item=>typeof item!=="string"||!/^[A-Za-z0-9._:/-]{3,120}$/.test(item))||
     !allowedModels.includes(model)||new Set(allowedModels).size!==allowedModels.length)
@@ -49,6 +50,24 @@ export function createGateway({token,model="gpt-oss:20b",allowedModels=[model],e
     const supplied=header.startsWith("Bearer ")?header.slice(7).trim():"";
     if(!compareToken(token,supplied))return respond(res,401,{error:"Unauthorized"});
     if(req.url==="/health"&&req.method==="GET")return respond(res,200,{ok:true,model,models:allowedModels,access:"authenticated"});
+    if(req.url==="/interpreter/health"&&req.method==="GET"){
+      if(!interpreterEndpoint)return respond(res,503,{ok:false,error:"Open Interpreter is not enabled"});
+      try{const r=await upstreamFetch(interpreterEndpoint.replace("/execute","/health"),{headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(5000)});const d=await r.json();return respond(res,r.ok?200:502,r.ok?d:{ok:false,error:"Open Interpreter unavailable"})}
+      catch{return respond(res,502,{ok:false,error:"Open Interpreter unavailable"})}
+    }
+    if(req.url==="/interpreter/execute"&&req.method==="POST"){
+      if(!interpreterEndpoint)return respond(res,503,{error:"Open Interpreter is not enabled"});
+      if(!(req.headers["content-type"]||"").startsWith("application/json"))return respond(res,415,{error:"JSON required"});
+      let size=0,chunks=[];
+      try{for await(const chunk of req){size+=chunk.length;if(size>5000)return respond(res,413,{error:"Task too large"});chunks.push(chunk)}
+        const body=JSON.parse(Buffer.concat(chunks).toString("utf8")),prompt=typeof body?.prompt==="string"?body.prompt.trim():"";
+        if(!prompt||prompt.length>2500)return respond(res,400,{error:"Task must be 1–2500 characters"});
+        const r=await upstreamFetch(interpreterEndpoint,{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({prompt}),signal:AbortSignal.timeout(88000)});
+        const d=await r.json().catch(()=>({}));if(!r.ok)return respond(res,r.status===429?429:502,{error:r.status===429?"Open Interpreter is busy":d?.error||"Open Interpreter execution failed"});
+        if(typeof d?.result!=="string"||!d.result.trim())return respond(res,502,{error:"Open Interpreter returned no result"});
+        return respond(res,200,{ok:true,result:d.result.slice(0,60000),model:d.model||"Open Interpreter"});
+      }catch(error){console.error("STAR Open Interpreter proxy error",error?.name||"unknown");return respond(res,502,{error:"Open Interpreter execution failed"})}
+    }
     if(req.url!=="/chat/completions"||req.method!=="POST")return respond(res,404,{error:"Not found"});
     if(!/^application\/json(?:\s*;|$)/i.test(req.headers["content-type"]||""))return respond(res,415,{error:"JSON required"});
     let size=0,chunks=[];
@@ -88,6 +107,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   const model=process.env.STAR_MODEL||"gpt-oss:20b";
   const extra=(process.env.STAR_ALLOWED_MODELS||model).split(",").map(x=>x.trim()).filter(Boolean);
   const server=createGateway({token:process.env.STAR_BACKEND_TOKEN,model,allowedModels:extra,
-    endpoint:process.env.OLLAMA_ENDPOINT||"http://ollama:11434/v1/chat/completions"});
+    endpoint:process.env.OLLAMA_ENDPOINT||"http://ollama:11434/v1/chat/completions",
+    interpreterEndpoint:process.env.INTERPRETER_ENDPOINT||""});
   server.listen(port,"0.0.0.0",()=>console.log("STAR authenticated inference gateway started on internal port "+port));
 }

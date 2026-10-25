@@ -27,6 +27,9 @@ RUN set -eu; \
     rm -f /tmp/open-interpreter-install.sh; \
     interpreter --version
 
+COPY --chown=node:node interpreter-server.mjs /app/interpreter-server.mjs
+EXPOSE 8090
+
 WORKDIR /workspace
 ENTRYPOINT ["interpreter"]
 CMD ["--oss","--local-provider","ollama","--model","qwen2.5-coder:7b","--sandbox","workspace-write","--ask-for-approval","on-request","--cd","/workspace"]

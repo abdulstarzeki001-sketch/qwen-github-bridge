@@ -354,6 +354,33 @@ export async function onRequest({request,env,context}){
       integrations:{catalog_count:17,external_code_executed:false},
       capabilities:{web_chat:true,github_repository_intelligence:policy.allowGithubRead,telegram_webhook:true}});
   }
+  if(path==="/api/interpreter/status"&&request.method==="GET"){
+    const owner=await hasOwnerAccess(request,env);if(!owner.ok)return json({error:"Owner sign-in required"},401);
+    let endpoint;
+    try{endpoint=new URL(env.STAR_INTERPRETER_URL||"");
+      if(!env.STAR_INTERPRETER_TOKEN||endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||endpoint.pathname!=="/interpreter/execute"||!endpoint.hostname.includes(".")||["localhost","127.0.0.1","0.0.0.0"].includes(endpoint.hostname))return json({ok:true,configured:false,reachable:false});
+      endpoint.pathname="/interpreter/health";
+    }catch{return json({ok:true,configured:false,reachable:false})}
+    try{const r=await fetch(endpoint.toString(),{headers:{Authorization:"Bearer "+env.STAR_INTERPRETER_TOKEN},redirect:"error",signal:AbortSignal.timeout(5000)});
+      if(!r.ok)return json({ok:true,configured:true,reachable:false});const d=await r.json();
+      return json({ok:true,configured:true,reachable:d?.ok===true,model:typeof d?.model==="string"?d.model:""});
+    }catch{return json({ok:true,configured:true,reachable:false})}
+  }
+  if(path==="/api/interpreter"&&request.method==="POST"){
+    const owner=await hasOwnerAccess(request,env);if(!owner.ok)return json({error:"Owner sign-in required"},401);
+    let endpoint;
+    try{endpoint=new URL(env.STAR_INTERPRETER_URL||"");
+      if(!env.STAR_INTERPRETER_TOKEN||endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||endpoint.pathname!=="/interpreter/execute"||!endpoint.hostname.includes(".")||["localhost","127.0.0.1","0.0.0.0"].includes(endpoint.hostname))return json({error:"Open Interpreter server is not configured"},503);
+    }catch{return json({error:"Open Interpreter server is not configured"},503)}
+    const size=Number(request.headers.get("content-length"));if(Number.isFinite(size)&&size>5000)return json({error:"Task is too large"},413);
+    let body;try{body=await request.json()}catch{return json({error:"Invalid JSON"},400)}
+    const prompt=typeof body?.prompt==="string"?body.prompt.trim():"";if(!prompt||prompt.length>2500)return json({error:"Task must be 1–2500 characters"},400);
+    try{const r=await fetch(endpoint.toString(),{method:"POST",headers:{Authorization:"Bearer "+env.STAR_INTERPRETER_TOKEN,"Content-Type":"application/json"},body:JSON.stringify({prompt}),redirect:"error",signal:AbortSignal.timeout(95000)});
+      const d=await r.json().catch(()=>({}));if(!r.ok)return json({error:r.status===429?"Open Interpreter is busy":d?.error||"Open Interpreter execution failed"},r.status===429?429:502);
+      if(typeof d?.result!=="string"||!d.result)return json({error:"Open Interpreter returned an empty result"},502);
+      return json({ok:true,result:d.result.slice(0,60000),model:typeof d.model==="string"?d.model:"Open Interpreter"});
+    }catch(error){console.error("Open Interpreter proxy error",error?.name||"unknown");return json({error:"Open Interpreter server is unreachable or task timed out"},502)}
+  }
   if(path!=="/api/chat"||request.method!=="POST")return json({error:"Not found"},404);
   const owner=await hasOwnerAccess(request,env);
   if(!owner.ok)return json({error:"Owner sign-in required"},401);

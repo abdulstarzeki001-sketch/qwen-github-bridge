@@ -35,3 +35,7 @@ After changing Pages settings, redeploy the project. Never paste secrets into Gi
 ## Open Interpreter
 
 Cloudflare Pages does not run Open Interpreter or shell commands. The repository includes a separate GPU-host deployment under `deploy/independent-ai`; it requires an independently provisioned GPU server. Cloudflare Containers require a paid Workers plan, so they are outside the $0 Pages setup.
+
+## Open Interpreter website mode
+
+STAR includes an owner-only `/open-interpreter.html` page. Pages proxies tasks; the Interpreter process runs on the separate GPU host. Follow the [GPU host instructions](deploy/independent-ai/README.md#open-interpreter-from-the-star-website), then set `STAR_INTERPRETER_URL` and secret `STAR_INTERPRETER_TOKEN` in Cloudflare Pages production. Until a host is running and both values are configured, the page reports that the executor is disconnected. Workspace changes are not published automatically.

@@ -131,3 +131,22 @@ Do not copy secrets, production data, or unrelated personal files into `agent-wo
 - [Ollama gpt-oss](https://ollama.com/library/gpt-oss)
 - [Cloudflare Tunnel guide](https://developers.cloudflare.com/tunnel/get-started/)
 - [Docker NVIDIA GPU compose](https://docs.docker.com/compose/how-tos/gpu-support/)
+
+## Open Interpreter from the STAR website
+
+The site now has an owner-only page at `/open-interpreter.html`. Start the isolated executor on the GPU host:
+
+```sh
+docker compose --profile interpreter up -d --build interpreter-web
+```
+
+The service runs Open Interpreter with the local Ollama model and the dedicated `agent-workspace/`. It has no direct Internet egress, receives no STAR credentials, accepts one task at a time, and stops tasks after 85 seconds.
+
+After the HTTPS Cloudflare Tunnel hostname is routed to the STAR gateway, set these in Cloudflare Pages production:
+
+```ini
+STAR_INTERPRETER_URL=https://ai.your-owned-domain.tld/interpreter/execute
+STAR_INTERPRETER_TOKEN=<same secret as STAR_BACKEND_TOKEN on the GPU host>
+```
+
+Keep the token as a Pages secret. Workspace changes stay on the GPU host and are not published automatically. Without a running GPU host and both Pages variables, the UI reports that the executor is disconnected.
