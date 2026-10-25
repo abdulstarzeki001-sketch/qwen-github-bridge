@@ -82,17 +82,25 @@ This runtime now integrates **Qwen2.5 Coder**, **Drana-Infinity**, and **gpt-oss
 4. Keep the **same allowlist** in Cloudflare Pages environment as `STAR_ALLOWED_MODELS`, with `STAR_SELFHOSTED_URL`, `STAR_SELFHOSTED_MODEL` and secret `STAR_SELFHOSTED_TOKEN` pointing at your working gateway. The model picker only offers entries approved on the server.
 5. A private owner endpoint `/api/nexus/models` returns the allowlist, and `/api/nexus/model-probe` checks authenticated `/health` reachability for the private provider. This does not claim model inference is available until you also send a successful chat.
 
-### Opt-in terminal coding agent on the same private network
+### Primary terminal executor: Open Interpreter
 
-A pinned-release WormGPTv2 (CLI) Docker build is defined under `Dockerfile.agent`. Run from this directory:
+Open Interpreter is the primary coding and command execution engine for the private GPU stack. It is installed from the official standalone release `0.0.56`; the upstream installer source is pinned to a Git commit and verifies the release archive checksum. It uses the existing local Ollama service and defaults to the `qwen2.5-coder:7b` model.
+
+From this directory, first build the on-demand executor image:
 
 ```sh
-docker compose --profile agent build agent
-docker compose --profile agent run --rm agent --version
-docker compose --profile agent run --rm agent
+docker compose --profile interpreter build interpreter
 ```
 
-This is an interactive **terminal-only agent**, not an HTTP service. It can access the local Ollama endpoint by Docker DNS `http://ollama:11434/v1`. The agent receives no production tokens and sees only files copied to `agent-workspace/`; do not put private credentials or live production data there. It starts only when you explicitly launch its Compose profile; it will not start as part of `docker compose up -d`.
+Copy only the project files you want it to access into `agent-workspace/`, then start an interactive session:
+
+```sh
+docker compose --profile interpreter run --rm interpreter
+```
+
+Type a task in the terminal. Open Interpreter can inspect and edit files under `agent-workspace/` and run commands there. Its defaults use the workspace-write sandbox and ask for approval when needed. The container gets no Cloudflare, GitHub, or production credentials. Its private internal network can reach Ollama but blocks direct internet egress. It starts only when launched and is not exposed as an HTTP endpoint or wired to Cloudflare Pages chat.
+
+Do not copy secrets, production data, or unrelated personal files into `agent-workspace/`. To stop the session, use `Ctrl-C`; the named `interpreter-home` volume keeps local CLI state between runs.
 
 **Runtime preconditions:** your own paid/owned persistent NVIDIA GPU VM, working Docker + GPU toolkit, model storage, Cloudflare Tunnel hostname, and secrets. GitHub Actions performs build checks on disposable runners; it does not host these containers permanently.
 

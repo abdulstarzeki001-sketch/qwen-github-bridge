@@ -38,12 +38,12 @@ Temporary GitHub Actions runners are **not persistent AI hosts**. Do not interpr
 
 ## STAR NEXUS V5 — integrated private AI runtime
 
-The independent GPU deployment at `deploy/independent-ai` can now run **Qwen2.5 Coder**, **Drana-Infinity**, and **gpt-oss** on the same Ollama instance behind STAR's authenticated inference gateway. It also includes an optional isolated WormGPTv2 CLI agent container built from a SHA-256 pinned release. The agent is not launched automatically and cannot access STAR credentials.
+The independent GPU deployment at `deploy/independent-ai` can run **Qwen2.5 Coder**, **Drana-Infinity**, and **gpt-oss** on the same Ollama instance behind STAR's authenticated inference gateway. **Open Interpreter is the primary coding and command execution engine** for this stack. Its official standalone release is installed at a pinned version in an on-demand container, and it connects to the local Ollama model. The executor can read and write only `agent-workspace/`, has no STAR credentials, and uses the workspace-write sandbox with on-request approvals. Its internal Docker network reaches Ollama and blocks direct internet egress.
 
 - `GET /api/nexus/models` returns the server-approved model list for signed-in owners.
 - `GET /api/nexus/model-probe` tests the configured private inference gateway's authenticated health endpoint; success confirms the gateway is reachable, **not** that an individual model can generate a reply.
 - Mobile/desktop STAR NEXUS chat presents a model selector only after owner sign-in. The server still validates any requested model against `STAR_ALLOWED_MODELS`.
-- On the private GPU server: `docker compose up -d`, `bash pull-models.sh`, and optionally `docker compose --profile agent run --rm agent`.
+- On the private GPU server: `docker compose up -d`, `bash pull-models.sh`, and optionally `docker compose --profile interpreter build interpreter` followed by `docker compose --profile interpreter run --rm interpreter`. Put only the project files you want it to work on in `deploy/independent-ai/agent-workspace/` first. This executor is an SSH/terminal workflow on the GPU host; Cloudflare Pages chat does not execute commands.
 
 **An actual GPU VM and Cloudflare environment secrets are still required.** GitHub CI validates builds; GitHub and Cloudflare Pages do not host continuous GPU inference.
 

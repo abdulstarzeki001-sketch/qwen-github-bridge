@@ -15,6 +15,7 @@ services:
       - "11434"
     networks:
       - star-private
+      - interpreter-private
     deploy:
       resources:
         reservations:
@@ -51,32 +52,47 @@ services:
     depends_on:
       - ollama
 
-  # Optional interactive WormGPTv2 coding agent; not started by "docker compose up -d".
-  # Launch with: docker compose --profile agent run --rm agent
-  # This service has no Cloudflare, GitHub, or production app credentials.
-  agent:
-    profiles: ["agent"]
+  # Primary coding executor: Open Interpreter, run only when explicitly launched.
+  # Workspace is the only project directory mounted; no STAR or provider secrets are passed in.
+  # The internal network allows Ollama access and blocks direct internet egress from the executor.
+  interpreter:
+    profiles: ["interpreter"]
     build:
       context: .
-      dockerfile: Dockerfile.agent
+      dockerfile: Dockerfile.interpreter
     stdin_open: true
     tty: true
     init: true
     user: node
     working_dir: /workspace
     environment:
-      CLAUDE_CODE_USE_OPENAI: "1"
-      OPENAI_BASE_URL: "http://ollama:11434/v1"
-      OPENAI_MODEL: ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      STAR_AGENT_MODEL: ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      CODEX_OSS_BASE_URL: "http://ollama:11434/v1"
       HOME: "/home/node"
+      INTERPRETER_HOME: "/home/node/.openinterpreter"
+    command:
+      - --oss
+      - --local-provider
+      - ollama
+      - --model
+      - ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      - --sandbox
+      - workspace-write
+      - --ask-for-approval
+      - on-request
+      - --cd
+      - /workspace
+    read_only: true
+    tmpfs:
+      - /tmp
     volumes:
       - ./agent-workspace:/workspace
-      - agent-home:/home/node
+      - interpreter-home:/home/node/.openinterpreter
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     networks:
-      - star-private
+      - interpreter-private
     depends_on:
       - ollama
 
@@ -94,7 +110,10 @@ services:
 networks:
   star-private:
     driver: bridge
+  interpreter-private:
+    driver: bridge
+    internal: true
 
 volumes:
   ollama-models:
-  agent-home:
+  interpreter-home:
