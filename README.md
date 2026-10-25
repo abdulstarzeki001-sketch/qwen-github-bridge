@@ -151,6 +151,7 @@ Leave `STAR_AI_PROVIDER` unset to use the binding. To choose another provider, s
 A private GPU deployment can run Qwen and Open Interpreter using [the independent AI runbook](deploy/independent-ai/README.md). Open Interpreter runs on that separate GPU host; Cloudflare Pages chat does not execute shell commands.
 
 See [the Cloudflare Pages deployment guide](CLOUDFLARE_DEPLOY.md) and [Workers AI setup](docs/FREE_AI_BRAIN.md).
+
 ## Optional WormGPT-compatible provider
 
 STAR includes a dedicated `wormgpt` provider option for **independently reviewed OpenAI-compatible inference APIs** on Cloudflare Pages and the self-hosted FastAPI stack. It does **not** install or certify the original WormGPT model. The existing provider remains the default until its owner deliberately supplies a trusted HTTPS inference server, model ID, and server-side secret. See [WormGPT integration and security setup](docs/WORMGPT_INTEGRATION.md).
