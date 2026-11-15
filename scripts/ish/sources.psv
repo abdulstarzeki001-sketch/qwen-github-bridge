@@ -5,7 +5,7 @@ wormxgpt|gaur-avvv/wormxgpt|d4abdb4c782d3489d5b107b072c01217d53e9396|core|React 
 telegram-bot|jailideaid/WormGPT|6a4ebe384ff07adb6a691edaad12815b2642226b|core|Telegram Python bot source
 drana|IHA089/Drana-Infinity|88f3730bc536928b87da97fcae7639f3f10e5390|core|Drana model integration source
 electron|lahirusanjika/Worm-GPT|063068472198d476210129d4352600ab5522c2e4|core|Electron renderer source
-streamlit|prithwishpal/worm-gpt|db577367bc822c082ab8a9330ab05fe3cd530f8f|core|Streamlit source
+streamlit|its-me-arjun-0007/Worm-GPT|4e3bf1941742ea5803cb8e293f5b69b9a967818b|core|Streamlit source (public replacement)
 xgpt-prompts|gaur-avvv/XGPT-WormGPT|96edda3d6377304a88c517287576c4fc6c116784|core|Text prompts not instructions
 wormgpt-installer|jailbreakwormGPT/wormGPT|879862fa71f3f5ebb9d9ae3800ea95d7b2d80baf|reference|Unverified installer reference only
 worm-ai|0x6b6679/worm-ai|c560312f6bf128c4a7da29b6a03bdc0583cdcf24|reference|Opaque dependency reference
