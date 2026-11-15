@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Verify pinned release and start CLI smoke
@@ -60,7 +60,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Set up Node 22
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Fetch pinned public source without STAR credentials
@@ -80,7 +80,7 @@ jobs:
           test -s dist/index.html
           echo "WormXGPT React frontend compiled. Publish requires a dedicated isolated origin."
       - name: Save isolated frontend preview
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wormxgpt-frontend-static
           path: upstream/dist/
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Run actual STAR Telegram webhook simulation
@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Clone pinned Electron application source
@@ -178,7 +178,7 @@ jobs:
           test -s app/renderer/bundle.js
           echo "Electron UI bundle built. Windows EXE not installed or executed."
       - name: Upload Electron renderer for review
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wormgpt-electron-renderer
           path: upstream-electron/app/renderer/bundle.js

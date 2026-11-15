@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout STAR sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate RunPod release boot before registry publish
         run: node scripts/test-runpod-v6.mjs && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/runpod/model-config.sh
@@ -32,14 +32,14 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Sign in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish GPU-ready container
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./deploy/independent-ai
           file: ./deploy/independent-ai/runpod/Dockerfile
