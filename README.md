@@ -1,45 +1,124 @@
-# STAR CYBER AI X
+# STAR CYBER AI X · NEXUS V3
 
-**Self-hosted AI security workspace** for authorized application-security testing, Burp Suite traffic analysis, evidence management, secure code review, remediation, retesting, and reporting.
+**Self-hosted AI security workspace** for authorized application-security testing, Burp Suite traffic analysis, repository security review, evidence management, remediation, retesting, and reporting.
 
-> The previous Qwen GitHub Bridge is preserved under `legacy/qwen-github-bridge/`.
+
+## STAR NEXUS V3 (new mobile-first home)
+
+The default `/` route is now the new **STAR NEXUS** command center. The former FastAPI dashboard is preserved at `/legacy-dashboard.html` for compatibility, while `/ai-v2.html`, `/sovereign.html`, all existing authorized testing functions, and workflows remain available.
+
+- AI chat: the existing owner-authenticated `POST /api/chat`, no browser-side AI API tokens.
+- Live provider status: `GET /api/health`.
+- Owner-only integration health: `GET /api/nexus/status` (configuration status, not proof of live reachability).
+- Telegram bot: `POST /api/telegram/webhook` after configuring bot secret, allowed private chat IDs, and setWebhook; supports the configured STAR inference provider without GitHub execution privileges.
+- NEXUS integrations catalog references 17 community repositories (not automatically installed or executed).
+- Mobile PWA starts at `/` for iPhone/iPad Safari and works as a responsive desktop web app.
+
+[Telegram setup guide](/telegram-setup.html) · [Community sources](integrations/SOURCES.md) · [Existing integrations](docs/WORMGPT_INTEGRATION.md)
+
+## Sequential upstream execution (one repository at a time)
+
+STAR includes the [Launch Integrations page](/integrations-run.html) and an [isolated GitHub Actions workflow](.github/workflows/verify-upstreams.yml). Jobs run **sequentially**:
+
+1. WormGPTv2 CLI v0.22.0 — verify the pinned SHA-256 and actually execute its CLI `--version`; conversational use requires an LLM provider.
+2. WormXGPT React — clone pinned source, install without lifecycle scripts, build Vite and upload an artifact; a hosted UI is not deployed automatically.
+3. WormGPT Telegram Python — import/build the client offline and test STAR's existing webhook with mocked messaging; real Telegram requires user-created bot credentials.
+4. Drana-Infinity — exercise its Ollama inventory model chooser with a test inventory; actual LLM inference requires a persistent Ollama server.
+
+Runbooks: [CLI](integrations/wormgptv2/README.md), [Web](integrations/wormxgpt/README.md), [Telegram](integrations/telegram/README.md), [Drana](integrations/drana/README.md).
+
+Temporary GitHub Actions runners are **not persistent AI hosts**. Do not interpret a build/startup smoke check as proof that the external service can chat from an iPhone or Telegram.
+
+## STAR NEXUS V4 — functional upgrades
+
+- **Multi-turn AI conversations:** the browser sends a bounded window of previous dialogue to the owner-authenticated `/api/chat`. The server strictly checks history roles/sizes and redacts known secret patterns. The earlier STAR UI only sent the latest prompt; now supported providers can use the previous dialogue.
+- **GitHub Studio:** new responsive `/#github` view, authenticated read-only file browser via existing GitHub App endpoints, text-only source display, and explicit **stage to chat** action. Files are not automatically sent to the AI. Requires existing GitHub App installation/secrets on Cloudflare.
+- Models, Telegram, previous STAR UI, vault and scanner remain unchanged. No third-party executable is deployed with this upgrade.
+- The browser does not persist private conversation history across sessions: it remains in the current tab until cleared or reloaded.
+
+## STAR NEXUS V5 — integrated private AI runtime
+
+The independent GPU deployment at `deploy/independent-ai` can run **Qwen2.5 Coder**, **Drana-Infinity**, and **gpt-oss** on the same Ollama instance behind STAR's authenticated inference gateway. **Open Interpreter is the primary coding and command execution engine** for this stack. Its official standalone release is installed at a pinned version in an on-demand container, and it connects to the local Ollama model. The executor can read and write only `agent-workspace/`, has no STAR credentials, and uses the workspace-write sandbox with on-request approvals. Its internal Docker network reaches Ollama and blocks direct internet egress.
+
+- `GET /api/nexus/models` returns the server-approved model list for signed-in owners.
+- `GET /api/nexus/model-probe` tests the configured private inference gateway's authenticated health endpoint; success confirms the gateway is reachable, **not** that an individual model can generate a reply.
+- Mobile/desktop STAR NEXUS chat presents a model selector only after owner sign-in. The server still validates any requested model against `STAR_ALLOWED_MODELS`.
+- On the private GPU server: `docker compose up -d`, `bash pull-models.sh`, and optionally `docker compose --profile interpreter build interpreter` followed by `docker compose --profile interpreter run --rm interpreter`. Put only the project files you want it to work on in `deploy/independent-ai/agent-workspace/` first. This executor is an SSH/terminal workflow on the GPU host; Cloudflare Pages chat does not execute commands.
+
+**An actual GPU VM and Cloudflare environment secrets are still required.** GitHub CI validates builds; GitHub and Cloudflare Pages do not host continuous GPU inference.
+
+[Full private GPU and coding-agent setup](deploy/independent-ai/README.md).
+
+## RunPod GPU image V6 deployment
+
+STAR's `ghcr.io/abdulstarzeki001-sketch/star-independent-ai:latest` image has an updated RunPod startup that preloads **all explicitly allowed** Ollama models before opening the authenticated inference gateway. Use `STAR_MODEL` and `STAR_ALLOWED_MODELS` in the Pod environment and mount persistent storage on `/workspace`.
+
+To test a live Pod from a checked-out STAR repository, set `STAR_RUNPOD_ENDPOINT` and `STAR_BACKEND_TOKEN` locally and run `node scripts/verify-runpod.mjs`. This verifies HTTP 401 without a token, authenticated model discovery and a short actual completion before using the Pod in Cloudflare Pages. No credentials should be committed to the repository.
+
+**A successful container image publish is not a running GPU Pod**: the owner must activate GPU compute, model storage and private credentials separately.
+
+[RunPod deployment documentation](deploy/independent-ai/runpod/README.md) · [iPhone deployment walkthrough](web/gpu-deploy.html)
+
+## iPad iSH — local STAR workspace and upstream source retrieval
+
+The iSH Alpine setup lives in [scripts/ish](scripts/ish/README.md), with an [Arabic iPad guide](web/ish-setup.html) served at [STAR iSH setup](https://star-cyber-ai-x.pages.dev/ish-setup.html).
+
+```sh
+apk update
+apk add --no-cache git python3 curl ca-certificates openssh-client
+git clone --depth 1 https://github.com/abdulstarzeki001-sketch/qwen-github-bridge.git
+cd qwen-github-bridge
+sh scripts/ish/star.sh doctor
+sh scripts/ish/star.sh sources core
+sh scripts/ish/star.sh serve 8080
+```
+
+- `sources core` downloads 7 version-pinned public source repositories; `sources all` retrieves all 17 references as data only. Files reside under `integrations/upstreams/`, which Git ignores. **No external binaries, installers, scripts, or dependencies are automatically executed.**
+- An isolated [source-bundle workflow](.github/workflows/ish-sources-bundle.yml) can publish downloadable archive artifacts without committing outside source trees into STAR production.
+- iSH can run a static web preview on iPad; real auth/API/AI services stay on Cloudflare or the separate GPU host.
+- `sh scripts/ish/star.sh sync` only updates a clean `main` checkout through fast-forward, preserving user changes.
 
 ## Architecture
 
 ```text
-Burp Suite / Browser / iPhone
-            |
-            v
-      STAR CYBER AI X API
-            |
-   +--------+---------+----------------+
-   |                  |                |
-   v                  v                v
-LLM Analyst        Verifier       Evidence Store
-   |                                   |
-   +----------> Findings <-------------+
-                 |
-                 +--> Reports
-                 +--> Authorized scanner runner
+Burp Suite / Browser / iPhone / GitHub
+               |
+               v
+         STAR CYBER AI X API
+               |
+   +-----------+-----------+----------------+
+   |                       |                |
+   v                       v                v
+LLM Analyst             Verifier       Evidence Store
+   |                       |                |
+   +------> Findings <------+----------------+
+              |
+              +--> Retest history
+              +--> HTML / JSON reports
+              +--> Authorized scanner runner
+              +--> Repository Intelligence
 ```
 
 ## Features
 
 - OpenAI-compatible LLM adapter for self-hosted models
 - Analyst + independent verifier workflow
-- Burp Suite Montoya extension with **Analyze with STAR AI**
+- Burp Suite Montoya extension with **Analyze**, **Passive Inspect**, and **Compare 2 selected** actions
+- **GitHub Repository Intelligence** for read-only source indexing and AI-assisted secure-code review
+- **Finding retest workflow** with `fix-verified / still-vulnerable / inconclusive`
 - Explicit project/scope authorization gate
 - Evidence bundles with SHA-256 integrity hashes
 - Evidence attachments for screenshots, HAR, JSON, PCAP, text, and related artifacts
 - Findings database with severity, status, confidence, CWE, OWASP, evidence, and remediation
+- Audit log for security-relevant platform actions
 - Controlled scanner runner
-- Printable HTML reports
-- Mobile-first dashboard
+- Printable HTML + machine-readable JSON reports
+- Mobile-first control dashboard
 - Docker / Docker Compose
 - GitHub Actions CI
 - Automatic GHCR container publishing from `main`
 - Optional deployment webhook
-- Dependabot for Python, Gradle, and GitHub Actions
+- Dependabot for Python, Maven, and GitHub Actions
 
 ## Quick start
 
@@ -61,13 +140,48 @@ Protected API endpoints require:
 Authorization: Bearer <STAR_API_TOKEN>
 ```
 
-## Model
+## AI brain
+
+The production site runs on Cloudflare Pages. Production and preview have the Cloudflare Workers AI binding named `AI`, so Pages chat uses Cloudflare's hosted model without an account ID, API token, GPU, or external provider key.
+
+The default Pages model is `@cf/meta/llama-3.1-8b-instruct-fp8`. Workers AI usage is subject to Cloudflare's free allocation and plan limits; see [current pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/).
+
+Leave `STAR_AI_PROVIDER` unset to use the binding. To choose another provider, set that variable and the corresponding server-side credentials in Cloudflare Pages. The Docker/FastAPI runtime has its own provider configuration.
+
+A private GPU deployment can run Qwen and Open Interpreter using [the independent AI runbook](deploy/independent-ai/README.md). Open Interpreter runs on that separate GPU host; Cloudflare Pages chat does not execute shell commands.
+
+See [the Cloudflare Pages deployment guide](CLOUDFLARE_DEPLOY.md) and [Workers AI setup](docs/FREE_AI_BRAIN.md).
+
+## Optional WormGPT-compatible provider
+
+STAR includes a dedicated `wormgpt` provider option for **independently reviewed OpenAI-compatible inference APIs** on Cloudflare Pages and the self-hosted FastAPI stack. It does **not** install or certify the original WormGPT model. The existing provider remains the default until its owner deliberately supplies a trusted HTTPS inference server, model ID, and server-side secret. See [WormGPT integration and security setup](docs/WORMGPT_INTEGRATION.md).
+
+## GitHub Repository Intelligence
+
+For private repositories, configure a fine-grained read-only token:
 
 ```env
-LLM_BASE_URL=http://host.docker.internal:8000/v1
-LLM_API_KEY=local
-LLM_MODEL=Qwen3-Coder
+GITHUB_TOKEN=...
 ```
+
+Recommended GitHub permissions on selected repositories:
+
+- Metadata: Read
+- Contents: Read
+
+Import a repository:
+
+```http
+POST /api/repositories/import
+```
+
+Then review selected indexed files:
+
+```http
+POST /api/repositories/{repository_id}/analyze
+```
+
+Static-review findings are saved as `suspected` or `likely`; the platform does not claim runtime exploitation from source review alone.
 
 ## Burp Suite
 
@@ -77,13 +191,23 @@ mvn -B -f burp-extension/pom.xml clean package
 
 Load `burp-extension/target/star-burp-ai-0.2.0.jar` into Burp, configure the **STAR AI** tab, then right-click a request/response and select **Analyze with STAR AI**.
 
+## Retesting
+
+A Burp/API finding tied to an authorized scope can be retested with:
+
+```http
+POST /api/findings/{finding_id}/retest
+```
+
+The original finding is only promoted to `fix-verified` when the independent retest verifier has clear equivalent evidence and confidence of at least 80%.
+
 ## Security testing model
 
 Active testing only runs for targets registered in a scope with `authorized=true`. The default scanner profile is non-destructive.
 
 ## CI / deployment
 
-Pull requests test Python, compile the Burp extension, and build the Docker image. Pushes to `main` publish:
+Pull requests test Python, compile the Burp extension, publish the JAR as a CI artifact, and build the Docker image. Pushes to `main` publish:
 
 ```text
 ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge:latest
@@ -91,4 +215,26 @@ ghcr.io/abdulstarzeki001-sketch/qwen-github-bridge:latest
 
 If `DEPLOY_WEBHOOK_URL` is configured as a repository secret, the publish workflow calls it after a successful image push.
 
-See `docs/` for deployment, Burp integration, security model, and roadmap.
+See `docs/` for deployment, Burp integration, repository intelligence, security model, and roadmap.
+
+
+## Cloudflare Pages production
+
+The production project is `star-cyber-ai-x`, connected to this repository's `main` branch and serving `web/`. Cloudflare Pages provides the web runtime and Workers AI binding. GitHub provides source control and CI.
+
+Owner access is protected by the existing Cloudflare Access application, whose allow policy is restricted to the owner's account. Wrangler includes the Access team issuer and application audience so the Pages API can validate Access sessions.
+
+## Claude through Cloudflare
+
+For POWER mode, STAR can proxy Anthropic through Cloudflare Pages so the real Anthropic key never needs to be stored on the iPhone.
+
+Recommended current model:
+
+```text
+STAR_AI_PROVIDER=anthropic
+STAR_ANTHROPIC_MODEL=claude-sonnet-5-5
+```
+
+Store `ANTHROPIC_API_KEY` and a separate 32+ character `STAR_CLAUDE_PROXY_TOKEN` as Cloudflare secrets. An authorized HTTPS client receives only the proxy token. If Cloudflare Access protects the entire site, configure the dedicated `/api/claude/*` path so API clients can reach the function; the function still enforces the proxy token.
+
+See `docs/CLOUDFLARE_CLAUDE.md`.

@@ -1,62 +1,162 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>STAR CYBER AI X</title>
-<style>
-:root{--bg:#07101c;--panel:#0d1928;--line:#21354b;--text:#eaf2ff;--muted:#8ea3ba;--accent:#72e6c1}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at 20% -10%,#183b4f 0,transparent 35%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
-.wrap{max-width:1100px;margin:auto;padding:24px 16px 100px}
-.hero{padding:28px;border:1px solid var(--line);border-radius:24px;background:rgba(13,25,40,.84);backdrop-filter:blur(16px)}
-.badge{display:inline-block;padding:6px 10px;border:1px solid #2e685a;border-radius:999px;color:var(--accent);font-size:12px;font-weight:800}
-h1{font-size:clamp(30px,7vw,54px);margin:12px 0 8px;letter-spacing:-1px}
-p{color:var(--muted);line-height:1.7}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
-.card{border:1px solid var(--line);border-radius:20px;background:var(--panel);padding:18px;min-height:150px}
-.card h3{margin-top:0}.num{font-size:30px;font-weight:900}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-button,a.btn{border:1px solid var(--line);background:#112235;color:var(--text);padding:12px 15px;border-radius:14px;text-decoration:none;font-weight:750;cursor:pointer}
-button.primary{background:var(--accent);color:#05231a;border-color:transparent}
-pre{white-space:pre-wrap;direction:ltr;text-align:left;background:#060d16;border:1px solid var(--line);padding:15px;border-radius:16px;overflow:auto}
-@media(max-width:720px){.grid{grid-template-columns:1fr}.card{min-height:auto}.hero{padding:20px}}
-</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060c16"><meta name="description" content="STAR NEXUS — sovereign AI workspace for web, GitHub, security and Telegram.">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STAR NEXUS">
+<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>STAR NEXUS · AI COMMAND CENTER</title>
+<link rel="stylesheet" href="/nexus.css"><link rel="stylesheet" href="/nexus-v4.css"><link rel="stylesheet" href="/nexus-v5.css"><script src="/nexus.js" defer></script><script src="/nexus-github.js" defer></script>
 </head>
 <body>
-<div class="wrap">
-  <section class="hero">
-    <span class="badge">SELF-HOSTED SECURITY AI</span>
-    <h1>STAR CYBER AI X</h1>
-    <p>تحليل Burp، حفظ الأدلة، فحص النطاقات المصرح بها، التحقق من النتائج، وإصدار تقارير أمنية.</p>
-    <div class="toolbar">
-      <button class="primary" onclick="health()">فحص النظام</button>
-      <a class="btn" href="/docs">API Docs</a>
+<div class="aurora aurora-a" aria-hidden="true"></div><div class="aurora aurora-b" aria-hidden="true"></div>
+<div class="app" id="app">
+<aside class="sidebar" aria-label="القائمة الرئيسية">
+  <a class="identity" href="/" aria-label="STAR NEXUS">
+    <span class="star-mark">✳</span><span><strong>STAR <em>NEXUS</em></strong><small>INTELLIGENCE OS / V3</small></span>
+  </a>
+  <div class="workspace-label">MAIN WORKSPACE <span>01</span></div>
+  <nav class="nav" aria-label="التنقل">
+    <button class="nav-item active" data-view="overview" type="button"><span class="nav-icon">◈</span><span>لوحة القيادة</span></button>
+    <button class="nav-item" data-view="chat" type="button"><span class="nav-icon">▣</span><span>مركز المحادثة</span><span class="mini-key">AI</span></button>
+    <button class="nav-item" data-view="models" type="button"><span class="nav-icon">⬡</span><span>مختبر النماذج</span></button>
+    <a class="nav-item" href="/open-interpreter.html"><span class="nav-icon">⌘</span><span>Open Interpreter</span></a>
+    <button class="nav-item" data-view="github" type="button"><span class="nav-icon">◇</span><span>GitHub Studio</span></button>
+    <button class="nav-item" data-view="agents" type="button"><span class="nav-icon">⌘</span><span>الوكلاء والتكاملات</span></button>
+  </nav>
+  <div class="workspace-label next">CHANNELS & CONTROL <span>02</span></div>
+  <nav class="nav">
+    <button class="nav-item" data-view="telegram" type="button"><span class="nav-icon">➤</span><span>Telegram Hub</span></button>
+    <button class="nav-item" data-view="settings" type="button"><span class="nav-icon">⚙</span><span>إعدادات المالك</span></button>
+  </nav>
+  <div class="sidebar-spacer"></div>
+  <div class="sidebar-foot">
+   <div class="connection-pill"><span class="pulse-dot" id="sidePulse"></span><span id="sideStatus">فحص الاتصال…</span></div>
+   <div class="user-panel"><span class="user-avatar">S</span><span><strong>OWNER CONSOLE</strong><small id="ownerMini">وصول محدود</small></span><span class="chevron">⌄</span></div>
+  </div>
+</aside>
+<div class="main-column">
+<header class="topbar">
+  <div class="breadcrumbs"><span>STAR OS</span><span class="slash">/</span><strong id="crumb">لوحة القيادة</strong></div>
+  <div class="top-actions">
+    <span class="date-pill" id="clock">NEXUS 03</span>
+    <a class="icon-button" href="/ai-v2.html" title="واجهة STAR القديمة" aria-label="STAR CORE V2">↗</a>
+    <a class="icon-button" href="/open-interpreter.html" title="Open Interpreter" aria-label="Open Interpreter">⌘</a>
+    <button type="button" class="icon-button owner-action" id="openAuth" title="جلسة المالك" aria-label="تسجيل دخول المالك">♙</button>
+  </div>
+</header>
+<main id="main">
+<section class="page active" id="view-overview" aria-label="لوحة القيادة">
+  <div class="hero">
+    <div class="hero-copy"><div class="eyebrow"><span class="live-dot"></span> STAR OS / SYSTEM ONLINE <span class="hero-index">003—V3</span></div>
+    <h1>عقلك الاصطناعي.<br><span>منظومة بلا حدود هندسية.</span></h1>
+    <p>بيئة عمل واحدة للذكاء الاصطناعي، مراجعة المشاريع، وكلاء البرمجة، وأوامر Telegram. تحكّم بالخدمات من مكان واحد بدون خلط مفاتيحك مع الواجهة.</p>
+    <div class="hero-buttons"><button type="button" class="primary-btn" data-go="chat">ابدأ محادثة <span>↗</span></button><button type="button" class="secondary-btn" data-go="agents">استكشف التكاملات <span>↗</span></button></div>
     </div>
-    <div id="status"></div>
-  </section>
+    <div class="orb-stage" aria-hidden="true"><div class="orbit orbit-1"></div><div class="orbit orbit-2"></div><div class="orb"></div><div class="orb-chip chip-a">NEURAL ENGINE</div><div class="orb-chip chip-b">MULTI AGENT</div><div class="orb-coord">40° 18′ / CORE READY</div></div>
+  </div>
+  <div class="metrics">
+   <article class="metric"><div class="metric-heading">المحرّك الحالي <span class="metric-symbol">⬡</span></div><strong id="metricModel" class="fit-metric">جاري الفحص</strong><small id="metricProvider">لا توجد معلومات بعد</small></article>
+   <article class="metric"><div class="metric-heading">المزود <span class="metric-symbol">◉</span></div><strong id="metricProviderName">—</strong><small id="metricProviderDetail">حالة التهيئة</small></article>
+   <article class="metric"><div class="metric-heading">وحدات التكامل <span class="metric-symbol">⌘</span></div><strong id="metricIntegrations">17</strong><small>مصادر مرجعية قابلة للتكييف</small></article>
+   <article class="metric"><div class="metric-heading">قنوات التواصل <span class="metric-symbol">➤</span></div><strong>02</strong><small>WEB · TELEGRAM</small></article>
+  </div>
+  <div class="overview-grid">
+  <article class="panel quick">
+    <div class="panel-head"><div><span class="overline">QUICK ACCESS / 01</span><h2>مركز العمليات</h2></div><span class="corner-icon">↗</span></div>
+    <div class="action-grid">
+      <button type="button" data-go="chat"><span class="action-art">◈</span><strong>محادثة ذكية</strong><small>اسأل النموذج الحالي</small><span class="action-arrow">↖</span></button>
+      <button type="button" data-go="models"><span class="action-art">◉</span><strong>النماذج</strong><small>المزود والأوزان</small><span class="action-arrow">↖</span></button>
+      <button type="button" data-go="github"><span class="action-art">◇</span><strong>GitHub Studio</strong><small>استعراض وفهم الملفات</small><span class="action-arrow">↖</span></button>
+      <button type="button" data-go="telegram"><span class="action-art">➤</span><strong>Telegram</strong><small>بوت مرتبط بالنظام</small><span class="action-arrow">↖</span></button>
+    </div>
+  </article>
+  <article class="panel system-panel">
+    <div class="panel-head"><div><span class="overline">SYSTEM TELEMETRY / LIVE</span><h2>حالة البنية</h2></div><span class="healthy-ring" id="liveRing"></span></div>
+    <div class="sys-line"><span>Cloudflare API</span><strong id="stateApi">فحص…</strong></div>
+    <div class="sys-line"><span>Owner session</span><strong id="stateAuth">فحص…</strong></div>
+    <div class="sys-line"><span>AI provider</span><strong id="stateModel">فحص…</strong></div>
+    <div class="sys-line"><span>Telegram bot</span><strong id="stateTelegram">فحص…</strong></div>
+    <div class="signal-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <p class="tiny-muted">التهيئة لا تعني أن الخدمة الخارجية متصلة؛ جرّب طلباً حقيقياً للتحقق.</p>
+  </article>
+  </div>
+  <section class="panel source-strip"><div><span class="overline">GIT CONNECTED</span><h3>مستودع STAR الرئيسي</h3><p>البنية الحالية محفوظة ويمكن العودة إلى الوحدات القديمة عند الحاجة.</p></div><a class="secondary-btn" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge" target="_blank" rel="noopener noreferrer">فتح GitHub ↗</a></section>
+</section>
 
-  <section class="grid">
-    <div class="card"><div class="num">01</div><h3>Burp AI</h3><p>تحليل request/response مع Analyst + Verifier.</p></div>
-    <div class="card"><div class="num">02</div><h3>Attack Lab</h3><p>اختبارات مضبوطة ومقيدة بالنطاق المصرح به.</p></div>
-    <div class="card"><div class="num">03</div><h3>Evidence</h3><p>حفظ الطلبات والردود مع SHA-256.</p></div>
-    <div class="card"><div class="num">04</div><h3>Reports</h3><p>تقارير Findings وCWE وOWASP والإصلاح.</p></div>
-    <div class="card"><div class="num">05</div><h3>Verifier</h3><p>تدقيق مستقل للنتيجة قبل اعتبارها مثبتة.</p></div>
-    <div class="card"><div class="num">06</div><h3>Retest Ready</h3><p>الهيكل جاهز لإضافة replay وscreenshots وPCAP.</p></div>
-  </section>
-</div>
-<script>
-async function health(){
-  const el=document.getElementById("status");
-  el.innerHTML="جاري الفحص...";
-  try{
-    const r=await fetch("/api/health");
-    const d=await r.json();
-    el.innerHTML="<pre>"+JSON.stringify(d,null,2)+"</pre>";
-  }catch(e){
-    el.innerHTML="<pre>"+String(e)+"</pre>";
-  }
-}
-</script>
-</body>
-</html>
+<section class="page" id="view-chat" aria-label="محادثة الذكاء">
+  <div class="section-heading"><div><span class="overline">WORKSPACE / NEURAL CHAT</span><h1>مركز المحادثة</h1><p>اتصل بمحرك STAR الحقيقي؛ الردود تأتي من API المحمي بعد تسجيل دخول المالك.</p></div><span class="heading-mark">◈</span></div>
+  <div class="chat-shell">
+    <div class="chat-top"><div class="avatar-neural">✳</div><div><strong>STAR NEXUS AI</strong><small id="chatModel">اكتشاف المزود...</small></div><span class="spacer"></span><label class="nexus-picker" for="chatModelSelect">النموذج <select id="chatModelSelect" aria-label="اختر نموذج الذكاء" disabled><option value="">النموذج الافتراضي</option></select></label><button type="button" class="text-btn" id="clearChat">مسح المحادثة</button></div>
+    <div class="chat-thread" id="chatThread" aria-live="polite" aria-relevant="additions text"><div class="chat-empty"><span class="chat-empty-icon">✳</span><h2>بماذا تريد أن نبدأ؟</h2><p>مراجعة كود، تحليل أمني، تصميم واجهة أو خطة مشروع. يمكنك تعديل طريقة الإجابة من إعدادات المالك.</p><div class="prompts"><button type="button" data-prompt="حلل بنية STAR AI واقترح 3 تحسينات قابلة للتنفيذ">تحسين مشروعي ↗</button><button type="button" data-prompt="ساعدني في مراجعة أمان واجهة API مع توضيح الفرضيات">مراجعة API ↗</button><button type="button" data-prompt="صمم خطة لتشغيل نموذج محلي مع بوابة HTTPS محمية">نموذج مستقل ↗</button></div></div></div>
+    <form id="chatForm" class="chat-form"><textarea id="chatInput" rows="2" maxlength="6000" required aria-label="أرسل رسالتك" placeholder="اكتب طلبك هنا… (Enter للإرسال، Shift+Enter لسطر جديد)"></textarea><div class="compose-bottom"><span>STAR • <span id="composeMode">OWNER-GATED INFERENCE</span></span><button id="chatSend" class="send-btn" type="submit" aria-label="إرسال">↗</button></div></form>
+    <div class="chat-note" role="status" id="chatNotice"></div>
+  </div>
+</section>
+
+<section class="page" id="view-github" aria-label="GitHub Studio">
+  <div class="section-heading"><div><span class="overline">REPOSITORY INTELLIGENCE / V4</span><h1>GitHub Studio</h1><p>استعرض الملفات الموجودة في المستودع من داخل STAR. يمكنك تجهيز مقتطف للمراجعة بالذكاء دون إرسال الملف تلقائياً.</p></div><span class="heading-mark">◇</span></div>
+  <div class="studio-toolbar"><div><span class="overline">CONNECTED REPOSITORY</span><h2 id="gitRepo">STAR · qwen-github-bridge</h2><span class="studio-branch" id="gitBranch">الفرع: جاري الفحص…</span></div><button type="button" id="gitRefresh" class="secondary-btn">تحديث الاتصال ↻</button></div>
+  <div class="studio-grid">
+    <section class="panel studio-tree" aria-label="مستعرض ملفات GitHub">
+      <div class="studio-tree-head"><div><span class="overline">FILE EXPLORER</span><h2>المستودع</h2></div><button type="button" id="gitUp" class="studio-icon-btn" title="الرجوع إلى المجلد الأعلى" aria-label="أعلى مجلد">↑</button></div>
+      <div class="studio-path" id="gitPath" dir="ltr">/</div>
+      <div class="studio-list" id="gitEntries" aria-live="polite"><p class="tiny-muted">يلزم تسجيل دخول المالك وربط GitHub App.</p></div>
+    </section>
+    <section class="panel studio-viewer" aria-label="محتوى الملف">
+      <div class="studio-tree-head"><div><span class="overline">SOURCE INSPECTOR</span><h2 id="gitFileName">اختر ملفاً</h2></div><span id="gitFileSize" class="studio-branch">READ ONLY</span></div>
+      <pre id="gitFilePreview" class="studio-code" dir="ltr">اختر ملفاً من القائمة لعرض محتواه.</pre>
+      <div class="studio-actions"><button type="button" class="primary-btn" id="gitStage" disabled>جهّز للتحليل بـ STAR ↗</button><a class="secondary-btn" id="gitOpenGithub" href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge" target="_blank" rel="noopener noreferrer">المستودع ↗</a></div>
+      <p class="tiny-muted">المراجعة تتطلب خطوة إرسال منك. أي ملف يُعرض كنص فقط، بدون تشغيل أكواده.</p>
+    </section>
+  </div>
+  <p id="gitNotice" role="status" class="studio-notice"></p>
+</section>
+
+<section class="page" id="view-models" aria-label="مختبر النماذج">
+  <div class="section-heading"><div><span class="overline">AI ENGINE / MULTI PROVIDER</span><h1>مختبر النماذج</h1><p>اختر بنية الاستدلال التي تناسبك. تغيير المزود الفعلي يتم من أسرار الخادم، لا من المتصفح.</p></div><span class="heading-mark">⬡</span></div>
+  <div class="highlight-row"><div><span class="overline">ACTIVE ENGINE</span><strong id="currentModelFull">جاري الكشف…</strong><small id="modelStatusText">الاتصال لم يُختبر بعد</small></div><div class="nexus-model-tools"><button type="button" class="secondary-btn" id="probeModels">اختبار الاتصال ↗</button><button type="button" class="secondary-btn" id="refreshModels">إعادة الفحص ↻</button></div></div>
+  <div class="model-grid" id="modelGrid"></div>
+  <div class="instruction-card"><span>✦</span><div><strong>هل تريد نموذجا محلياً بالكامل؟</strong><p>جهّز Ollama على خادمك، ثم اربطه ببوابة STAR HTTPS الخاصة. اسم WormGPT في قائمة المصادر لا يثبت امتلاك أوزان النموذج الأصلي.</p></div><a href="/gpu-deploy.html">دليل GPU المستقل ↗</a></div>
+</section>
+
+<section class="page" id="view-agents" aria-label="الوكلاء والتكاملات">
+  <div class="section-heading"><div><span class="overline">EXTENSIONS / SOURCE REGISTRY</span><h1>الوكلاء والتكاملات</h1><p>دليل عملي بالمستودعات التي طلبتها. عرض مصدر أو إضافة للكتالوج لا يعني تنفيذ شيفرته أو تثبيته.</p></div><span class="heading-mark">⌘</span></div>
+  <div class="tools" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px"><a href="/integrations-run.html" class="primary-btn">تشغيل المستودعات بالترتيب ↗</a><a href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge/actions/workflows/verify-upstreams.yml" class="secondary-btn" target="_blank" rel="noopener noreferrer">الاختبارات المباشرة ↗</a></div>
+  <div class="filters"><label class="search-box"><span>⌕</span><input id="sourceSearch" placeholder="ابحث عن مستودع أو فئة" autocomplete="off" aria-label="بحث التكاملات"></label><div class="filter-options" id="filterOptions"><button class="selected" data-filter="all">الكل</button><button data-filter="agent">وكلاء</button><button data-filter="web">ويب</button><button data-filter="telegram">بوتات</button><button data-filter="model">نماذج</button><button data-filter="reference">مراجع</button></div></div>
+  <div class="registry-grid" id="sourceGrid"></div>
+  <div class="registry-footer">جميع الروابط تقود للمستودعات الأصلية. لم تُنسخ أكواد خارجية إلى خادم الإنتاج.</div>
+</section>
+
+<section class="page" id="view-telegram" aria-label="Telegram Hub">
+  <div class="section-heading"><div><span class="overline">CHANNELS / TELEGRAM</span><h1>Telegram Hub</h1><p>بوت واحد يستطيع استخدام عقل STAR نفسه عبر خادمك، بدلاً من نشر مفاتيحك داخل مشاريع Telegram غير معروفة.</p></div><span class="heading-mark">➤</span></div>
+  <div class="telegram-layout">
+   <article class="panel">
+     <div class="telegram-icon">➤</div><h2>STAR NEXUS BOT</h2><p>تعمل نقطة استقبال Telegram على Cloudflare فقط عند إعداد أسرار البوت وقائمة المحادثات المسموحة. لا يوجد بوت مفعّل تلقائياً.</p>
+     <div class="sys-line"><span>WEBHOOK</span><strong id="tgWebhook">غير مهيأ</strong></div><div class="sys-line"><span>AI BACKEND</span><strong id="tgProvider">—</strong></div>
+     <a class="primary-btn block" href="/telegram-setup.html" id="telegramDocs">قراءة دليل الإعداد ↗</a>
+   </article>
+   <article class="panel steps"><span class="overline">SETUP / 04 STEPS</span><h2>تشغيل البوت</h2>
+    <ol><li><strong>أنشئ البوت</strong><p>من @BotFather وخذ التوكن الخاص به.</p></li><li><strong>أضف الأسرار</strong><p>TELEGRAM_BOT_TOKEN وTELEGRAM_WEBHOOK_SECRET وTELEGRAM_ALLOWED_CHAT_IDS إلى إعدادات Cloudflare.</p></li><li><strong>سجل Webhook</strong><p>وجّه Telegram إلى /api/telegram/webhook مع secret_token مطابق.</p></li><li><strong>اختبر من حسابك</strong><p>رسالة /start أولاً، ثم سؤال تجريبي.</p></li></ol>
+   </article>
+  </div>
+  <div class="instruction-card"><span>⌁</span><div><strong>البوتات المرجعية</strong><p>تحتفظ المنصة بروابط المشاريع المجتمعية للتعلم؛ التنفيذ الإنتاجي يستخدم Endpoint مستقلاً ومحدود الصلاحيات.</p></div><button type="button" data-go="agents">تصفح المصادر ↗</button></div>
+</section>
+
+<section class="page" id="view-settings" aria-label="إعدادات المالك">
+  <div class="section-heading"><div><span class="overline">SYSTEM / OWNER ACCESS</span><h1>مركز التحكم</h1><p>إعدادات محلية للمحادثة وجلسة مالك محمية. لا تحفظ مفاتيح API الخاصة في المتصفح.</p></div><span class="heading-mark">⚙</span></div>
+  <div class="settings-grid">
+    <article class="panel"><span class="overline">IDENTITY</span><h2>دخول المالك</h2><p id="settingsSession">جارٍ فحص جلسة المالك.</p><button type="button" class="primary-btn" id="settingsLogin">تفعيل هذا الجهاز ↗</button><button type="button" class="secondary-btn" id="logoutBtn">تسجيل الخروج</button></article>
+    <article class="panel"><span class="overline">CHAT PREFERENCES</span><h2>التحكم بطريقة الإجابة</h2><label class="field-label" for="ownerInstructions">تعليمات إضافية للنموذج</label><textarea id="ownerInstructions" rows="5" maxlength="2000" placeholder="مثال: اكتب بالعربية، ركز على التحليل البرمجي..."></textarea><div class="two-fields"><label>الإبداع <input type="range" id="temperature" min="0" max="1" step="0.05" value="0.2"></label><label>طول الإجابة <select id="maxTokens"><option value="512">موجز</option><option value="1400" selected>متوازن</option><option value="2048">مفصل</option><option value="4096">مطوّل</option></select></label></div><button type="button" class="primary-btn" id="savePrefs">حفظ على هذا الجهاز</button><p class="tiny-muted" id="prefsSaved">إعدادات النص تخزن محلياً؛ لا تدخل بيانات سرية.</p></article>
+  </div>
+  <div class="settings-links"><a href="/legacy-dashboard.html">لوحة المشروع القديمة ↗</a><a href="/ai-v2.html">STAR COMMANDER III ↗</a><a href="/sovereign.html">STAR SOVEREIGN ↗</a><a href="https://github.com/abdulstarzeki001-sketch/qwen-github-bridge">GitHub ↗</a></div>
+</section>
+</main>
+<footer class="footer"><span>© STAR NEXUS · INTELLIGENCE SYSTEM</span><span>ENGINEERED FOR CONTROL <b>●</b> V4.0</span></footer>
+</div></div>
+<nav class="mobile-dock" aria-label="التنقل على الهاتف"><button class="active" data-view="overview"><span>◈</span>الرئيسية</button><button data-view="chat"><span>▣</span>المحادثة</button><button data-view="models"><span>⬡</span>النماذج</button><button data-view="github"><span>◇</span>GitHub</button><button data-view="agents"><span>⌘</span>التكاملات</button><button data-view="telegram"><span>➤</span>تلجرام</button></nav>
+<dialog id="authDialog" class="auth-dialog"><form method="dialog" id="authForm"><div class="auth-art">✳</div><h2>تفعيل جهاز المالك</h2><p>أدخل STAR API Token الخاص بك مرة واحدة لتخزين جلسة مالك آمنة عبر HttpOnly Cookie. الرمز لا يُحفظ في LocalStorage.</p><input id="authToken" type="password" autocomplete="off" minlength="32" placeholder="رمز المالك (32 حرفاً على الأقل)" required><div class="auth-actions"><button type="button" id="closeAuth">إلغاء</button><button class="primary-btn" type="submit" id="authSubmit">تفعيل ↗</button></div><div id="authError" role="status"></div></form></dialog>
+<!-- Inline boot marker retained for static smoke test compatibility. -->
+<script>window.STAR_NEXUS_VERSION="3.0";</script>
+</body></html>

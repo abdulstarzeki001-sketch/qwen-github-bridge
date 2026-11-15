@@ -7,6 +7,7 @@ import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,30 +24,54 @@ final class StarContextMenuProvider implements ContextMenuItemsProvider {
 
     @Override
     public List<Component> provideMenuItems(ContextMenuEvent event) {
-        HttpRequestResponse selected = null;
+        List<HttpRequestResponse> selectedItems = event.selectedRequestResponses();
+        HttpRequestResponse primary = null;
 
         if (event.messageEditorRequestResponse().isPresent()) {
-            selected = event.messageEditorRequestResponse().get().requestResponse();
-        } else if (!event.selectedRequestResponses().isEmpty()) {
-            selected = event.selectedRequestResponses().get(0);
+            primary = event.messageEditorRequestResponse().get().requestResponse();
+        } else if (!selectedItems.isEmpty()) {
+            primary = selectedItems.get(0);
         }
 
-        if (selected == null || selected.request() == null) {
+        if (primary == null || primary.request() == null) {
             return List.of();
         }
 
-        HttpRequestResponse item = selected;
-        JMenuItem analyze = new JMenuItem("Analyze with STAR AI");
-        analyze.addActionListener(ignored -> {
-            config.showResult("Queued selected request/response for analysis...");
-            CompletableFuture.runAsync(() -> client.analyze(item))
-                .exceptionally(ex -> {
-                    api.logging().logToError("STAR AI async task failed: " + ex);
-                    config.showResult("ERROR\n\n" + ex.getMessage());
-                    return null;
-                });
-        });
+        List<Component> items = new ArrayList<>();
+        HttpRequestResponse selected = primary;
 
-        return List.of(analyze);
+        JMenuItem analyze = new JMenuItem("Analyze with STAR AI");
+        analyze.addActionListener(ignored ->
+            runAsync("analysis", () -> client.analyze(selected))
+        );
+        items.add(analyze);
+
+        JMenuItem inspect = new JMenuItem("Inspect passively with STAR AI");
+        inspect.addActionListener(ignored ->
+            runAsync("passive inspection", () -> client.inspect(selected))
+        );
+        items.add(inspect);
+
+        if (selectedItems.size() == 2) {
+            HttpRequestResponse first = selectedItems.get(0);
+            HttpRequestResponse second = selectedItems.get(1);
+            JMenuItem compare = new JMenuItem("Compare 2 selected with STAR AI");
+            compare.addActionListener(ignored ->
+                runAsync("comparison", () -> client.compare(first, second))
+            );
+            items.add(compare);
+        }
+
+        return items;
+    }
+
+    private void runAsync(String label, Runnable action) {
+        config.showResult("Queued STAR AI " + label + "...");
+        CompletableFuture.runAsync(action)
+            .exceptionally(ex -> {
+                api.logging().logToError("STAR AI async task failed: " + ex);
+                config.showResult("ERROR\n\n" + ex.getMessage());
+                return null;
+            });
     }
 }

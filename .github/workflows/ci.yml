@@ -51,6 +51,7 @@ jobs:
           from app.main import app
           init_db()
           assert app.title == "STAR CYBER AI X"
+          assert app.version == "0.7.0"
           print(app.title, app.version)
           PY
 
@@ -68,6 +69,13 @@ jobs:
       - name: Build JAR
         run: mvn -B -f burp-extension/pom.xml clean package
 
+      - name: Upload Burp JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: star-burp-ai
+          path: burp-extension/target/star-burp-ai-0.2.0.jar
+          if-no-files-found: error
+
   docker:
     name: Docker image
     runs-on: ubuntu-latest
@@ -76,3 +84,128 @@ jobs:
 
       - name: Build
         run: docker build --pull -t star-cyber-ai-x:ci .
+
+      - name: Check opt-in Open Interpreter Compose configuration
+        env:
+          STAR_BACKEND_TOKEN: ci-test-backend-token-not-for-deployment
+          CF_TUNNEL_TOKEN: ci-test-tunnel-not-for-deployment
+        run: docker compose -f deploy/independent-ai/compose.yaml --profile interpreter config --quiet
+
+      - name: Build pinned Open Interpreter executor container
+        run: docker build -f deploy/independent-ai/Dockerfile.interpreter -t star-open-interpreter:ci deploy/independent-ai
+
+      - name: Smoke-test Open Interpreter version
+        run: docker run --rm --network none --read-only star-open-interpreter:ci --version
+
+
+  netlify:
+    name: Netlify functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install Netlify runtime dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Check Netlify functions
+        run: npm run check:netlify
+
+      - name: Test Commander III privacy and mission flow
+        run: node scripts/test-commander.mjs
+
+      - name: Test seamless sole-owner login, cookie security and Access SSO
+        run: node scripts/test-owner-session.mjs && node scripts/test-owner-access-autologin.mjs
+
+      - name: Test SOVEREIGN owner inference controls and local gateway
+        run: node scripts/test-sovereign.mjs && node scripts/test-sovereign-settings.mjs && node scripts/test-sovereign-gateway.mjs && node scripts/test-sovereign-ui.mjs && node --check web/star-sovereign.js && node --check sovereign-gateway/server.mjs
+
+      - name: Test optional WormGPT-compatible backend and owner authentication
+        run: node scripts/test-wormgpt.mjs && node --check functions/_wormgpt.js
+
+      - name: Test expanded STAR Telegram developer toolbox and deterministic JSON
+        run: node scripts/test-telegram-expanded-toolbox.mjs && node --check functions/_wormgpt_coding_skills.js
+
+      - name: Test STAR Telegram coding-agent skills and safe public repo inspection
+        run: node scripts/test-wormgpt-telegram-skills.mjs && node --check functions/_wormgpt_coding_skills.js
+
+      - name: Test STAR NEXUS V3 Telegram webhook, owner status, new UI
+        run: node scripts/test-nexus-v3.mjs && node --check web/nexus.js && node --check functions/_nexus_telegram.js
+
+      - name: Test signed deployment automation for Telegram without leaking Cloudflare secrets
+        run: node scripts/test-telegram-deployment-oidc.mjs && node --check functions/_telegram_github_oidc.js
+
+      - name: Test one-click owner-authenticated Telegram webhook activation
+        run: node scripts/test-telegram-owner-setup.mjs && node --check functions/_telegram_admin.js
+
+      - name: Test iSH Telegram webhook setup and privacy
+        run: python3 -m unittest discover -s scripts/ish -p 'test_telegram.py' -v
+
+      - name: Test iSH iPad workspace and 17 pinned upstream source catalog
+        run: node scripts/test-ish-workspace.mjs && sh -n scripts/ish/star.sh && sh -n scripts/ish/fetch-sources.sh
+
+      - name: Test NEXUS V4 history and GitHub Studio
+        run: node scripts/test-nexus-v4.mjs && node --check web/nexus-github.js && node --check functions/_nexus_context.js
+
+      - name: Test NEXUS V5 model switching and private GPU runtime
+        run: node scripts/test-nexus-v5.mjs && node --check web/nexus.js && node --check deploy/independent-ai/gateway.mjs
+
+      - name: Test persistent STAR Vault database gateway and UI scripts
+        run: node scripts/test-star-vault.mjs && node --check web/star-vault.js && node --check web/star-core-v2-phase2.js && node --check web/star-core-v2-phase3.js
+
+      - name: Test STAR cloud-only implementation and owner authentication
+        run: node scripts/test-star-cloud-only.mjs && node --check web/star-vault.js
+
+      - name: Verify free Cloudflare Workers AI fallback with owner-gated inference
+        run: node scripts/test-cloudflare-free-default.mjs
+
+      - name: Test private knowledge library and cited retrieval
+        run: node scripts/test-star-knowledge.mjs && node --check web/star-knowledge.js && node --check web/star-knowledge-core.js
+
+      - name: Test Supabase owner-scoped secure device synchronization
+        run: node scripts/test-star-supabase-sync.mjs && node --check web/star-supabase-sync.js && node --check web/star-supabase-config.js
+
+      - name: Test private GPU owner-only gateway
+        run: node scripts/test-independent-gateway.mjs && node --check deploy/independent-ai/gateway.mjs
+
+      - name: Test RunPod V7 cost-gated Pod provision controller
+        run: node scripts/test-runpod-v7.mjs && node --check scripts/runpod-control.mjs
+
+      - name: Test RunPod V6 model preload and authenticated inference verifier
+        run: node scripts/test-runpod-v6.mjs && node --check scripts/verify-runpod.mjs && node --check web/runpod-setup.js && bash -n deploy/independent-ai/runpod/model-config.sh
+
+      - name: Check Runpod Codex setup and GPU Pod startup scripts
+        run: bash -n scripts/setup-runpod-codex.sh && bash -n deploy/independent-ai/runpod/start-runpod.sh && bash -n deploy/independent-ai/pull-models.sh && bash -n integrations/wormgptv2/bootstrap.sh && bash -n integrations/wormgptv2/run-local.sh && bash -n integrations/drana/run-ollama.sh
+
+      - name: Check dashboard inline JavaScript
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import vm from "node:vm";
+          for (const file of ["web/index.html", "web/ai.html", "web/ai-v2.html"]) {
+            const html = fs.readFileSync(file, "utf8");
+            const scripts = html.split("<script>").slice(1).map(s => s.split("</script>")[0]);
+            if (!scripts.length) {
+              if (file === "web/ai.html" && html.includes('url=/ai-v2.html')) continue;
+              throw new Error("No inline script found in " + file);
+            }
+            for (const script of scripts) new vm.Script(script, {filename:file});
+          }
+          for (const file of ["web/star-core-v2-scene.js","web/star-core-v2-phase2.js","web/star-core-v2-phase3.js"]) {
+            const code = fs.readFileSync(file, "utf8");
+            new vm.Script(code, {filename:file});
+          }
+          const html = fs.readFileSync("web/ai-v2.html", "utf8");
+          const ids = ["p2Core3d","p2RepoConnect","p2RepoBrowse","p2AdminToken","p2RepoEntries","p2RepoPreview","p2PrepareReview","p2Save","p2SavedList","p2IncludeContext","p2MemoryStatus"];
+          for (const id of ids) if (!html.includes('id="'+id+'"')) throw new Error("Missing phase-2 element "+id);
+          for (const asset of ["star-core-v2-phase2.css","star-core-v2-scene.js","star-core-v2-phase2.js","star-core-v2-phase3.css","star-core-v2-phase3.js"]) {
+            if (!html.includes(asset) || !fs.existsSync("web/"+asset)) throw new Error("Missing V2 asset: "+asset);
+          }
+          const scripts = ["web/star-core-v2-phase2.js","web/ai-v2.html"].map(f=>fs.readFileSync(f,"utf8"));
+          if (!scripts[0].includes("textContent") || !scripts[0].includes("STAR_V2_CONTEXT_PROMPT")) throw new Error("Missing safe text rendering or explicit context opt-in");
+          console.log("STAR CORE V2 phase-two assets and JavaScript syntax verified");
+          console.log("Dashboard and STAR AI inline JavaScript syntax valid");
+          NODE

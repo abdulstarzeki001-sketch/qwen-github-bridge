@@ -26,3 +26,15 @@ node_modules/
 .DS_Store
 .idea/
 .vscode/
+
+# Netlify local state
+.netlify/
+
+# Local pinned source checkouts on iSH/iPad (never deployed to Cloudflare)
+integrations/upstreams/
+
+# Local third-party agent installations
+.integrations/
+# Host-side coding agent sandbox and local model state
+deploy/independent-ai/agent-workspace/*
+!deploy/independent-ai/agent-workspace/.gitkeep

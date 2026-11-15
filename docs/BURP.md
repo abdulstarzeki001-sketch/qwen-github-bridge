@@ -8,7 +8,7 @@ STAR BURP AI is a Java 17 Montoya API extension.
 mvn -B -f burp-extension/pom.xml clean package
 ```
 
-The CI workflow compiles it on every pull request.
+The CI workflow compiles it on every pull request and uploads the JAR as an artifact.
 
 ## Configure
 
@@ -19,19 +19,54 @@ Open the `STAR AI` tab in Burp and set:
 - Project ID
 - authorized Scope ID
 
-Then right-click a request/response and select:
+## Context-menu actions
 
-```text
-Analyze with STAR AI
-```
+### Analyze with STAR AI
 
-The extension forwards the selected HTTP request and response to:
+Sends the selected request/response to:
 
 ```text
 POST /api/burp/analyze
 ```
 
-The backend stores the evidence bundle, asks the analyst model, asks an independent verifier, records the finding, and returns the result.
+This path is scope-gated. The backend stores an evidence bundle, runs the analyst model, runs an independent verifier, saves the finding, and returns the result.
+
+### Inspect passively with STAR AI
+
+Sends the selected exchange to:
+
+```text
+POST /api/burp/inspect
+```
+
+This path performs deterministic passive inspection only. It does not send a modified HTTP request to the target.
+
+It inspects:
+
+- HTTP request/response metadata,
+- Authorization scheme,
+- JWT header and selected claims,
+- cookie attributes,
+- common browser-security response headers,
+- basic passive observations.
+
+### Compare 2 selected with STAR AI
+
+Select exactly two Burp history items and use:
+
+```text
+POST /api/burp/compare
+```
+
+The backend returns:
+
+- status-code changes,
+- body-length delta,
+- response-body similarity,
+- changed response headers,
+- passive inspection for both exchanges.
+
+This is useful for evidence comparison in authorized testing without automatically generating or sending attack traffic.
 
 ## Evidence attachments
 

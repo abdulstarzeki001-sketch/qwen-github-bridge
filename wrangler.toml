@@ -1,0 +1,22 @@
+name = "star-cyber-ai-x"
+pages_build_output_dir = "./web"
+compatibility_date = "2026-10-10"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Pages reads secrets from its own environment settings.
+# Core owner/API secrets may include STAR_API_TOKEN and GitHub App credentials.
+#
+# Claude-through-Cloudflare:
+#   Secret: ANTHROPIC_API_KEY
+#   Secret: STAR_CLAUDE_PROXY_TOKEN (32+ chars; for authorized HTTPS API clients only)
+#   Variable: STAR_ANTHROPIC_MODEL (default: claude-sonnet-5-5)
+#   Variable: STAR_AI_PROVIDER=anthropic to make STAR POWER mode use Claude
+#
+# Other optional providers remain supported (Workers AI, OpenAI, OpenRouter, self-hosted).
+
+[vars]
+STAR_ACCESS_TEAM_DOMAIN = "https://fancy-haze-5879.cloudflareaccess.com"
+STAR_ACCESS_AUD = "c5c1dd3b60b39d02c09c57b077b06fb627063cb89558e494f1420509329e35b3"
+
+[ai]
+binding = "AI"
