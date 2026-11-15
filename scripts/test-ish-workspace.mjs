@@ -50,6 +50,6 @@ for(const s of ["sources core","sources all","serve 8080","sh scripts/ish/star.s
 const doc=readFileSync("scripts/ish/README.md","utf8");
 assert.ok(doc.includes("Cloudflare Pages Functions"));
 const workflow=readFileSync(".github/workflows/ish-sources-bundle.yml","utf8");
-assert.ok(workflow.includes("upload-artifact@v4"));
+assert.match(workflow, /actions\/upload-artifact@v[0-9]+\b/, "Workflow must pin the official upload-artifact action to a major version");
 assert.ok(workflow.includes("persist-credentials: false"));
 console.log("STAR iSH: 17 pinned sources, 7 core, POSIX scripts, local preview, portable source artifacts passed");
