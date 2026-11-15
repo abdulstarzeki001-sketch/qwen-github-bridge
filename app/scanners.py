@@ -24,7 +24,7 @@ def available_scanners() -> list[str]:
 
 def validate_scope_target(target: str) -> str:
     value = (target or "").strip()
-    if not value or any(ord(ch) < 32 for ch in value) or any(ch.isspace() for ch in value):
+    if not value or len(value) > 2048 or any(ord(ch) < 32 or ord(ch) == 127 for ch in value) or any(ch.isspace() for ch in value):
         raise ValueError("Scope target must be a non-empty URL or host without whitespace")
 
     parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
