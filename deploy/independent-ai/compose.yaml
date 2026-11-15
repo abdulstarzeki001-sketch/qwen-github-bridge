@@ -1,0 +1,154 @@
+# STAR independent model on a private rented GPU or owned NVIDIA server.
+# No inference ports are published to the host or the public Internet.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: "30m"
+    volumes:
+      - ollama-models:/root/.ollama
+    expose:
+      - "11434"
+    networks:
+      - star-private
+      - interpreter-private
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  gateway:
+    image: node:24-alpine
+    user: node
+    restart: unless-stopped
+    init: true
+    working_dir: /app
+    command: ["node", "/app/gateway.mjs"]
+    environment:
+      PORT: "8080"
+      STAR_BACKEND_TOKEN: ${STAR_BACKEND_TOKEN:?Set STAR_BACKEND_TOKEN in .env}
+      STAR_MODEL: ${STAR_MODEL:-gpt-oss:20b}
+      STAR_ALLOWED_MODELS: ${STAR_ALLOWED_MODELS:-gpt-oss:20b}
+      OLLAMA_ENDPOINT: "http://ollama:11434/v1/chat/completions"
+      INTERPRETER_ENDPOINT: "http://interpreter-web:8090/execute"
+    volumes:
+      - ./gateway.mjs:/app/gateway.mjs:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "8080"
+    networks:
+      - star-private
+      - interpreter-private
+    depends_on:
+      - ollama
+
+  # Primary coding executor: Open Interpreter, run only when explicitly launched.
+  # Workspace is the only project directory mounted; no STAR or provider secrets are passed in.
+  # The internal network allows Ollama access and blocks direct internet egress from the executor.
+  interpreter:
+    profiles: ["interpreter"]
+    build:
+      context: .
+      dockerfile: Dockerfile.interpreter
+    stdin_open: true
+    tty: true
+    init: true
+    user: node
+    working_dir: /workspace
+    environment:
+      STAR_AGENT_MODEL: ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      CODEX_OSS_BASE_URL: "http://ollama:11434/v1"
+      HOME: "/home/node"
+      INTERPRETER_HOME: "/home/node/.openinterpreter"
+    command:
+      - --oss
+      - --local-provider
+      - ollama
+      - --model
+      - ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      - --sandbox
+      - workspace-write
+      - --ask-for-approval
+      - on-request
+      - --cd
+      - /workspace
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./agent-workspace:/workspace
+      - interpreter-home:/home/node/.openinterpreter
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - interpreter-private
+    depends_on:
+      - ollama
+
+  interpreter-web:
+    profiles: ["interpreter"]
+    build:
+      context: .
+      dockerfile: Dockerfile.interpreter
+    entrypoint: ["node", "/app/interpreter-server.mjs"]
+    restart: unless-stopped
+    init: true
+    user: node
+    working_dir: /workspace
+    environment:
+      PORT: "8090"
+      STAR_INTERPRETER_TOKEN: ${STAR_BACKEND_TOKEN:?Set STAR_BACKEND_TOKEN in .env}
+      STAR_AGENT_MODEL: ${STAR_AGENT_MODEL:-qwen2.5-coder:7b}
+      CODEX_OSS_BASE_URL: "http://ollama:11434/v1"
+      HOME: "/home/node"
+      INTERPRETER_HOME: "/home/node/.openinterpreter"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./agent-workspace:/workspace
+      - interpreter-home:/home/node/.openinterpreter
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "8090"
+    networks:
+      - interpreter-private
+    depends_on:
+      - ollama
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?Set CF_TUNNEL_TOKEN in .env}
+    restart: unless-stopped
+    networks:
+      - star-private
+    depends_on:
+      - gateway
+
+networks:
+  star-private:
+    driver: bridge
+  interpreter-private:
+    driver: bridge
+    internal: true
+
+volumes:
+  ollama-models:
+  interpreter-home:

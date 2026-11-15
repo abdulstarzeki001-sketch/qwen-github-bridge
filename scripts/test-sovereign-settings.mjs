@@ -1,0 +1,65 @@
+import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
+import { onRequest } from "../functions/api/[[path]].js";
+globalThis.crypto ||= webcrypto;
+const site="https://star-cyber-ai-x.pages.dev",token="v".repeat(64);
+const data=new Map();
+const store={get:async k=>data.has(k)?data.get(k):null,put:async(k,v)=>{data.set(k,v)},delete:async k=>{data.delete(k)}};
+const env={STAR_API_TOKEN:token,STAR_AI_PROVIDER:"openai",OPENAI_API_KEY:"fake-key-for-test",STAR_ALLOWED_MODELS:"gpt-4.1,gpt-4.1-mini",STAR_OWNER_SETTINGS:store};
+async function call(path,method="GET",body=null,authenticated=true,headers={}){
+ const h={Origin:site,...headers};
+ if(authenticated)h.Authorization="Bearer "+token;
+ if(body!==null)h["Content-Type"]="application/json";
+ return onRequest({request:new Request(site+path,{method,headers:h,...(body!==null?{body:JSON.stringify(body)}:{})}),env});
+}
+const valid={owner_instructions:"Write code in Arabic",model:"gpt-4.1-mini",temperature:0.6,max_tokens:2048};
+let res=await call("/api/owner/settings","GET",null,false);
+assert.equal(res.status,401,"Owner settings inaccessible without auth");
+res=await call("/api/owner/settings","PUT",valid,false);
+assert.equal(res.status,401,"Owner settings can't be written anonymously");
+res=await call("/api/owner/settings","PUT",{...valid,model:"invalid"});
+assert.equal(res.status,400,"Unknown model rejected");
+res=await call("/api/owner/settings","PUT",{...valid,secret:"do-not-store"});
+assert.equal(res.status,400,"Unknown secret fields rejected");
+res=await call("/api/owner/settings","PUT",{...valid,temperature:5});
+assert.equal(res.status,400,"Unsupported tuning rejected");
+assert.equal(data.size,0);
+res=await call("/api/owner/settings","PUT",valid);
+assert.equal(res.status,200);
+let out=await res.json();
+assert.equal(out.profile.model,"gpt-4.1-mini");
+assert.equal(data.size,1,"KV write persisted the owner profile");
+res=await call("/api/owner/settings");
+assert.equal(res.status,200);
+out=await res.json();
+assert.equal(out.storage,"cloudflare-kv");
+assert.deepEqual(out.profile,valid);
+const originalFetch=globalThis.fetch;
+let captured=null;
+globalThis.fetch=async(url,options)=>{
+ if(url!=="https://api.openai.com/v1/chat/completions")throw Error("Unexpected URL: "+url);
+ captured=JSON.parse(options.body);
+ return Response.json({model:captured.model,choices:[{message:{content:"ok"}}]});
+};
+try{
+ res=await call("/api/chat","POST",{prompt:"Test from second device"});
+ assert.equal(res.status,200);
+ assert.equal(captured.model,"gpt-4.1-mini","Stored model used by default");
+ assert.equal(captured.temperature,0.6);
+ assert.equal(captured.max_tokens,2048);
+ assert.match(captured.messages[0].content,/Write code in Arabic/);
+ res=await call("/api/chat","POST",{prompt:"Override request",model:"gpt-4.1",temperature:0.2});
+ assert.equal(res.status,200);
+ assert.equal(captured.model,"gpt-4.1","Per-request owner override works");
+ assert.equal(captured.temperature,0.2);
+}finally{globalThis.fetch=originalFetch}
+res=await call("/api/owner/settings","DELETE");
+assert.equal(res.status,200);
+assert.equal(data.size,0,"Owner can delete saved preferences");
+res=await call("/api/owner/settings");
+assert.equal((await res.json()).profile,null);
+const withoutKv={...env,STAR_OWNER_SETTINGS:undefined};
+res=await onRequest({request:new Request(site+"/api/owner/settings",{headers:{Authorization:"Bearer "+token}}),env:withoutKv});
+assert.equal(res.status,200);
+assert.equal((await res.json()).enabled,false,"Local-only fallback when KV not configured");
+console.log("SOVEREIGN KV profile tests passed (auth, validation, persistence, automatic defaults, deletion)");

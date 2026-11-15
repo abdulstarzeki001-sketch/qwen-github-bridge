@@ -1,0 +1,19 @@
+.knowledge-panel{border:1px solid #39778a;border-radius:19px;margin:12px 0 17px;padding:16px;background:linear-gradient(150deg,#0b253a,#10182b);color:#d6f6ff}
+.knowledge-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#94fae7;margin-bottom:9px;font-size:13px}
+.knowledge-head span{font-size:11px;color:#abc9d5}
+.knowledge-help{font-size:11px;line-height:1.85;color:#aec9dc;margin:9px 0}
+.knowledge-import{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.knowledge-import input{flex:1;min-width:190px;max-width:100%;background:#08192b;border:1px solid #365774;color:#d4f8ff;border-radius:11px;padding:11px;font-size:12px}
+.knowledge-import button,.knowledge-row button,.knowledge-dialog button{border:1px solid #6cead9;border-radius:11px;background:#153b48;color:#d5fff4;font:inherit;font-size:12px;font-weight:700;padding:10px 13px;cursor:pointer}
+.knowledge-import button:disabled{opacity:.5;cursor:wait}
+.knowledge-opt{display:flex;gap:9px;align-items:center;font-size:12px;line-height:1.8;margin:8px 0}.knowledge-opt input{accent-color:#84f4da;width:18px;height:18px}
+.knowledge-status{font-size:11px;color:#95f5cc;white-space:pre-wrap;line-height:1.7}
+.knowledge-status[data-error=yes]{color:#ffbaaa}
+.knowledge-list{display:grid;gap:7px;max-height:225px;overflow:auto}
+.knowledge-row{display:flex;align-items:center;gap:7px;border:1px solid #29465e;border-radius:11px;background:#091c2d;padding:9px}
+.knowledge-rowinfo{flex:1;min-width:0;display:grid;gap:3px}.knowledge-rowinfo strong{font-size:12px;color:#e1f7ff;overflow-wrap:anywhere}.knowledge-rowinfo span{font-size:10px;color:#9ec2d1}
+.knowledge-row button{padding:8px 9px}.knowledge-row button.knowledge-del{color:#ffadb5;border-color:#743b4d;background:#321828}
+.knowledge-sources{margin:10px 0;color:#b4e3e0;font-size:11px;line-height:1.8}.knowledge-sources p{margin:5px 0;color:#a6cbd9}
+.knowledge-dialog{background:#08182b;color:#e1faff;border:1px solid #4d7d94;border-radius:17px;max-width:min(800px,93vw);width:100%;max-height:80vh;overflow:auto}
+.knowledge-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.8}
+@media(max-width:530px){.knowledge-panel{padding:12px}.knowledge-import{display:grid}.knowledge-import input{width:100%}}
