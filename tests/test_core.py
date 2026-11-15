@@ -156,6 +156,33 @@ def test_cloudflare_provider_resolution():
     assert model == "@cf/qwen/qwen3.8-27b"
 
 
+def test_wormgpt_provider_requires_verified_endpoint_configuration():
+    s = Settings(
+        ai_provider="wormgpt",
+        wormgpt_base_url="https://model.example.org/v1",
+        wormgpt_api_key="k" * 64,
+        wormgpt_model="reviewed-wormgpt-model",
+    )
+    assert s.resolved_llm() == (
+        "https://model.example.org/v1", "k" * 64, "reviewed-wormgpt-model"
+    )
+    for unsafe in (
+        "http://127.0.0.1:11434/v1",
+        "https://127.0.0.1/v1",
+        "https://model.example.org/v1?secret=value",
+        "https://user:password@model.example.org/v1",
+    ):
+        try:
+            Settings(
+                ai_provider="wormgpt", wormgpt_base_url=unsafe,
+                wormgpt_api_key="k" * 64, wormgpt_model="model",
+            ).resolved_llm()
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError(f"unsafe model URL accepted: {unsafe}")
+
+
 def test_self_hosted_provider_resolution():
     s = Settings(
         ai_provider="self_hosted",

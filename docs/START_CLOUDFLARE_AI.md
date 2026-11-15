@@ -29,10 +29,10 @@ CLOUDFLARE_API_TOKEN
 Optional repository variable:
 
 ```text
-CLOUDFLARE_AI_MODEL=@cf/qwen/qwen3.8-27b
+CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
 ```
 
-If you do not create the variable, the workflow uses Qwen 3.8 27B automatically.
+If you do not create the variable, the workflow uses Llama 3.1 8B automatically.
 
 ## 3. Run the connection test
 
@@ -48,7 +48,7 @@ Success looks like:
 
 ```text
 Cloudflare Workers AI connection: OK
-Model: @cf/qwen/qwen3.8-27b
+Model: @cf/meta/llama-3.1-8b-instruct
 Response: STAR AI ONLINE
 ```
 
@@ -60,7 +60,7 @@ Wherever STAR CYBER AI X itself is deployed, configure the same Cloudflare value
 AI_PROVIDER=cloudflare
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_API_TOKEN=...
-CLOUDFLARE_AI_MODEL=@cf/qwen/qwen3.8-27b
+CLOUDFLARE_AI_MODEL=@cf/meta/llama-3.1-8b-instruct
 ```
 
 Do not expose these values in the browser frontend.

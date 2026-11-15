@@ -2,6 +2,30 @@ import { OpenRouter } from "@openrouter/sdk";
 
 const SECURITY_HEADERS = { "cache-control":"no-store", "x-content-type-options":"nosniff", "x-frame-options":"DENY", "referrer-policy":"no-referrer", "permissions-policy":"camera=(), microphone=(), geolocation=()" };
 
+async function secretMatches(expected, received) {
+  if (!expected || !received || expected.length < 32 || received.length < 32) return false;
+  const encoder = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+    crypto.subtle.digest("SHA-256", encoder.encode(received)),
+  ]);
+  const aa = new Uint8Array(a), bb = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < aa.length; i++) diff |= aa[i] ^ bb[i];
+  return diff === 0;
+}
+
+function bearer(req) {
+  const auth = req.headers.get("authorization") || "";
+  return auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+}
+
+function redactPrompt(value) {
+  return String(value || "")
+    .replace(/^(Authorization|Proxy-Authorization|Cookie|Set-Cookie|X-API-Key|API-Key|X-Auth-Token):[ \t]*.+$/gim, "$1: <redacted>")
+    .replace(/\b(sk-ant-[A-Za-z0-9_-]{12,}|sk-(?:proj-)?[A-Za-z0-9_-]{20,}|github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,})\b/g, "<redacted>");
+}
+
 function normalizeContent(content) {
   if (typeof content === "string") return content.trim();
   if (!Array.isArray(content)) return "";
@@ -18,6 +42,20 @@ function normalizeContent(content) {
 }
 
 export default async (req) => {
+  const expectedToken = Netlify.env.get("STAR_API_TOKEN") || "";
+  if (expectedToken.length < 32) {
+    return Response.json(
+      { error: "STAR_API_TOKEN is not configured for Netlify chat." },
+      { status: 503, headers: SECURITY_HEADERS },
+    );
+  }
+  if (!(await secretMatches(expectedToken, bearer(req)))) {
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: SECURITY_HEADERS },
+    );
+  }
+
   const gatewayBaseUrl = Netlify.env.get("OPENROUTER_BASE_URL");
   if (!gatewayBaseUrl) {
     return Response.json(
@@ -54,6 +92,7 @@ export default async (req) => {
     );
   }
 
+  const safePrompt = redactPrompt(prompt);
   const model = Netlify.env.get("STAR_NETLIFY_MODEL") || "openrouter/free";
   const client = new OpenRouter();
 
@@ -71,7 +110,7 @@ export default async (req) => {
           },
           {
             role: "user",
-            content: prompt,
+            content: safePrompt,
           },
         ],
       },
