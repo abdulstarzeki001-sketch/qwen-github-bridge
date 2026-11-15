@@ -1,6 +1,7 @@
 import { createSign, timingSafeEqual } from "node:crypto";
 
 const get = (key) => Netlify.env.get(key) || "";
+const SECURITY_HEADERS = { "Cache-Control":"no-store", "X-Content-Type-Options":"nosniff", "X-Frame-Options":"DENY", "Referrer-Policy":"no-referrer", "Permissions-Policy":"camera=(), microphone=(), geolocation=()" };
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
 function authorized(req) {
@@ -46,7 +47,7 @@ async function github(path, token, options = {}) {
 }
 
 export default async function handler(req) {
-  const headers = { "Cache-Control": "no-store" };
+  const headers = SECURITY_HEADERS;
   if (!authorized(req)) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   try {
     const installation = get("GITHUB_INSTALLATION_ID");
@@ -73,7 +74,7 @@ export default async function handler(req) {
       if (resource.type !== "file" || resource.size > 131072 || resource.encoding !== "base64") {
         return Response.json({ error: "File type or size unsupported (max 128 KiB)" }, { status: 400, headers });
       }
-      const bytes = Buffer.from(resource.content.replace(/\\s/g, ""), "base64");
+      const bytes = Buffer.from(resource.content.replace(/\s/g, ""), "base64");
       if (bytes.includes(0)) return Response.json({ error: "Binary files unsupported" }, { status: 400, headers });
       return Response.json({ ok: true, path: resource.path, type: "file", size: resource.size,
         content: new TextDecoder("utf-8", { fatal: true }).decode(bytes) }, { headers });

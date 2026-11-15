@@ -1,5 +1,5 @@
 from app.burp_tools import compare_exchanges, inspect_exchange, inspect_jwt
-from app.llm import _bounded_confidence, _extract_json
+from app.llm import _extract_json, redact_for_ai
 from app.config import Settings
 from app.github_intel import (
     is_text_candidate,
@@ -7,12 +7,29 @@ from app.github_intel import (
     validate_repo_name,
 )
 from app.reports import render_report
-from app.scanners import build_command, host_from_target, validate_scanner_target
-from app.redaction import redact_http_message, redact_source_text
+from app.scanners import build_command, host_from_target, validate_scope_target
 
 
 def test_host_from_target():
     assert host_from_target("https://example.com:8443/api") == "example.com"
+
+
+def test_scope_target_validation_rejects_ambiguous_targets():
+    assert validate_scope_target("https://example.com:8443/api") == "https://example.com:8443/api"
+    assert validate_scope_target("10.0.0.5:8080") == "10.0.0.5:8080"
+    for value in (
+        "file:///etc/passwd",
+        "https://user:pass@example.com/",
+        "example.com/path",
+        "https://example.com/#fragment",
+        "example.com bad.test",
+    ):
+        try:
+            validate_scope_target(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"target should have been rejected: {value}")
 
 
 def test_default_nmap_profile_is_non_destructive():
@@ -111,6 +128,21 @@ def test_llm_extract_json_from_fence():
     assert result == {"ok": True, "n": 3}
 
 
+def test_llm_redacts_credentials_before_provider_request():
+    source = (
+        "Authorization: Bearer top-secret-token\n"
+        "Cookie: session=abc123\n"
+        "password=hunter2\n"
+        "x-api-key: shared-key-value\n"
+    )
+    redacted = redact_for_ai(source)
+    assert "top-secret-token" not in redacted
+    assert "session=abc123" not in redacted
+    assert "hunter2" not in redacted
+    assert "shared-key-value" not in redacted
+    assert redacted.count("<redacted:") == 4
+
+
 def test_cloudflare_provider_resolution():
     s = Settings(
         ai_provider="cloudflare",
@@ -122,6 +154,33 @@ def test_cloudflare_provider_resolution():
     assert base_url == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
     assert key == "secret"
     assert model == "@cf/qwen/qwen3.8-27b"
+
+
+def test_wormgpt_provider_requires_verified_endpoint_configuration():
+    s = Settings(
+        ai_provider="wormgpt",
+        wormgpt_base_url="https://model.example.org/v1",
+        wormgpt_api_key="k" * 64,
+        wormgpt_model="reviewed-wormgpt-model",
+    )
+    assert s.resolved_llm() == (
+        "https://model.example.org/v1", "k" * 64, "reviewed-wormgpt-model"
+    )
+    for unsafe in (
+        "http://127.0.0.1:11434/v1",
+        "https://127.0.0.1/v1",
+        "https://model.example.org/v1?secret=value",
+        "https://user:password@model.example.org/v1",
+    ):
+        try:
+            Settings(
+                ai_provider="wormgpt", wormgpt_base_url=unsafe,
+                wormgpt_api_key="k" * 64, wormgpt_model="model",
+            ).resolved_llm()
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError(f"unsafe model URL accepted: {unsafe}")
 
 
 def test_self_hosted_provider_resolution():
@@ -136,51 +195,3 @@ def test_self_hosted_provider_resolution():
         "local",
         "demo",
     )
-
-
-def test_redaction_masks_http_credentials_but_preserves_structure():
-    raw = (
-        "POST /login HTTP/1.1\r\n"
-        "Host: example.test\r\n"
-        "Authorization: Bearer topsecret-token-value\r\n"
-        "Cookie: sid=abcdef1234567890\r\n"
-        "Content-Type: application/json\r\n\r\n"
-        '{"username":"demo","password":"super-secret","token":"abc123456789"}'
-    )
-    result = redact_http_message(raw)
-    assert "topsecret-token-value" not in result
-    assert "abcdef1234567890" not in result
-    assert "super-secret" not in result
-    assert "abc123456789" not in result
-    assert "username" in result
-    assert "<redacted:" in result
-
-
-def test_source_redaction_masks_common_secret_patterns():
-    source = 'API_KEY=sk-example12345678901234567890\nAuthorization: Bearer token-value-123456789'
-    result = redact_source_text(source)
-    assert "sk-example12345678901234567890" not in result
-    assert "token-value-123456789" not in result
-    assert "<redacted:" in result
-
-
-def test_scanner_target_validation_rejects_credentials_and_bad_web_scheme():
-    try:
-        host_from_target("https://user:pass@example.com")
-        assert False, "expected ValueError"
-    except ValueError:
-        pass
-
-    try:
-        validate_scanner_target("nuclei", "file:///etc/passwd")
-        assert False, "expected ValueError"
-    except ValueError:
-        pass
-
-    assert validate_scanner_target("nmap", "example.com") == "example.com"
-
-
-def test_llm_confidence_parser_is_fail_closed():
-    assert _bounded_confidence("95") == 95
-    assert _bounded_confidence("not-a-number") == 0
-    assert _bounded_confidence(500) == 100

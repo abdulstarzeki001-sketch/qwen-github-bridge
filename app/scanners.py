@@ -1,43 +1,57 @@
 import asyncio
+import shutil
 from urllib.parse import urlparse
 
 from .config import settings
 
 
 ALLOWED_SCANNERS = {"nmap", "nuclei", "zap-baseline"}
+SCANNER_BINARIES = {
+    "nmap": "nmap",
+    "nuclei": "nuclei",
+    "zap-baseline": "zap-baseline.py",
+}
 
 
-def _clean_target(target: str) -> str:
+def scanner_available(scanner: str) -> bool:
+    binary = SCANNER_BINARIES.get(scanner)
+    return bool(binary and shutil.which(binary))
+
+
+def available_scanners() -> list[str]:
+    return sorted(scanner for scanner in ALLOWED_SCANNERS if scanner_available(scanner))
+
+
+def validate_scope_target(target: str) -> str:
     value = (target or "").strip()
-    if not value or len(value) > 2048:
-        raise ValueError("Invalid target")
-    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
-        raise ValueError("Target contains control characters")
+    if not value or len(value) > 2048 or any(ord(ch) < 32 or ord(ch) == 127 for ch in value) or any(ch.isspace() for ch in value):
+        raise ValueError("Scope target must be a non-empty URL or host without whitespace")
+
+    parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
+    if parsed.scheme and parsed.scheme.lower() not in {"http", "https"}:
+        raise ValueError("Scope target scheme must be http or https")
+    if parsed.username or parsed.password:
+        raise ValueError("Scope target must not contain embedded credentials")
+    if not parsed.hostname:
+        raise ValueError("Scope target must include a hostname or IP address")
+    try:
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError("Scope target has an invalid port") from exc
+    if parsed.fragment:
+        raise ValueError("Scope target must not include a URL fragment")
+    if not parsed.scheme and (parsed.path not in {"", "/"} or parsed.query):
+        raise ValueError("Bare scope targets must be host[:port] only")
     return value
 
 
 def host_from_target(target: str) -> str:
-    value = _clean_target(target)
+    value = validate_scope_target(target)
     parsed = urlparse(value if "://" in value else f"//{value}", scheme="")
-    if parsed.username or parsed.password:
-        raise ValueError("Credentials in target URLs are not allowed")
-    host = parsed.hostname
-    if not host:
-        raise ValueError("Target hostname is missing")
-    return host
-
-
-def validate_scanner_target(scanner: str, target: str) -> str:
-    value = _clean_target(target)
-    parsed = urlparse(value)
-    if scanner in {"nuclei", "zap-baseline"} and parsed.scheme and parsed.scheme not in {"http", "https"}:
-        raise ValueError("Web scanners require an http or https target")
-    host_from_target(value)
-    return value
+    return parsed.hostname or ""
 
 
 def build_command(scanner: str, target: str) -> list[str]:
-    target = validate_scanner_target(scanner, target)
     host = host_from_target(target)
 
     if scanner == "nmap":

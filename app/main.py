@@ -1,5 +1,5 @@
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 import json
 import shlex
 
@@ -16,18 +16,17 @@ from .evidence import add_attachment, read_manifest, save_bundle
 from .github_intel import GitHubRepositoryClient, validate_repo_name, language_hint
 from .llm import analyze_and_verify, review_source_bundle, verify_retest
 from .reports import render_report
-from .scanners import run_scanner, validate_scanner_target
+from .scanners import available_scanners, run_scanner, scanner_available, validate_scope_target
 from .security import require_api_token
 
-
-APP_VERSION = "0.7.1"
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title=settings.app_name, version=APP_VERSION, lifespan=lifespan)
+
+app = FastAPI(title=settings.app_name, version="0.7.0", lifespan=lifespan)
 
 
 class ProjectCreate(BaseModel):
@@ -85,7 +84,7 @@ class RetestRequest(BaseModel):
 def bounded_int(value, default: int = 0, minimum: int = 0, maximum: int = 100) -> int:
     try:
         parsed = int(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         parsed = default
     return max(minimum, min(maximum, parsed))
 
@@ -119,6 +118,7 @@ def health():
             if settings.ai_provider == "cloudflare"
             else bool(settings.llm_base_url and settings.llm_model)
         ),
+        "available_scanners": available_scanners(),
     }
 
 
@@ -143,11 +143,15 @@ def list_projects():
 def create_scope(data: ScopeCreate):
     if not one("SELECT id FROM projects WHERE id=?", (data.project_id,)):
         raise HTTPException(404, "Project not found")
+    try:
+        target = validate_scope_target(data.target)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
 
     with connect() as conn:
         cur = conn.execute(
             "INSERT INTO scopes(project_id,name,target,authorized,notes) VALUES (?,?,?,?,?)",
-            (data.project_id, data.name, data.target, int(data.authorized), data.notes),
+            (data.project_id, data.name, target, int(data.authorized), data.notes),
         )
         scope_id = cur.lastrowid
 
@@ -155,7 +159,7 @@ def create_scope(data: ScopeCreate):
         "scope.create",
         "scope",
         str(scope_id),
-        {"project_id": data.project_id, "target": data.target, "authorized": data.authorized},
+        {"project_id": data.project_id, "target": target, "authorized": data.authorized},
     )
     return one("SELECT * FROM scopes WHERE id=?", (scope_id,))
 
@@ -618,14 +622,19 @@ async def analyze_repository(repository_id: int, data: RepositoryAnalyzeRequest)
 @app.post("/api/scans", dependencies=[Depends(require_api_token)])
 async def create_scan(data: ScanCreate):
     scope = require_authorized_scope(data.scope_id)
+    try:
+        validate_scope_target(scope["target"])
+    except ValueError as exc:
+        raise HTTPException(400, f"Stored scope target is invalid: {exc}")
 
     if data.scanner not in {"nmap", "nuclei", "zap-baseline"}:
         raise HTTPException(400, "Unsupported scanner")
-
-    try:
-        validate_scanner_target(data.scanner, scope["target"])
-    except ValueError as exc:
-        raise HTTPException(400, str(exc))
+    if not scanner_available(data.scanner):
+        raise HTTPException(
+            503,
+            f"{data.scanner} is not installed in this runtime. "
+            "Use a runner image that includes it before enabling this scanner.",
+        )
 
     with connect() as conn:
         cur = conn.execute(
